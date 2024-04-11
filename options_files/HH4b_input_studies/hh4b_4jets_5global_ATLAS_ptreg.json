@@ -30,7 +30,7 @@
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
     "event_info_file": "event_files/HH4b_input_studies/hh4b_5globaljet_ptreg.yaml",
-    "training_file": "../../../9999padglobal/output_JetGoodHiggs_train.h5",
+    "training_file": "/afs/cern.ch/user/m/mcroci/9999padglobal_sin_cos_phi/output_JetGoodHiggs_train.h5",
 
     "normalize_features": true,
     "limit_to_num_jets": 0,
