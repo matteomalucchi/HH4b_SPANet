@@ -9,7 +9,9 @@ INPUTS:
     Jet:
       ptPnetRegNeutrino: log_normalize
       eta: normalize
+      phi: normalize 
       cosPhi: normalize
+      sinPhi: normalize
       btag: none
 
   # ---------------------------------------------------------------------
@@ -19,7 +21,9 @@ INPUTS:
     FifthJet:
       ptPnetRegNeutrino: log_normalize
       eta: normalize
+      phi: normalize
       cosPhi: normalize
+      sinPhi: normalize
       btag: none
 
 

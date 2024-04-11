@@ -9,8 +9,11 @@ INPUTS:
     Jet:
       ptPnetRegNeutrino: log_normalize
       eta: normalize
+      phi: normalize 
       cosPhi: normalize
+      sinPhi: normalize
       btag: none
+      mass: log_normalize
 
   # ---------------------------------------------------------------------
   # REQUIRED - GLOBAL - inputs which will have a single vector per event.
@@ -19,8 +22,11 @@ INPUTS:
     FifthJet:
       ptPnetRegNeutrino: log_normalize
       eta: normalize
+      phi: normalize
       cosPhi: normalize
+      sinPhi: normalize
       btag: none
+      mass: log_normalize
 
 
 # ----------------------------------------------------------------------
