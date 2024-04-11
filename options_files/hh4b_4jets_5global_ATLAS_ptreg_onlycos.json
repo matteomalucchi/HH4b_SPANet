@@ -29,7 +29,7 @@
 
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
-    "event_info_file": "event_files/hh4b_5globaljet_ptreg_onlycos.yaml",
+    "event_info_file": "event_files/hh4b_5globaljet_ptreg_cosPhi.yaml",
     "training_file": "../9999padglobal_sin_cos_phi/output_JetGoodHiggs_train.h5",
 
     "normalize_features": true,
