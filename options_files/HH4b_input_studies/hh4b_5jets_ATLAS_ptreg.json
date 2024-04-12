@@ -48,9 +48,9 @@
     "combine_pair_loss": "min",
     "optimizer": "AdamW",
     "focal_gamma": 0.0,
-    "learning_rate": 0.00659,
-    "learning_rate_cycles": 1,
-    "learning_rate_warmup_epochs": 1.0,
+    "learning_rate": 0.0001,
+    "learning_rate_cycles": 0,
+    "learning_rate_warmup_epochs": 0,
 
     "assignment_loss_scale": 1.0,
     "detection_loss_scale": 0.0,
