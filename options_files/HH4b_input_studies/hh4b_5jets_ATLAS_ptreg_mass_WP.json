@@ -29,8 +29,8 @@
 
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
-    "event_info_file": "event_files/HH4b_input_studies/hh4b_5globaljet_ptreg_mass_WP.yaml",
-    "training_file": "/afs/cern.ch/user/m/mcroci/kl_training_newCuts_btagWP/output_JetGoodHiggs_train.h5",
+    "event_info_file": "event_files/HH4b_input_studies/hh4b_ptreg_mass_WP.yaml",
+    "training_file": "/afs/cern.ch/user/m/mcroci/kl_training_newCuts_btagWP/output_JetGood_train.h5",
 
     "normalize_features": true,
     "limit_to_num_jets": 0,
