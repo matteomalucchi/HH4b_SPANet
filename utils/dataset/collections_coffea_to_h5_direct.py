@@ -97,15 +97,13 @@ global_collections_dict = {
                 "saved_name_coll": "Event",
                 "saved_name_var": "detaVBF",
             },
-        },
-        {
-            "events_mjjJetGoodVBFMergedProvVBFPadded": {
+            "events_centralityHiggsLeadingRun2JetGoodVBFMergedProvVBFPtFlattenPadded": {
                 "saved_name_coll": "Event",
-                "saved_name_var": "mjjVBF",
+                "saved_name_var": "centralityHiggsLeadingRun2VBF",
             },
-            "events_detaJetGoodVBFMergedProvVBFPadded": {
+            "events_centralityHiggsSubLeadingRun2JetGoodVBFMergedProvVBFPtFlattenPadded": {
                 "saved_name_coll": "Event",
-                "saved_name_var": "detaVBF",
+                "saved_name_var": "centralityHiggsSubLeadingRun2VBF",
             },
         },
         {
@@ -116,6 +114,32 @@ global_collections_dict = {
             "events_detaJetGoodVBFMergedProvVBFPadded": {
                 "saved_name_coll": "Event",
                 "saved_name_var": "detaVBF",
+            },
+            "events_centralityHiggsLeadingRun2JetGoodVBFMergedProvVBFPadded": {
+                "saved_name_coll": "Event",
+                "saved_name_var": "centralityHiggsLeadingRun2VBF",
+            },
+            "events_centralityHiggsSubLeadingRun2JetGoodVBFMergedProvVBFPadded": {
+                "saved_name_coll": "Event",
+                "saved_name_var": "centralityHiggsSubLeadingRun2VBF",
+            },
+        },
+        {
+            "events_mjjJetGoodVBFMergedProvVBFPadded": {
+                "saved_name_coll": "Event",
+                "saved_name_var": "mjjVBF",
+            },
+            "events_detaJetGoodVBFMergedProvVBFPadded": {
+                "saved_name_coll": "Event",
+                "saved_name_var": "detaVBF",
+            },
+            "events_centralityHiggsLeadingRun2JetGoodVBFMergedProvVBFPadded": {
+                "saved_name_coll": "Event",
+                "saved_name_var": "centralityHiggsLeadingRun2VBF",
+            },
+            "events_centralityHiggsSubLeadingRun2JetGoodVBFMergedProvVBFPadded": {
+                "saved_name_coll": "Event",
+                "saved_name_var": "centralityHiggsSubLeadingRun2VBF",
             },
         },
     ],

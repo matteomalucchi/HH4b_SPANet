@@ -1,7 +1,4 @@
-"""Script with configurations for each of the datasets that are to be tested for efficiency.
-
-There are two dictionaries; one is a dictionary showing the actual datasets and the other is a list of true data, to which compare the predictions.
-"""
+"""Script with configurations for each of the datasets that are to be tested for efficiency."""
 
 import logging
 
@@ -14,9 +11,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# uncomment the configurations that you want to use
-spanet_dir_kevin = "/eos/user/k/kehrler/semester_project/HH4b_SPANet/predictions/"
+roc_dict = {
+   "some_model_of_matteo": {
+       "file": "/eos/home-m/mmalucch/spanet_infos/dnn_roc/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_newUpdates_newLeptonVeto_3L1Cut_UpdateJetVetoMap_postEE_thierry/tpr_fpr.npz",
+       "label": "some_model_of_matteo",
+       "color": "pink",
+   },
+}
 
+
+spanet_dir_kevin = "/eos/user/k/kehrler/semester_project/HH4b_SPANet/predictions/"
 spanet_dict = {
 #    "spanet_dict_example_model_from_thierry": {
 #        "true": "true_dict_example_model_from_thierry",
@@ -57,7 +61,7 @@ spanet_dict = {
 #        "file": f"{spanet_dir_kevin}hh4b_classification_AN23_184/hh4b_classification_AN23_184.h5",
 #        "true": "true_dict_hh4b_classification_AN23_184",
 #        "label": "hh4b_classification_AN23_184",
-#        "color": "pink",
+#        "color": "tab:blue",
 #    },
 
 #    "spanet_dict_hh4b_classification_var000000": {
@@ -277,7 +281,7 @@ spanet_dict = {
 #        "color": "pink",
 #    },
 
-#    "spanet_dict_hh4b_classification_var0000231": {
+#    "spanet_dict_hh4b_classification_var000031": {
 #        "file": f"{spanet_dir_kevin}hh4b_classification_var000031/hh4b_classification_var000031.h5",
 #        "true": "true_dict_hh4b_classification_var0000##",
 #        "label": "hh4b_classification_var000031",
@@ -316,7 +320,7 @@ spanet_dict = {
 #        "file": f"{spanet_dir_kevin}hh4b_classification_var000036/hh4b_classification_var000036.h5",
 #        "true": "true_dict_hh4b_classification_var0000##",
 #        "label": "hh4b_classification_var000036",
-#        "color": "pink",
+#        "color": "tab:purple",
 #    },
 
 #    "spanet_dict_hh4b_classification_var000037": {
@@ -445,13 +449,14 @@ spanet_dict = {
 #        "color": "pink",
 #    },
 
-#    "spanet_dict_hh4b_classification_var000055": {
-#        "file": f"{spanet_dir_kevin}hh4b_classification_var000055/hh4b_classification_var000055.h5",
-#        "true": "true_dict_hh4b_classification_var0000##",
-#        "label": "hh4b_classification_var000055",
-#        "color": "pink",
-#    },
+    "spanet_dict_hh4b_classification_var000055": {
+       "file": f"{spanet_dir_kevin}hh4b_classification_var000055/hh4b_classification_var000055.h5",
+       "true": "true_dict_hh4b_classification_var0000##",
+       "label": "hh4b_classification_var000055",
+       "color": "pink",
+   },
 }
+
 
 true_path_thierry = "/eos/user/t/tharte/Analysis_data/spanet_samples/classification/"
 true_dict = {

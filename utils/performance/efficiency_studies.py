@@ -718,12 +718,12 @@ def main():
         logger.info("Plotting higgs 1d all events")
         for bins, name in zip([mh_bins, mh_bins_peak], ["", "_peak"]):
             if args.data:
-                kl_values = (
+                kl_values = np.array(
                     []
                 )  # This is needed to make sure, that we are only producing one plot.
             for number in [1, 2]:
                 for kl_variation, kl_name in zip(
-                    range(len(kl_values) + 1), ["all"] + kl_values
+                    range(len(kl_values) + 1), ["all"] + kl_values.to_list()
                 ):
                     os.makedirs(f"{plot_dir}/kl_{kl_name}_massplot", exist_ok=True)
                     plot_histos_1d(
