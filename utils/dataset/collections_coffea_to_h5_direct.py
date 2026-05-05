@@ -62,6 +62,16 @@ jet_collections_dict = {
             },
         },
     ],
+    "JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING": [
+        {
+            "JetGoodVBFMergedProvVBFPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 5,
+                "resonances": ["vbf"],
+                "min_num_jets": 0,
+            },
+        },
+    ],
 }
 
 global_collections_dict = {
