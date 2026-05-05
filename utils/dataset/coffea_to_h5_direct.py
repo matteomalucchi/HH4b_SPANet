@@ -29,7 +29,7 @@ RESONANCES = {
     "h2": (2, ("b1", "b2")),
     "vbf": (3, ("q1", "q2")),
 }
-MIN_NUMBER_JETS = 1
+MIN_NUM_JETS = 4
 
 # -----------------------------------------------------------------------------
 # CLI
@@ -67,14 +67,14 @@ p.add_argument(
     "--jets",
     nargs="+",
     default=["JetTotalSPANetPtFlattenPadded", "JetTotalSPANetPadded"],
-    help="Jet collections to process (must match keys in coffea file)",
+    help="Jet collections to process (must match keys in coffea file)."+ "\nIf the value is one of the predefined uppercase collection groups (e.g. 'JET_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of collections defined in collections_coffea_to_h5_direct.py.",
 )
 p.add_argument(
     "-g",
     "--global-vars",
     nargs="+",
     default=["all"],
-    help="Global variables to save, or 'all' to save all non-jet variables as global variables",
+    help="Global variables to save, or 'all' to save all non-jet variables as global variables."+ "\nIf the value is one of the predefined uppercase collection groups (e.g. 'GLOBAL_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of variables defined in collections_coffea_to_h5_direct.py.",
 )
 p.add_argument(
     "-m", "--max-jets", nargs="+", type=int, default=[5, 5], help="Max jets to keep"
@@ -199,6 +199,7 @@ def unflatten_to_jagged(flat, counts):
         raise ValueError("Flat length != sum(counts)")
 
     return ak.unflatten(flat, counts)
+
 
 def pad_clip_jets(jets, max_jets):
 
@@ -497,7 +498,9 @@ def coffea_to_h5(
                     if type(payload) == pyarrow._dataset.FileSystemDataset:
                         payload = payload.to_table()
                         payload_columns = payload.schema.names
-                        payload = {key: np.array(payload[key]) for key in payload_columns}
+                        payload = {
+                            key: np.array(payload[key]) for key in payload_columns
+                        }
                     else:
                         payload = {key: values.value for key, values in payload.items()}
                         payload_columns = list(payload.keys())
@@ -583,10 +586,13 @@ def coffea_to_h5(
                             != COFFEA_PADDING_VALUE
                         )
 
-                        # check that there are at least MIN_NUMBER_JETS jets in the event
-                        if np.any(np.sum(mask_jet_pt, axis=1) < MIN_NUMBER_JETS):
+                        # check that there are at least min_num_jets jets in the event
+                        if np.any(
+                            np.sum(mask_jet_pt, axis=1)
+                            < jet_info_dict.get("min_num_jets", MIN_NUM_JETS)
+                        ):
                             raise ValueError(
-                                f"Event has less than {MIN_NUMBER_JETS} jets. Check dataset {dataset}"
+                                f"Event has less than {jet_info_dict.get('min_num_jets', MIN_NUM_JETS)} jets. Check dataset {dataset}"
                             )
 
                         jet_mask_written = False
@@ -779,7 +785,9 @@ def coffea_to_h5(
                             shuffle,
                         )
                     else:
-                        kl_padding = H5_PADDING_VALUE * ak.ones_like(payload[weight_name])
+                        kl_padding = H5_PADDING_VALUE * ak.ones_like(
+                            payload[weight_name]
+                        )
                         write_block_split(
                             tr_in,
                             te_in,
