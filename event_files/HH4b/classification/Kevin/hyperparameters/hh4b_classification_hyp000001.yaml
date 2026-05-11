@@ -6,15 +6,31 @@ INPUTS:
   # REQUIRED - SEQUENTIAL - inputs which can have an arbitrary number of vectors.
   # -----------------------------------------------------------------------------
   SEQUENTIAL:
-    Jet:
+    JetHiggsLeading:
       # MASK: normalize
-      # btagPNetB: normalize
-      # btagPNetB_5wp: normalize
-      # eta: normalize
-      # mass: log_normalize
-      # phi: normalize
-      # provenance: normalize
-      # pt: log_normalize
+      btagPNetB_5wp: normalize
+      eta: normalize
+      mass: log_normalize
+      phi: normalize
+      pt: log_normalize
+      # reco_provenance: normalize
+    JetHiggsSubLeading:
+      # MASK: normalize
+      btagPNetB_5wp: normalize
+      eta: normalize
+      mass: log_normalize
+      phi: normalize
+      pt: log_normalize
+      # reco_provenance: normalize
+    Jet5th:
+      # MASK: normalize
+      btagPNetB_5wp: normalize
+      eta: normalize
+      mass: log_normalize
+      phi: normalize
+      pt: log_normalize
+      # reco_provenance: normalize
+
 
   # ---------------------------------------------------------------------
   # REQUIRED - GLOBAL - inputs which will have a single vector per event.
@@ -23,71 +39,57 @@ INPUTS:
     Event:
       # Arctanh_Delta_pairing_probabilities: normalize
       # Binned_Arctanh_Delta_pairing_probabilities: normalize
-      # Delta_pairing_probabilities: normalize
-      # HT: log_normalize
+      Delta_pairing_probabilities: normalize
+      HT: log_normalize
       # Padded_Arctanh_Delta_pairing_probabilities: normalize
-      # dR_max: normalize
-      # dR_min: normalize
-      # era: normalize
+      dR_max: normalize
+      dR_min: normalize
       # event: normalize
       # kl: normalize
-      # sig_bkg_dnn_score: normalize
-      # sigma_over_higgs1_reco_mass: normalize
-      # sigma_over_higgs2_reco_mass: normalize
       # year: normalize
     HiggsLeading:
-      # dEta: normalize
-      # dPhi: normalize
-      # dR: normalize
-      # eta: normalize
-      # helicityCosTheta: normalize
-      # phi: normalize
-      # mass: log_normalize
-      # pt: log_normalize
+      dR: normalize
+      eta: normalize
+      helicityCosTheta: normalize
+      mass: log_normalize
+      phi: normalize
+      pt: log_normalize
     HiggsSubLeading:
-      # dEta: normalize
-      # dPhi: normalize
-      # dR: normalize
-      # eta: normalize
-      # helicityCosTheta: normalize
-      # phi: normalize
-      # mass: log_normalize
-      # pt: log_normalize
+      dR: normalize
+      eta: normalize
+      helicityCosTheta: normalize
+      mass: log_normalize
+      phi: normalize
+      pt: log_normalize
     HH:
-      # Costhetastar_CS: normalize
-      # dEta: normalize
+      Costhetastar_CS: normalize
+      dEta: normalize
       # dPhi: normalize
-      # dR: normalize
-      # eta: normalize
-      # mass: log_normalize
-      # phi: normalize
-      # pt: log_normalize
+      dR: normalize
+      eta: normalize
+      mass: log_normalize
+      phi: normalize
+      pt: log_normalize
     add_jet1pt:
-      # LeadingHiggs_dEta: normalize
-      # LeadingHiggs_dPhi: normalize
-      # LeadingHiggs_mass: normalize
-      # SubLeadingHiggs_dEta: normalize
-      # SubLeadingHiggs_dPhi: normalize
-      # SubLeadingHiggs_mass: normalize
-      # btagPNetB_5wp: normalize
+      btagPNetB_5wp: normalize
       # eta: normalize
       # mass: normalize
       # phi: normalize
       # pt: normalize
-    weight:
-      # variation_pileupDown: normalize
-      # variation_pileupUp: normalize
+
 
 # ----------------------------------------------------------------------
 # REQUIRED - EVENT - Complete list of resonance particles and daughters.
 # ----------------------------------------------------------------------
 EVENT:
   h1:
-    - b1
-    - b2
+    - b1: JetHiggsLeading
+    - b2: JetHiggsLeading
   h2:
-    - b1
-    - b2
+    - b1: JetHiggsSubLeading
+    - b2: JetHiggsSubLeading
+  add:
+    - a1: Jet5th
 
 
 # ---------------------------------------------------------

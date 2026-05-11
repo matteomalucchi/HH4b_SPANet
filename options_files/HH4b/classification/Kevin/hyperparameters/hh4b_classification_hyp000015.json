@@ -29,8 +29,8 @@
 
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
-    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/classification/Kevin/<model name>.yaml",
-    "training_file": "<path of training file.h5>",
+    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/classification/Kevin/hyperparameters/hh4b_classification_hyp000015.yaml",
+    "training_file": "/eos/user/t/tharte/Analysis_data/spanet_samples/classification/1_15_10_mixed_with_additional_Higgs_collections/columns_for_classifierJetGoodFromHiggsOrderedLeading_JetGoodFromHiggsOrderedSubLeading_add_jet1pt_train.h5",
 
     "normalize_features": true,
     "limit_to_num_jets": 0,
@@ -45,7 +45,7 @@
     "dataset_limit": 1.0,
     "train_validation_split": 0.95,
     "dataset_randomization": 9999,
-    "batch_size": 2048,
+    "batch_size": 1024,
     "num_dataloader_workers": 16,
 
     "mask_sequence_vectors": true,
