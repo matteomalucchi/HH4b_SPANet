@@ -561,12 +561,12 @@ spanet_dict = {
 #        "color": "tab:brown",
 #    },
 
-#     "spanet_dict_hh4b_classification_var000071": {
-#        "file": f"{spanet_dir_kevin}hh4b_classification_var000071/hh4b_classification_var000071.h5",
-#        "true": "true_dict_1_15_6_mixeddata_fixed_jetvetomap_1_15_10_1_14",
-#        "label": "mixed data standard inputs (var000071)",
-#        "color": "tab:orange",
-#    },
+    "spanet_dict_hh4b_classification_var000071": {
+       "file": f"{spanet_dir_kevin}hh4b_classification_var000071/hh4b_classification_var000071.h5",
+       "true": "true_dict_1_15_6_mixeddata_fixed_jetvetomap_1_15_10_1_14",
+       "label": "mixed data | standard inputs | var000071",
+       "color": "tab:cyan",
+   },
 
 #     "spanet_dict_hh4b_classification_var000072": {
 #        "file": f"{spanet_dir_kevin}hh4b_classification_var000072/hh4b_classification_var000072.h5",
@@ -603,12 +603,12 @@ spanet_dict = {
 #        "color": "tab:pink",
 #    },
 
-#     "spanet_dict_hh4b_classification_var000077": {
-#        "file": f"{spanet_dir_kevin}hh4b_classification_var000077/hh4b_classification_var000077.h5",
-#        "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
-#        "label": "standard inputs (var000077)",
-#        "color": "tab:orange",
-#    },
+    "spanet_dict_hh4b_classification_var000077": {
+       "file": f"{spanet_dir_kevin}hh4b_classification_var000077/hh4b_classification_var000077.h5",
+       "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
+       "label": "mixed data with separated jets | standard inputs | var000077",
+       "color": "tab:blue",
+   },
 
 #     "spanet_dict_hh4b_classification_var000078": {
 #        "file": f"{spanet_dir_kevin}hh4b_classification_var000078/hh4b_classification_var000078.h5",
@@ -648,44 +648,44 @@ spanet_dict = {
     "spanet_dict_hh4b_classification_var000083": {
        "file": f"{spanet_dir_kevin}hh4b_classification_var000083/hh4b_classification_var000083.h5",
        "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
-       "label": "standard inputs + reco_provenance (var000083)",
+       "label": "mixed data with separated jets | standard inputs + reco_provenance | var000083",
        "color": "tab:orange",
    },
 
-    "spanet_dict_hh4b_classification_var000084": {
-       "file": f"{spanet_dir_kevin}hh4b_classification_var000084/hh4b_classification_var000084.h5",
-       "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
-       "label": "standard inputs with btag (Jets) + reco_provenance (var000084)",
-       "color": "tab:blue",
-   },
+#     "spanet_dict_hh4b_classification_var000084": {
+#        "file": f"{spanet_dir_kevin}hh4b_classification_var000084/hh4b_classification_var000084.h5",
+#        "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
+#        "label": "standard inputs with btag (Jets) + reco_provenance (var000084)",
+#        "color": "tab:blue",
+#    },
 
-    "spanet_dict_hh4b_classification_var000085": {
-       "file": f"{spanet_dir_kevin}hh4b_classification_var000085/hh4b_classification_var000085.h5",
-       "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
-       "label": "standard inputs with btag (Jets + add_jet1pt) + reco_provenance (var000085)",
-       "color": "tab:cyan",
-   },
+#     "spanet_dict_hh4b_classification_var000085": {
+#        "file": f"{spanet_dir_kevin}hh4b_classification_var000085/hh4b_classification_var000085.h5",
+#        "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
+#        "label": "standard inputs with btag (Jets + add_jet1pt) + reco_provenance (var000085)",
+#        "color": "tab:cyan",
+#    },
 
-    "spanet_dict_hh4b_classification_var000086": {
-       "file": f"{spanet_dir_kevin}hh4b_classification_var000086/hh4b_classification_var000086.h5",
-       "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
-       "label": "standard inputs with PD + reco_provenance (var000086)",
-       "color": "tab:red",
-   },
+#     "spanet_dict_hh4b_classification_var000086": {
+#        "file": f"{spanet_dir_kevin}hh4b_classification_var000086/hh4b_classification_var000086.h5",
+#        "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
+#        "label": "standard inputs with PD + reco_provenance (var000086)",
+#        "color": "tab:red",
+#    },
 
     "spanet_dict_hh4b_classification_var000087": {
        "file": f"{spanet_dir_kevin}hh4b_classification_var000087/hh4b_classification_var000087.h5",
        "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
-       "label": "standard inputs with PD and btag (Jets) + reco_provenance(var000087)",
+       "label": "mixed data with separated jets | standard inputs with PD and btag (Jets) + reco_provenance | var000087",
        "color": "tab:purple",
    },
 
-    "spanet_dict_hh4b_classification_var000088": {
-       "file": f"{spanet_dir_kevin}hh4b_classification_var000088/hh4b_classification_var000088.h5",
-       "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
-       "label": "standard inputs with PD and btag (Jets + add_jet1pt) + reco_provenance (var000088)",
-       "color": "tab:pink",
-   },
+#     "spanet_dict_hh4b_classification_var000088": {
+#        "file": f"{spanet_dir_kevin}hh4b_classification_var000088/hh4b_classification_var000088.h5",
+#        "true": "true_dict_1_15_10_mixed_with_additional_Higgs_collections",
+#        "label": "standard inputs with PD and btag (Jets + add_jet1pt) + reco_provenance (var000088)",
+#        "color": "tab:pink",
+#    },
 }
 
 
