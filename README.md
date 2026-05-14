@@ -97,6 +97,10 @@ python utils/dataset/coffea_to_h5_direct.py --input output_all.coffea --output s
 > [!IMPORTANT]
 > When creating on a file for training where pT of the jets is flattened, remember to also create the corresponding file where pT is not flattened to later evaluate the model!
 
+
+> [!NOTE]
+>See [utils/dataset/README_coffea_to_h5_direct.md](utils/dataset/README_coffea_to_h5_direct.md) for full instructions, all CLI options, and how to configure jet and global-variable collections.
+
 <details>
 <summary> Legacy dataset creation (outdated instructions)  </summary>
 
