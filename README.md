@@ -99,7 +99,7 @@ python utils/dataset/coffea_to_h5_direct.py --input output_all.coffea --output s
 
 
 > [!NOTE]
->See [utils/dataset/README_coffea_to_h5_direct.md](utils/dataset/README_coffea_to_h5_direct.md) for full instructions, all CLI options, and how to configure jet and global-variable collections.
+>See [utils/dataset/README.md](utils/dataset/README.md) for full instructions, all CLI options, and how to configure jet and global-variable collections.
 
 <details>
 <summary> Legacy dataset creation (outdated instructions)  </summary>
