@@ -11,7 +11,7 @@ INPUTS:
       eta: normalize
       phi: normalize
       mass: log_normalize
-      # btagPNet_5wp: none
+      # btagPNetB_5wp: none
 
   # ---------------------------------------------------------------------
   # REQUIRED - GLOBAL - inputs which will have a single vector per event.
