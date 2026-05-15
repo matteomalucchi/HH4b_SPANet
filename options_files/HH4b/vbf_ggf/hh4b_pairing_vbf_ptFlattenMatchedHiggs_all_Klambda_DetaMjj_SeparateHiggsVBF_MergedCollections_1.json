@@ -30,7 +30,7 @@
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
     "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification_allKlambda.yaml",
-    "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections/AllKlambda_DetaMjj_SeparateHiggsVBFMergeColl_JetTotalSPANetSeparateProvHiggsVBFPtFlattenPadded_train.h5",
+    "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets/AllKlambda_DetaMjj_SeparateHiggsVBFMergeColl_JetTotalSPANetSeparateProvHiggsVBFPtFlattenPadded_train.h5",
 
     "normalize_features": true,
     "limit_to_num_jets": 0,
@@ -67,7 +67,7 @@
     "dropout": 0.0059,
 
     "metric": "validation_accuracy",
-    "epochs": 200,
+    "epochs": 100,
     "num_gpu": 1,
     "verbose_output": true
 }
