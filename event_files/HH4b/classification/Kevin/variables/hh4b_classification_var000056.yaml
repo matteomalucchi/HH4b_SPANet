@@ -1,0 +1,115 @@
+# ---------------------------------------------------
+# REQUIRED - INPUTS - List all inputs to SPANet here.
+# ---------------------------------------------------
+INPUTS:
+  # -----------------------------------------------------------------------------
+  # REQUIRED - SEQUENTIAL - inputs which can have an arbitrary number of vectors.
+  # -----------------------------------------------------------------------------
+  SEQUENTIAL:
+    Jet:
+      # MASK: normalize
+      # btagPNetB: normalize
+      # btagPNetB_5wp: normalize
+      eta: normalize
+      mass: log_normalize
+      phi: normalize
+      # provenance: normalize
+      pt: log_normalize
+
+  # ---------------------------------------------------------------------
+  # REQUIRED - GLOBAL - inputs which will have a single vector per event.
+  # ---------------------------------------------------------------------
+  GLOBAL:
+    Event:
+      # Arctanh_Delta_pairing_probabilities: normalize
+      # Binned_Arctanh_Delta_pairing_probabilities: normalize
+      # Delta_pairing_probabilities: normalize
+      HT: log_normalize
+      # Padded_Arctanh_Delta_pairing_probabilities: normalize
+      dR_max: normalize
+      dR_min: normalize
+      # era: normalize
+      # event: normalize
+      # kl: normalize
+      # sig_bkg_dnn_score: normalize
+      # sigma_over_higgs1_reco_mass: normalize
+      # sigma_over_higgs2_reco_mass: normalize
+      # year: normalize
+    HiggsLeading:
+      # dEta: normalize
+      # dPhi: normalize
+      dR: normalize
+      eta: normalize
+      helicityCosTheta: normalize
+      phi: normalize
+      mass: log_normalize
+      pt: log_normalize
+    HiggsSubLeading:
+      # dEta: normalize
+      # dPhi: normalize
+      dR: normalize
+      eta: normalize
+      helicityCosTheta: normalize
+      phi: normalize
+      mass: log_normalize
+      pt: log_normalize
+    HH:
+      Costhetastar_CS: normalize
+      dEta: normalize
+      # dPhi: normalize
+      dR: normalize
+      eta: normalize
+      mass: log_normalize
+      phi: normalize
+      pt: log_normalize
+    # add_jet1pt:
+      # LeadingHiggs_dEta: normalize
+      # LeadingHiggs_dPhi: normalize
+      # LeadingHiggs_mass: normalize
+      # SubLeadingHiggs_dEta: normalize
+      # SubLeadingHiggs_dPhi: normalize
+      # SubLeadingHiggs_mass: normalize
+      # eta: normalize
+      # mass: normalize
+      # phi: normalize
+      # pt: normalize
+    # weight:
+      # variation_pileupDown: normalize
+      # variation_pileupUp: normalize
+
+# ----------------------------------------------------------------------
+# REQUIRED - EVENT - Complete list of resonance particles and daughters.
+# ----------------------------------------------------------------------
+EVENT:
+  h1:
+    - b1
+    - b2
+  h2:
+    - b3
+    - b4
+
+
+# ---------------------------------------------------------
+# REQUIRED KEY - PERMUTATIONS - List of valid permutations.
+# ---------------------------------------------------------
+PERMUTATIONS:
+    EVENT:
+      - [ h1, h2 ]
+    h1:
+      - [ b1, b2 ]
+    h2:
+      - [ b3, b4 ]
+
+
+# ------------------------------------------------------------------------------
+# REQUIRED - REGRESSIONS - List of desired features to regress from observables.
+# ------------------------------------------------------------------------------
+REGRESSIONS:
+
+
+# -----------------------------------------------------------------------------
+# REQUIRED - REGRESSIONS - List of desired classes to predict from observables.
+# -----------------------------------------------------------------------------
+CLASSIFICATIONS:
+  EVENT:
+    - class
