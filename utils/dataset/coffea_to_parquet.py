@@ -25,7 +25,7 @@ parser.add_argument(
     "-c",
     "--cat",
     type=str,
-    default="4b_region",
+    default="inclusive",
     required=False,
     help="Event category",
 )

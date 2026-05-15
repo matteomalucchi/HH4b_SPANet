@@ -24,10 +24,16 @@ H5_PADDING_VALUE = 9999.0
 SEED = 9999
 _permutations = {}
 
+DEFAULT_RESONANCES = {
+    "h1": (1, ("b1", "b2")),
+    "h2": (2, ("b1", "b2")),
+    "vbf": (3, ("q1", "q2")),
+}
 RESONANCES = {
     "h1": (1, ("b1", "b2")),
     "h2": (2, ("b1", "b2")),
     "vbf": (3, ("q1", "q2")),
+    "add": (-1, ("a1", ))
 }
 MIN_NUM_JETS = 4
 
@@ -61,6 +67,13 @@ p.add_argument(
     nargs="+",
     default=["DATA", "GluGlu"],
     help="Class labels to use for classification",
+)
+p.add_argument(
+    "-rd",
+    "--resonance-list",
+    nargs="+",
+    default=["h1","h2","vbf","add"],
+    help="Resonances to be produced either for dummies or from provenance",
 )
 p.add_argument(
     "-j",
@@ -140,11 +153,15 @@ def create_resonances_targets_from_provenance(jets_prov, max_jets, resonances=No
     """
 
     # local jet indices per event
+    if max_jets<=1:
+        jets_prov = ak.singletons(jets_prov)
     indices = ak.local_index(jets_prov)
 
     targets = {}
 
     for resonance, (prov_id, labels) in RESONANCES.items():
+        if resonance not in args.resonance_list:
+            continue
         if resonances is not None and resonance not in resonances:
             continue
 
@@ -152,24 +169,20 @@ def create_resonances_targets_from_provenance(jets_prov, max_jets, resonances=No
         mask = jets_prov == prov_id
 
         # pick jet indices, pad to exactly 2, fill missing with -1
-        idx = ak.fill_none(ak.pad_none(indices[mask], 2, axis=1), -1)
+        idx = ak.fill_none(ak.pad_none(indices[mask], max_jets, axis=1), -1)
 
-        idx1 = idx[:, 0]
-        idx2 = idx[:, 1]
-
-        # enforce max_jets
-        idx1 = ak.where(idx1 < max_jets, idx1, -1)
-        idx2 = ak.where(idx2 < max_jets, idx2, -1)
-
-        targets[(resonance, labels[0])] = ak.to_numpy(idx1)
-        targets[(resonance, labels[1])] = ak.to_numpy(idx2)
-
+        if isinstance(labels, str):
+            labels = [labels]
+        for i in range(len(labels)):
+            idx_i = idx[:, i]
+            idx_i = ak.where(idx_i < max_jets, idx_i, -1)
+            targets[(resonance, labels[i])] = ak.to_numpy(idx_i)
     return targets
 
 
 def create_dummy_targets(N, tr_targets, te_targets, train_mask, test_mask, shuffle):
     idx = 0
-    for key in RESONANCES.keys():
+    for key in args.resonance_list:
         for label in RESONANCES[key][1]:
             arr = np.full(N, idx, dtype=np.int64)
             write_block_split(
@@ -208,6 +221,8 @@ def pad_clip_jets(jets, max_jets):
 
     # Awkward jagged
     if is_awkward(jets):
+        if max_jets <= 1:
+            jets = ak.singletons(jets)
         padded = ak.pad_none(jets, max_jets, axis=1, clip=True)
         dense = ak.to_numpy(ak.fill_none(padded, H5_PADDING_VALUE))
         return dense
@@ -452,7 +467,8 @@ def coffea_to_h5(
                 jet_coll_group: {
                     "saved_name": "Jet",
                     "max_num_jets": max_jets[j],
-                    "resonances": None,
+                    "resonances": list(DEFAULT_RESONANCES.keys()),
+                    "prov_key": "provenance",
                 }
             }
 
@@ -508,7 +524,7 @@ def coffea_to_h5(
                     w = payload[weight_name]
                     N = len(w)
 
-                    if args.remove_high_weights and "postW" in region:
+                    if args.remove_high_weights and "post" in region:
                         weight_mask = payload[weight_name] < 100
                         print(f"Maximal weight: {np.max(w[weight_mask])}")
                         print(f"Maximal weight without cutting: {np.max(w)}")
@@ -532,7 +548,7 @@ def coffea_to_h5(
                         else np.arange(N) < int(N * train_frac_sample)
                     )
                     test_mask = ~train_mask
-                    if args.remove_high_weights and "postW" in region:
+                    if args.remove_high_weights and "post" in region:
                         train_mask = train_mask & weight_mask
                         test_mask = test_mask & weight_mask
 
@@ -569,22 +585,25 @@ def coffea_to_h5(
                                 jet_counts,
                             )
                         else:
-                            jet_pt = ak.Array(payload[f"{jet_coll}_pt"])
+                            jet_pt = ak.singletons(ak.Array(payload[f"{jet_coll}_pt"]))
 
                         # Define the jet mask
-                        mask_jet_pt = (
-                            ak.to_numpy(
-                                ak.fill_none(
-                                    ak.pad_none(
-                                        jet_pt,
-                                        jet_info_dict["max_num_jets"],
-                                        clip=True,
-                                    ),
-                                    COFFEA_PADDING_VALUE,
+                        try:
+                            mask_jet_pt = (
+                                ak.to_numpy(
+                                    ak.fill_none(
+                                        ak.pad_none(
+                                            jet_pt,
+                                            jet_info_dict["max_num_jets"],
+                                            clip=True,
+                                        ),
+                                        COFFEA_PADDING_VALUE,
+                                    )
                                 )
+                                != COFFEA_PADDING_VALUE
                             )
-                            != COFFEA_PADDING_VALUE
-                        )
+                        except:
+                            breakpoint()
 
                         # check that there are at least min_num_jets jets in the event
                         if np.any(
@@ -598,7 +617,7 @@ def coffea_to_h5(
                         jet_mask_written = False
 
                         # Create the Targets
-                        prov_key = f"{jet_coll}_provenance"
+                        prov_key = f"{jet_coll}_{jet_info_dict['prov_key']}"
                         if prov_key in payload_columns:
                             if jet_counts is not None:
                                 jets_prov = unflatten_to_jagged(
