@@ -588,22 +588,19 @@ def coffea_to_h5(
                             jet_pt = ak.singletons(ak.Array(payload[f"{jet_coll}_pt"]))
 
                         # Define the jet mask
-                        try:
-                            mask_jet_pt = (
-                                ak.to_numpy(
-                                    ak.fill_none(
-                                        ak.pad_none(
-                                            jet_pt,
-                                            jet_info_dict["max_num_jets"],
-                                            clip=True,
-                                        ),
-                                        COFFEA_PADDING_VALUE,
-                                    )
+                        mask_jet_pt = (
+                            ak.to_numpy(
+                                ak.fill_none(
+                                    ak.pad_none(
+                                        jet_pt,
+                                        jet_info_dict["max_num_jets"],
+                                        clip=True,
+                                    ),
+                                    COFFEA_PADDING_VALUE,
                                 )
-                                != COFFEA_PADDING_VALUE
                             )
-                        except:
-                            breakpoint()
+                            != COFFEA_PADDING_VALUE
+                        )
 
                         # check that there are at least min_num_jets jets in the event
                         if np.any(
