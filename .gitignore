@@ -10,11 +10,15 @@ inputs_files/
 */error/
 */output/
 predictions*
+
 ramellar.cc
 tharte.cc
 nkontaxa.cc
 
-# ignore 
+# ignore plots
 *.pdf
 *.png
 *.svg
+
+# ignore files copies
+*_copy.py
