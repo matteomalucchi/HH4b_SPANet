@@ -55,6 +55,13 @@ parser.add_argument(
     default=None,
     help="Configuration with the models to consider",
 )
+parser.add_argument(
+    "-q",
+    "--plot-quantile",
+    action="store_true",
+    default=True,
+    help="If active, the 99% background quantile will be printed in the histogram.",
+)
 args = parser.parse_args()
 
 
@@ -334,6 +341,26 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl):
             weights_bkg = weights[mask_background]
             weights_sig = weights[~mask_background]
 
+        # Calculating a percentile (right now hardcoded to 99% of the background
+        bkg_scores = spanet_class[mask_background]
+        sig_scores = spanet_class[~mask_background]
+
+        if no_weights:
+            cut = np.quantile(bkg_scores, 0.99)
+            sig_eff = np.mean(sig_scores > cut)  # Mean just gives me the ones passing divided by all
+        else:
+            sorted_idx = np.argsort(bkg_scores)
+            cumulative_weights = np.cumsum(weights_bkg[sorted_idx]) / weights_bkg.sum()
+            cut = bkg_scores[sorted_idx[np.searchsorted(cumulative_weights, 0.99)]]
+
+            mask_signal_cut = sig_scores > cut
+            sig_eff = weights_sig[mask_signal_cut].sum() / weights_sig.sum()
+
+        logger.info("=============")
+        logger.info(f"Found 99% background quantile cut at: {cut:.4f} ")
+        logger.info(f"Signal efficiency at this point is: {sig_eff * 100:.2f}% ")
+        logger.info("=============")
+
         hist_bkg = Hist.new.Regular(
             50, 0, 1, name="SPANet Classification Score", flow=False
         ).Weight()
@@ -368,7 +395,7 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl):
         if series != {}:
             os.makedirs(f"{plot_dir}/background_signal_hist/{model_name}/kl_{kl_tag}", exist_ok=True)
             for log in [False, True]:
-                (
+                histplot = (
                     HEPPlotter("CMS")
                     .set_output(
                         f"{plot_dir}/background_signal_hist/{model_name}/kl_{kl_tag}/background_signal_hist_{model_name}_kl_{kl_tag}{'_log' if log else ''}"
@@ -388,8 +415,10 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl):
                     .set_plot_config(
                         cmstext="Private"
                     )
-                    .run()
                 )
+                # if args.plot_quantile:
+                histplot.add_line(orientation="v", x=cut, color="black", linestyle="dotted")  # 0 and 1 should not have a particular effect. its just to have two points on the line
+                histplot.run()
 
     if len(series_all_models) > 2:  # to avoid plotting the combined plot with all the models if there's only one model
         os.makedirs(f"{plot_dir}/background_signal_hist/models_all/kl_{kl_tag}", exist_ok=True)
