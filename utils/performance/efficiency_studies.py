@@ -723,7 +723,7 @@ def main():
                 )  # This is needed to make sure, that we are only producing one plot.
             for number in [1, 2]:
                 for kl_variation, kl_name in zip(
-                    range(len(kl_values) + 1), ["all"] + kl_values.to_list()
+                    range(len(kl_values) + 1), ["all"] + kl_values.tolist()
                 ):
                     os.makedirs(f"{plot_dir}/kl_{kl_name}_massplot", exist_ok=True)
                     plot_histos_1d(

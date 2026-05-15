@@ -29,8 +29,8 @@
 
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
-    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification_allKlambda.yaml",
-    "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets/AllKlambda_DetaMjj_SeparateHiggsVBFMergeColl_JetTotalSPANetSeparateProvHiggsVBFPtFlattenOnlyHiggsPadded_train.h5",
+    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification_allKlambda_DetaMjj.yaml",
+    "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/vbf_all_Klambda_DetaMjj/SaveMjjDeta_JetTotalSPANetPtFlattenPadded_train.h5",
 
     "normalize_features": true,
     "limit_to_num_jets": 0,
@@ -60,7 +60,7 @@
     "detection_loss_scale": 1.0,
     "kl_loss_scale": 0.0,
     "regression_loss_scale": 0.0,
-    "classification_loss_scale": 1.0,
+    "classification_loss_scale": 5.0,
 
     "l2_penalty": 0.000374,
     "gradient_clip": 0.425,
