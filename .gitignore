@@ -12,4 +12,9 @@ inputs_files/
 predictions*
 ramellar.cc
 tharte.cc
+nkontaxa.cc
 
+# ignore 
+*.pdf
+*.png
+*.svg
