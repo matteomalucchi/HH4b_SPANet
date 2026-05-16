@@ -39,7 +39,7 @@ def setup_logging(logpath):
     )
 
 # TODO: Currently we only have the values for postEE!!!!
-def get_region_mask(region, column_file, do_vbf_pairing, jet_coll):
+def get_region_mask(region, column_file, do_vbf_pairing, jet_coll="Jet", n_higgs_jets=4):
     if region == "inclusive":
         return ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
 
@@ -93,21 +93,21 @@ def get_region_mask(region, column_file, do_vbf_pairing, jet_coll):
             & (jet_btag[:, 3] < 0.2605)
         )
     elif region == "vbf_presel" and do_vbf_pairing:
-        mask = get_mask_vbf_region(column_file, 400, 3.5)
+        mask = get_mask_vbf_region(column_file, 400, 3.5, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
     elif region == "vbf_no_kin_cuts" and do_vbf_pairing:
-        mask = get_mask_vbf_region(column_file, 0, 0)
+        mask = get_mask_vbf_region(column_file, 0, 0, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
     else:
         raise ValueError("Undefined region")
     return mask
 
 
-def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet"):
+def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet", n_higgs_jets=4):
     jet_list = [
         get_jet_4vec(
             column_file, ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
         )
     ]
-    jet_vbf = [j[:, 4:] for j in jet_list]
+    jet_vbf = [j[:, n_higgs_jets:] for j in jet_list]
     idx_vbf_lead_mjj = get_lead_mjj_jet_idx(jet_vbf)[0]
     jet = jet_list[0]
     vbf_jets_max_mjj_0 = ak.unflatten(
@@ -129,7 +129,7 @@ def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet"):
 
     mask = ak.flatten((mjj > mjj_cut) & (delta_eta > delta_eta_cut))
     mask = ak.where(ak.is_none(mask), False, mask)
-
+    
     return mask
 
 

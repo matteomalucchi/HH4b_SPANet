@@ -459,13 +459,15 @@ def main():
         spanetfile = h5py.File(model_dict["file"], "r")
         truefile = h5py.File(true_dict[model_dict["true"]]["name"], "r")
 
-        jet_coll = true_dict[model_dict["true"]]["jet_coll"] if "jet_coll" in true_dict[model_dict["true"]].keys() else "Jet"
+        true_dict_entry = true_dict[model_dict["true"]]
+        jet_coll = true_dict_entry.get("jet_coll", "Jet")
+        n_higgs_jets = true_dict_entry.get("n_higgs_jets", 4)
 
         model_dict.pop("file")
         model_dict.pop("true")
 
         # mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, True)
-        mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, True, jet_coll)
+        mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, True, jet_coll, n_higgs_jets=n_higgs_jets)
 
         spanet_class = spanetfile["CLASSIFICATIONS"]["EVENT"]["class"][:, 1][()]  # [mask_region_spanet]
         true_class = truefile["CLASSIFICATIONS"]["EVENT"]["class"][()]  # [mask_region_spanet]
