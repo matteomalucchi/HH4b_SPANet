@@ -24,12 +24,18 @@ H5_PADDING_VALUE = 9999.0
 SEED = 9999
 _permutations = {}
 
-RESONANCES = {
+DEFAULT_RESONANCES = {
     "h1": (1, ("b1", "b2")),
-    "h2": (2, ("b3", "b4")),
+    "h2": (2, ("b1", "b2")),
     "vbf": (3, ("q1", "q2")),
 }
-MIN_NUMBER_JETS = 4
+RESONANCES = {
+    "h1": (1, ("b1", "b2")),
+    "h2": (2, ("b1", "b2")),
+    "vbf": (3, ("q1", "q2")),
+    "add": (-1, ("a1", ))
+}
+MIN_NUM_JETS = 4
 
 # -----------------------------------------------------------------------------
 # CLI
@@ -63,18 +69,25 @@ p.add_argument(
     help="Class labels to use for classification",
 )
 p.add_argument(
+    "-rd",
+    "--resonance-list",
+    nargs="+",
+    default=["h1","h2","vbf","add"],
+    help="Resonances to be produced either for dummies or from provenance",
+)
+p.add_argument(
     "-j",
     "--jets",
     nargs="+",
     default=["JetTotalSPANetPtFlattenPadded", "JetTotalSPANetPadded"],
-    help="Jet collections to process (must match keys in coffea file)",
+    help="Jet collections to process (must match keys in coffea file)."+ "\nIf the value is one of the predefined uppercase collection groups (e.g. 'JET_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of collections defined in collections_coffea_to_h5_direct.py.",
 )
 p.add_argument(
     "-g",
     "--global-vars",
     nargs="+",
     default=["all"],
-    help="Global variables to save, or 'all' to save all non-jet variables as global variables",
+    help="Global variables to save, or 'all' to save all non-jet variables as global variables."+ "\nIf the value is one of the predefined uppercase collection groups (e.g. 'GLOBAL_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of variables defined in collections_coffea_to_h5_direct.py.",
 )
 p.add_argument(
     "-m", "--max-jets", nargs="+", type=int, default=[5, 5], help="Max jets to keep"
@@ -90,11 +103,24 @@ p.add_argument(
     help="Normalize weights divided by sum_genweights",
 )
 p.add_argument(
+    "-rw",
+    "--remove-high-weights",
+    action="store_true",
+    help="Remove events with weights above 100 (only applies to regions containing 'postW' in name)",
+)
+p.add_argument(
     "--novars",
     action="store_true",
     help="If true, old save format without saved variations is expected",
     default=False,
 )
+p.add_argument(
+    "--downscale_training",
+    action="store_true",
+    help="Downscale the training fraction of the background by a factor 33398/1629245 (mixed vs. 2b)",
+    default=False,
+)
+
 
 args = p.parse_args()
 
@@ -127,11 +153,15 @@ def create_resonances_targets_from_provenance(jets_prov, max_jets, resonances=No
     """
 
     # local jet indices per event
+    if max_jets<=1:
+        jets_prov = ak.singletons(jets_prov)
     indices = ak.local_index(jets_prov)
 
     targets = {}
 
     for resonance, (prov_id, labels) in RESONANCES.items():
+        if resonance not in args.resonance_list:
+            continue
         if resonances is not None and resonance not in resonances:
             continue
 
@@ -139,24 +169,20 @@ def create_resonances_targets_from_provenance(jets_prov, max_jets, resonances=No
         mask = jets_prov == prov_id
 
         # pick jet indices, pad to exactly 2, fill missing with -1
-        idx = ak.fill_none(ak.pad_none(indices[mask], 2, axis=1), -1)
+        idx = ak.fill_none(ak.pad_none(indices[mask], max_jets, axis=1), -1)
 
-        idx1 = idx[:, 0]
-        idx2 = idx[:, 1]
-
-        # enforce max_jets
-        idx1 = ak.where(idx1 < max_jets, idx1, -1)
-        idx2 = ak.where(idx2 < max_jets, idx2, -1)
-
-        targets[(resonance, labels[0])] = ak.to_numpy(idx1)
-        targets[(resonance, labels[1])] = ak.to_numpy(idx2)
-
+        if isinstance(labels, str):
+            labels = [labels]
+        for i in range(len(labels)):
+            idx_i = idx[:, i]
+            idx_i = ak.where(idx_i < max_jets, idx_i, -1)
+            targets[(resonance, labels[i])] = ak.to_numpy(idx_i)
     return targets
 
 
 def create_dummy_targets(N, tr_targets, te_targets, train_mask, test_mask, shuffle):
     idx = 0
-    for key in RESONANCES.keys():
+    for key in args.resonance_list:
         for label in RESONANCES[key][1]:
             arr = np.full(N, idx, dtype=np.int64)
             write_block_split(
@@ -187,6 +213,7 @@ def unflatten_to_jagged(flat, counts):
 
     return ak.unflatten(flat, counts)
 
+
 def pad_clip_jets(jets, max_jets):
 
     # replace coffea padding to h5 padding
@@ -194,6 +221,8 @@ def pad_clip_jets(jets, max_jets):
 
     # Awkward jagged
     if is_awkward(jets):
+        if max_jets <= 1:
+            jets = ak.singletons(jets)
         padded = ak.pad_none(jets, max_jets, axis=1, clip=True)
         dense = ak.to_numpy(ak.fill_none(padded, H5_PADDING_VALUE))
         return dense
@@ -438,7 +467,8 @@ def coffea_to_h5(
                 jet_coll_group: {
                     "saved_name": "Jet",
                     "max_num_jets": max_jets[j],
-                    "resonances": None,
+                    "resonances": list(DEFAULT_RESONANCES.keys()),
+                    "prov_key": "provenance",
                 }
             }
 
@@ -484,10 +514,21 @@ def coffea_to_h5(
                     if type(payload) == pyarrow._dataset.FileSystemDataset:
                         payload = payload.to_table()
                         payload_columns = payload.schema.names
+                        payload = {
+                            key: np.array(payload[key]) for key in payload_columns
+                        }
                     else:
+                        payload = {key: values.value for key, values in payload.items()}
                         payload_columns = list(payload.keys())
 
-                    w = payload[weight_name].value
+                    w = payload[weight_name]
+                    N = len(w)
+
+                    if args.remove_high_weights and "post" in region:
+                        weight_mask = payload[weight_name] < 100
+                        print(f"Maximal weight: {np.max(w[weight_mask])}")
+                        print(f"Maximal weight without cutting: {np.max(w)}")
+
                     if args.norm_weights:
                         print(
                             f"weights before norm = {np.mean(w):.3f}, {np.std(w):.3f}"
@@ -497,14 +538,19 @@ def coffea_to_h5(
                             f"Dividing by sum_genweights = {sum_genweights[dataset]:.3f}",
                             f"weights after norm = {np.mean(w):.8f}, {np.std(w):.8f}",
                         )
-                    N = len(w)
-
+                    if class_idx == 0 and args.downscale_training:
+                        train_frac_sample = train_frac*33398/1629245
+                    else:
+                        train_frac_sample = train_frac
                     train_mask = (
-                        rng.random(N) < train_frac
+                        rng.random(N) < train_frac_sample
                         if shuffle
-                        else np.arange(N) < int(N * train_frac)
+                        else np.arange(N) < int(N * train_frac_sample)
                     )
                     test_mask = ~train_mask
+                    if args.remove_high_weights and "post" in region:
+                        train_mask = train_mask & weight_mask
+                        test_mask = test_mask & weight_mask
 
                     write_block_split(
                         tr_w,
@@ -533,13 +579,13 @@ def coffea_to_h5(
                         jet_counts = None
                         jetN = f"{jet_coll}_N"
                         if jetN in payload_columns:
-                            jet_counts = payload[jetN].value
+                            jet_counts = payload[jetN]
                             jet_pt = unflatten_to_jagged(
-                                np.array(payload[f"{jet_coll}_pt"].value),
+                                np.array(payload[f"{jet_coll}_pt"]),
                                 jet_counts,
                             )
                         else:
-                            jet_pt = ak.Array(payload[f"{jet_coll}_pt"])
+                            jet_pt = ak.singletons(ak.Array(payload[f"{jet_coll}_pt"]))
 
                         # Define the jet mask
                         mask_jet_pt = (
@@ -556,20 +602,23 @@ def coffea_to_h5(
                             != COFFEA_PADDING_VALUE
                         )
 
-                        # check that there are at least MIN_NUMBER_JETS jets in the event
-                        if np.any(np.sum(mask_jet_pt, axis=1) < MIN_NUMBER_JETS):
+                        # check that there are at least min_num_jets jets in the event
+                        if np.any(
+                            np.sum(mask_jet_pt, axis=1)
+                            < jet_info_dict.get("min_num_jets", MIN_NUM_JETS)
+                        ):
                             raise ValueError(
-                                f"Event has less than {MIN_NUMBER_JETS} jets. Check dataset {dataset}"
+                                f"Event has less than {jet_info_dict.get('min_num_jets', MIN_NUM_JETS)} jets. Check dataset {dataset}"
                             )
 
                         jet_mask_written = False
 
                         # Create the Targets
-                        prov_key = f"{jet_coll}_provenance"
+                        prov_key = f"{jet_coll}_{jet_info_dict['prov_key']}"
                         if prov_key in payload_columns:
                             if jet_counts is not None:
                                 jets_prov = unflatten_to_jagged(
-                                    np.array(payload[prov_key].value), jet_counts
+                                    np.array(payload[prov_key]), jet_counts
                                 )
                             else:
                                 jets_prov = ak.Array(payload[prov_key])
@@ -610,7 +659,7 @@ def coffea_to_h5(
                                 continue
 
                             coll, var = infer_collection_and_var(name)
-                            arr_u = arr.value
+                            arr_u = arr
                             is_jet = coll == jet_coll and var != "N"
 
                             if (
@@ -727,7 +776,7 @@ def coffea_to_h5(
                     # Get the various k-values for each dataset
                     if "GluGlu" in dataset:
                         kl_val = extract_param_value(dataset, "kl")
-                        kl_val_array = kl_val * ak.ones_like(payload[weight_name].value)
+                        kl_val_array = kl_val * ak.ones_like(payload[weight_name])
                         write_block_split(
                             tr_in,
                             te_in,
@@ -741,7 +790,7 @@ def coffea_to_h5(
                         # Get the C2V and not the k_lambda because the c2v is unique for each dataset of vbf
                         # while the k_lambda is not
                         c2v_val = extract_param_value(dataset, "C2V")
-                        c2v_val_array = c2v_val * ak.ones_like(payload[weight_name].value)
+                        c2v_val_array = c2v_val * ak.ones_like(payload[weight_name])
                         write_block_split(
                             tr_in,
                             te_in,
@@ -752,7 +801,9 @@ def coffea_to_h5(
                             shuffle,
                         )
                     else:
-                        kl_padding = H5_PADDING_VALUE * ak.ones_like(payload[weight_name].value)
+                        kl_padding = H5_PADDING_VALUE * ak.ones_like(
+                            payload[weight_name]
+                        )
                         write_block_split(
                             tr_in,
                             te_in,

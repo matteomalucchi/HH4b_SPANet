@@ -39,9 +39,9 @@ def setup_logging(logpath):
     )
 
 # TODO: Currently we only have the values for postEE!!!!
-def get_region_mask(region, column_file, do_vbf_pairing):
+def get_region_mask(region, column_file, do_vbf_pairing, jet_coll="Jet", n_higgs_jets=4):
     if region == "inclusive":
-        return ak.ones_like(column_file["INPUTS"]["Jet"]["MASK"][:, 0])
+        return ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
 
     if "test" in region:
         # keep only the first N events
@@ -49,13 +49,13 @@ def get_region_mask(region, column_file, do_vbf_pairing):
         logger.info(f"Keeping only the first {num_events} events!")
         mask = ak.concatenate(
             (
-                ak.ones_like(column_file["INPUTS"]["Jet"]["MASK"][:, 0])[:num_events],
-                ak.zeros_like(column_file["INPUTS"]["Jet"]["MASK"][:, 0])[num_events:],
+                ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])[:num_events],
+                ak.zeros_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])[num_events:],
             ),
         )
         return mask
 
-    jet_btag = column_file["INPUTS"]["Jet"]["btagPNetB"]
+    jet_btag = column_file["INPUTS"][jet_coll]["btagPNetB"]
     if region == "4b" or region == "4M":
         mask = (
             (jet_btag[:, 0] > 0.2605)
@@ -93,21 +93,21 @@ def get_region_mask(region, column_file, do_vbf_pairing):
             & (jet_btag[:, 3] < 0.2605)
         )
     elif region == "vbf_presel" and do_vbf_pairing:
-        mask = get_mask_vbf_region(column_file, 400, 3.5)
+        mask = get_mask_vbf_region(column_file, 400, 3.5, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
     elif region == "vbf_no_kin_cuts" and do_vbf_pairing:
-        mask = get_mask_vbf_region(column_file, 0, 0)
+        mask = get_mask_vbf_region(column_file, 0, 0, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
     else:
         raise ValueError("Undefined region")
     return mask
 
 
-def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut):
+def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet", n_higgs_jets=4):
     jet_list = [
         get_jet_4vec(
-            column_file, ak.ones_like(column_file["INPUTS"]["Jet"]["MASK"][:, 0])
+            column_file, ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
         )
     ]
-    jet_vbf = [j[:, 4:] for j in jet_list]
+    jet_vbf = [j[:, n_higgs_jets:] for j in jet_list]
     idx_vbf_lead_mjj = get_lead_mjj_jet_idx(jet_vbf)[0]
     jet = jet_list[0]
     vbf_jets_max_mjj_0 = ak.unflatten(
@@ -129,11 +129,11 @@ def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut):
 
     mask = ak.flatten((mjj > mjj_cut) & (delta_eta > delta_eta_cut))
     mask = ak.where(ak.is_none(mask), False, mask)
-
+    
     return mask
 
 
-def get_class_mask(class_label, column_file):
+def get_class_mask(class_label, column_file, jet_coll="Jet"):
     if class_label:
         try:
             class_array = column_file["CLASSIFICATIONS"]["EVENT"]["class"][()].astype(
@@ -153,25 +153,25 @@ def get_class_mask(class_label, column_file):
                 logger.warning(
                     "The file doesn't contain a class array. Setting the mask for the class to True ..."
                 )
-                mask = ak.ones_like(column_file["INPUTS"]["Jet"]["MASK"][:, 0])
+                mask = ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
     else:
-        mask = ak.ones_like(column_file["INPUTS"]["Jet"]["MASK"][:, 0])
+        mask = ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
 
     return mask
 
 
 
-def get_jet_4vec(truefile, mask_true):
+def get_jet_4vec(truefile, mask_true, jet_coll="Jet"):
     # load jet information
     try:
-        jet_pt = truefile["INPUTS"]["Jet"]["ptPnetRegNeutrino"][()][mask_true]
+        jet_pt = truefile["INPUTS"][jet_coll]["ptPnetRegNeutrino"][()][mask_true]
     except KeyError:
         logger.warning("Did not find ptPnetRegNeutrino, will try to load pt normal")
-        jet_pt = truefile["INPUTS"]["Jet"]["pt"][()][mask_true]
+        jet_pt = truefile["INPUTS"][jet_coll]["pt"][()][mask_true]
 
-    jet_eta = truefile["INPUTS"]["Jet"]["eta"][()][mask_true]
-    jet_phi = truefile["INPUTS"]["Jet"]["phi"][()][mask_true]
-    jet_mass = truefile["INPUTS"]["Jet"]["mass"][()][mask_true]
+    jet_eta = truefile["INPUTS"][jet_coll]["eta"][()][mask_true]
+    jet_phi = truefile["INPUTS"][jet_coll]["phi"][()][mask_true]
+    jet_mass = truefile["INPUTS"][jet_coll]["mass"][()][mask_true]
 
     jet_infos = [jet_pt, jet_eta, jet_phi, jet_mass]
     for i in range(len(jet_infos)):

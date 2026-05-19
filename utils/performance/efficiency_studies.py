@@ -195,9 +195,11 @@ def main():
             else False
         )
 
+        n_higgs_jets = true_dict[file_dict["true"]].get("n_higgs_jets", 4)
+
         # define region mask
-        mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, do_vbf_pairing)
-        mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing)
+        mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, do_vbf_pairing, n_higgs_jets=n_higgs_jets)
+        mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, n_higgs_jets=n_higgs_jets)
         assert all(mask_region_spanet == mask_region_true)
 
         # define the class mask
@@ -208,7 +210,7 @@ def main():
 
         if args.num_events:
             mask_num_events = helpers.get_region_mask(
-                f"test_{args.num_events}", truefile, False
+                f"test_{args.num_events}", truefile, False, n_higgs_jets=n_higgs_jets
             )
             logger.info(f"max num events {ak.sum(mask_num_events)}")
         else:
@@ -431,8 +433,10 @@ def main():
         else False
     )
 
+    n_higgs_jets = true_dict[run2_dataset].get("n_higgs_jets", 4)
+
     # define region mask
-    mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing)
+    mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, n_higgs_jets=n_higgs_jets)
     # assert all(mask_region_spanet == mask_region_true)
 
     # define the class mask
@@ -444,7 +448,7 @@ def main():
 
     jet_for_idx = [helpers.get_jet_4vec(truefile, ak.ones_like(mask_true))]
 
-    jet_vbf_for_idx = [j[:, 4:] for j in jet_for_idx]
+    jet_vbf_for_idx = [j[:, n_higgs_jets:] for j in jet_for_idx]
 
     if do_vbf_pairing:
         # get the idx of the 2 leading mjj jets (excluding the 4 jets leading in btag from higgs)
@@ -507,7 +511,7 @@ def main():
     )
 
     allrun2_idx_fully_matched = run2_algorithm(
-        alljet, mask_fully_matched, higgs=not args.ignore_higgs, vbf=do_vbf_pairing
+        alljet, mask_fully_matched, higgs=not args.ignore_higgs, vbf=do_vbf_pairing, n_higgs_jets=n_higgs_jets
     )
 
     if not args.data:

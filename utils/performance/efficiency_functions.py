@@ -341,7 +341,7 @@ def best_reco_higgs(jet_collection, idx_collection, higgs=True):
     return higgs_candidates_unflatten_order
 
 
-def run2_algorithm(jet, mask_fully_matched, higgs=True, vbf=False):
+def run2_algorithm(jet, mask_fully_matched, higgs=True, vbf=False, n_higgs_jets=4):
     logger.info("Running Run 2 algorithm...")
     comb_idx_min_list = []
     if higgs:
@@ -377,7 +377,7 @@ def run2_algorithm(jet, mask_fully_matched, higgs=True, vbf=False):
 
     if vbf:
         # choose higgs jets as the two jets with the highest mjj that are not from higgs decay
-        jet_vbf = [j[:, 4:] for j in jet]
+        jet_vbf = [j[:, n_higgs_jets:] for j in jet]
         comb_idx_min_vbf = helpers.get_lead_mjj_jet_idx(jet_vbf)
         comb_idx_min_vbf = [np.expand_dims(ci, 1) for ci in comb_idx_min_vbf]
 
