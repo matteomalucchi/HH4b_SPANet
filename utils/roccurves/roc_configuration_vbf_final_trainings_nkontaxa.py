@@ -16,71 +16,26 @@ true_dir_nestor = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
 
 spanet_dict.update({
 
-    #100 epochs all_Klambda 9 jets extreme_classlossweights 
-    f"vbf/predictions_allKlambda_extreme_classlossweights_7.h5": {
+    # 100 epochs all_Klambda 9 jets extreme_classlossweights
+    "predictions_allKlambda_extreme_classlossweights_7": {
         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_7.h5",
-       "true": "true_9jets_allklambda",
+        "true": "true_9jets_allklambda",
         "label": "9j all_Klambda ECLW (7.0)",
         "color": "yellow",
         "vbf": True,
     },
 
-    # allKlambda_DetaMjj_NNGW_extravars_extreme_classlossweights
-    #"predictions_allKlambda_DetaMjj_extravars_NNGW_extreme_classlossweights": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights_extreme_classlossweights.h5",
-    #    "true": "true_detamjj_nngw",
-    #    "label": "SPANet DetaMjj NNGW extravars extreme classlossweights",
-    #    "color": "brown",
-    #    "vbf": True,
-    #},
-
-    # allKlambda_DetaMjj_NGW_noextravars
-    # "predictions_allKlambda_DetaMjj_novars_NGW": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
-    #     "true": "true_detamjj_ngw",
-    #     "label": "DetaMjj NGW noextravars",
-    #     "color": "black",
-    #     "vbf": True,
-    # },
-
-    # allKlambda_DetaMjj_NNGW_extravars
-    #"predictions_allKlambda_DetaMjj_extravars_NNGW_200e": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights.h5",
-    #    "true": "true_detamjj_nngw",
-    #    "label": "DetaMjj NNGW extravars 200e",
-    #    "color": "yellow",
-    #    "vbf": True,
-    #},
-
-    #allKlambda_VBFPairing 100e
-    "predictions_allKlambda_vbfpairing_remake.h5": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_remake.h5",
-        "true": "true_allklambda_VBFPairing",
-        "label": "allKlambda VBFPairing 100e remake",
-        "color": "purple",
+    # allKlambda_DetaMjj_NGW_extravars 150e
+    "predictions_allKlambda_DetaMjj_NGW_extravars_150e": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_NGW_extravars_150e.h5",
+        "true": "true_detamjj_ngw",
+        "label": "DetaMjj NGW extravars 150e",
+        "color": "darkgreen",
         "vbf": True,
     },
 
-    #allKlambda_VBFPairing 100e extravars
-    "predictions_allKlambda_vbfpairing_extravars.h5": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_extravars.h5",
-        "true": "true_allklambda_VBFPairing",
-        "label": "allKlambda VBFPairing 100e extravars",
-        "color": "darkblue",
-        "vbf": True,
-    },
-
-    # allKlambda_DetaMjj_NGW_extravars 150e 
-     "predictions_allKlambda_DetaMjj_NGW_extravars_150e": {
-         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_NGW_extravars_150e.h5",
-         "true": "true_detamjj_ngw",
-         "label": "DetaMjj NGW extravars 150e",
-         "color": "darkgreen",
-         "vbf": True,
-     },
-
-    #vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality 150e ECLW=2
-    "predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_extravars_150e_ECLW_2.h5": {
+    # vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality 150e ECLW=2
+    "predictions_vbf_ptFlattenMatchedHiggs_DetaMjjCentrality_extravars_150e_ECLW_2": {
         "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_extravars_150e_ECLW_2.h5",
         "true": "true_allklambda_DetaMjjCentrality",
         "label": "ptFlattenMatchedHiggs DetaMjj Centrality 150e ECLW = 2.0",
@@ -96,6 +51,25 @@ spanet_dict.update({
         "color": "red",
         "vbf": True,
     },
+
+    # Uncomment only if you really want these in this ROC run
+    # "predictions_allKlambda_vbfpairing_remake": {
+    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_remake.h5",
+    #     "true": "true_allklambda_VBFPairing",
+    #     "label": "allKlambda VBFPairing 100e remake",
+    #     "color": "purple",
+    #     "vbf": True,
+    #     "n_higgs_jets": 0,
+    # },
+
+    # "predictions_allKlambda_vbfpairing_extravars": {
+    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_extravars.h5",
+    #     "true": "true_allklambda_VBFPairing",
+    #     "label": "allKlambda VBFPairing 100e extravars",
+    #     "color": "darkblue",
+    #     "vbf": True,
+    #     "n_higgs_jets": 0,
+    # },
 })
 
 true_dict.update({
@@ -168,9 +142,3 @@ roc_dict.update({
     #     "color": "black",
     # },
 })
-
-# =============================================================================
-# END MODIFICATIONS SECTION
-# =============================================================================
-
-roc_dict={}

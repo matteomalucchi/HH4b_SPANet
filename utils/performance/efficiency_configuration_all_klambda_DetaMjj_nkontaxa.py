@@ -19,32 +19,40 @@ true_dir_nestor = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
 spanet_dict.update({
 
 #AllKlambda 9 jets 100e
-    f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
+    #f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
+    #    "true": "true_9jets_allklambda",
+    #    "label": "9j all_Klambda 100e",
+    #    "color": "red",
+    #    "vbf": True,
+    #},
+
+#AllKlambda 9 jets 200e
+    f"{spanet_dir_nestor}vbf/predictions_allKlambda_200epochs.h5": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_200epochs.h5",
         "true": "true_9jets_allklambda",
-        "label": "9j all_Klambda 100e",
+        "label": "9j all_Klambda 200e",
         "color": "red",
         "vbf": True,
     },
 
-
 #allKlambda_DetaMjj_NGW_noextravars
-    #f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
-    #    "true": "true_detamjj_ngw",
-    #    "label": "DetaMjj NGW noextravars 200e",
-    #    "color": "black",
-    #    "vbf": True,
-    #},
+    f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
+        "true": "true_detamjj_ngw",
+        "label": "DetaMjj NGW noextravars 200e",
+        "color": "black",
+        "vbf": True,
+    },
 
 #allKlambda_DetaMjj_NNGW_noextravars
-    #f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
-    #    "true": "true_detamjj_nngw",
-    #    "label": "DetaMjj NNGW noextravars 200e",
-    #    "color": "green",
-    #    "vbf": True,
-    #},
+    f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
+        "true": "true_detamjj_nngw",
+        "label": "DetaMjj NNGW noextravars 200e",
+        "color": "green",
+        "vbf": True,
+    },
 
 #allKlambda_DetaMjj_NNGW_extravars
     #f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights.h5": {

@@ -74,7 +74,7 @@ spanet_dict.update({
        "color": "orange",
         "vbf": True,
     },
-"""
+
 #allKlambda_VBFPairing 100e remake
     f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_remake.h5": {
         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_remake.h5",
@@ -82,6 +82,7 @@ spanet_dict.update({
         "label": "allKlambda VBFPairing 100e remake",
         "color": "purple",
         "vbf": True,
+        "n_higgs_jets": 0,
     },
 
 #allKlambda_VBFPairing 100e extravars
@@ -91,7 +92,9 @@ spanet_dict.update({
         "label": "allKlambda VBFPairing 100e extravars",
         "color": "violet",
         "vbf": True,
+        "n_higgs_jets": 0,
     },
+"""
 
 #allKlambda_DetaMjj_NGW_extravars 150e
     f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_NGW_extravars_150e.h5": {

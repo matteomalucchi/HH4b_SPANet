@@ -25,20 +25,20 @@ spanet_dict.update({
     # },
 
     # 500 epochs all_Klambda 9 jets
-     "predictions_allKlambda_500epochs": {
-         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_500epochs.h5",
-         "true": "true_9jets_allklambda",
-         "label": "SPANet 9j all_Klambda 500e",
-         "color": "blue",
-         "vbf": True,
-     },
+    # "predictions_allKlambda_500epochs": {
+    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_500epochs.h5",
+    #     "true": "true_9jets_allklambda",
+    #     "label": "SPANet 9j all_Klambda 500e",
+    #     "color": "blue",
+    #     "vbf": True,
+    #},
 
     # 200 epochs all_Klambda 9 jets
      "predictions_allKlambda_200epochs": {
          "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_200epochs.h5",
          "true": "true_9jets_allklambda",
-         "label": "SPANet 9j all_Klambda 200e",
-         "color": "magenta",
+         "label": "9j all_Klambda 200e",
+         "color": "red",
          "vbf": True,
      },
 
@@ -52,14 +52,14 @@ spanet_dict.update({
     #},
 
     #allKlambda_VBFPairing 100e
-    "predictions_allKlambda_vbfpairing": {
-       "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5",
-       "true": "true_allklambda_VBFPairing",
-       "label": "allKlambda VBFPairing 100e",
-       "color": "green",
-       "vbf": True,
-       "n_higgs_jets": 0,
-    },
+    #"predictions_allKlambda_vbfpairing": {
+    #   "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5",
+    #  "true": "true_allklambda_VBFPairing",
+    #   "label": "allKlambda VBFPairing 100e",
+    #   "color": "green",
+    #   "vbf": True,
+    #   "n_higgs_jets": 0,
+    #},
 
     # 100 epochs all_Klambda 9 jets extreme_classlossweights
     #"predictions_allKlambda_extreme_classlossweights": {
@@ -71,22 +71,22 @@ spanet_dict.update({
     #},
 
     # allKlambda_DetaMjj_NGW_noextravars
-    # "predictions_allKlambda_DetaMjj_novars_NGW": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
-    #     "true": "true_detamjj_ngw",
-    #     "label": "DetaMjj NGW noextravars",
-    #     "color": "black",
-    #     "vbf": True,
-    # },
+     "predictions_allKlambda_DetaMjj_novars_NGW": {
+         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
+         "true": "true_detamjj_ngw",
+         "label": "DetaMjj NGW noextravars",
+         "color": "black",
+         "vbf": True,
+     },
 
     # allKlambda_DetaMjj_NNGW_noextravars
-    # "predictions_allKlambda_DetaMjj_novars_NNGW": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
-    #     "true": "true_detamjj_nngw",
-    #     "label": "DetaMjj NNGW noextravars",
-    #     "color": "green",
-    #     "vbf": True,
-    # },
+    "predictions_allKlambda_DetaMjj_novars_NNGW": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
+        "true": "true_detamjj_nngw",
+        "label": "DetaMjj NNGW noextravars",
+        "color": "green",
+        "vbf": True,
+     },
 
     # allKlambda_DetaMjj_NNGW_extravars
     #"predictions_allKlambda_DetaMjj_extravars_NNGW_200e": {
@@ -134,13 +134,13 @@ spanet_dict.update({
     #},
 
     # AllKlambda 9 jets
-    "predictions_allKlambda_100e": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
-        "true": "true_9jets_allklambda",
-        "label": "9j all_Klambda 100e",
-        "color": "red",
-        "vbf": True,
-    },
+    #"predictions_allKlambda_100e": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
+    #    "true": "true_9jets_allklambda",
+    #    "label": "9j all_Klambda 100e",
+    #    "color": "red",
+    #    "vbf": True,
+    #},
 })
 
 true_dict.update({
