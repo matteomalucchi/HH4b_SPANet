@@ -46,7 +46,7 @@ spanet_dict.update({
     #"predictions_allKlambda_DetaMjj_extravars_NNGW_extreme_classlossweights": {
     #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights_extreme_classlossweights.h5",
     #    "true": "true_detamjj_nngw",
-    #    "label": "SPANet DetaMjj NNGW extravars extreme classlossweights",
+    #    "label": "DetaMjj NNGW extravars CLW = 5.0",
     #    "color": "brown",
     #    "vbf": True,
     #},
@@ -71,31 +71,40 @@ spanet_dict.update({
     #},
 
     # allKlambda_DetaMjj_NGW_noextravars
-     "predictions_allKlambda_DetaMjj_novars_NGW": {
-         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
-         "true": "true_detamjj_ngw",
-         "label": "DetaMjj NGW noextravars",
-         "color": "black",
-         "vbf": True,
-     },
+    #  "predictions_allKlambda_DetaMjj_novars_NGW": {
+    #      "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
+    #      "true": "true_detamjj_ngw",
+    #      "label": "9j SPANet NGW 200e",
+    #      "color": "black",
+    #      "vbf": True,
+    #},
 
     # allKlambda_DetaMjj_NNGW_noextravars
-    "predictions_allKlambda_DetaMjj_novars_NNGW": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
-        "true": "true_detamjj_nngw",
-        "label": "DetaMjj NNGW noextravars",
-        "color": "green",
-        "vbf": True,
-     },
-
-    # allKlambda_DetaMjj_NNGW_extravars
-    #"predictions_allKlambda_DetaMjj_extravars_NNGW_200e": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights.h5",
+    #"predictions_allKlambda_DetaMjj_novars_NNGW": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
     #    "true": "true_detamjj_nngw",
-    #    "label": "DetaMjj NNGW extravars 200e",
-    #    "color": "yellow",
+    #    "label": "DetaMjj NNGW noextravars",
+    #    "color": "green",
     #    "vbf": True,
     #},
+
+    # allKlambda_DetaMjj_NNGW_extravars
+    "predictions_allKlambda_DetaMjj_extravars_NNGW_200e": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights.h5",
+        "true": "true_detamjj_nngw",
+        "label": "9j SPANet Deta + mjj as extravars 200e",
+        "color": "darkgreen",
+        "vbf": True,
+    },
+
+    #vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality 100e
+    "predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality.h5",
+        "true": "true_allklambda_DetaMjjCentrality",
+        "label": "9j SPANet + Centrality 100e",
+       "color": "brown",
+       "vbf": True,
+    },
 
 #100 epochs all_Klambda 9 jets extreme_classlossweights remake
     #f"predictions_allKlambda_extreme_classlossweights_5": {
