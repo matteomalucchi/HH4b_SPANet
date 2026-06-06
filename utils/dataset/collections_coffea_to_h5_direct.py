@@ -107,6 +107,42 @@ jet_collections_dict = {
             },
         },
     ],
+    "JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL": [
+        {
+            "JetGoodVBFMergedProvVBFPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 5,
+                "resonances": ["vbf"],
+                "min_num_jets": 0,
+                "prov_key": "provenance_vbf",
+            },
+        },
+        {
+            "JetGoodVBFMergedProvVBFPadded": {
+                "saved_name": "JetVBF",
+                "max_num_jets": 5,
+                "resonances": ["vbf"],
+                "min_num_jets": 0,
+                "prov_key": "provenance_vbf",
+            },
+            "JetGoodProvHiggsPadded": {
+                "saved_name": "JetHiggs",
+                "max_num_jets": 4,
+                "resonances": [],
+                "min_num_jets": 4,
+                "prov_key": "provenance_higgs",
+            },
+        },
+        {
+            "JetTotalSPANetPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 9,
+                "resonances": ["vbf"],
+                "min_num_jets": 4,
+                "prov_key": "provenance_vbf",
+            },
+        },
+    ],
     "JET_COLLECTION_VBF_BOOSTED": [
         {
             "JetGoodVBF": {
