@@ -16,11 +16,20 @@ INPUTS:
   # REQUIRED - GLOBAL - inputs which will have a single vector per event.
   # ---------------------------------------------------------------------
   GLOBAL:
+    Event:
+      centralityHiggsLeadingRun2VBF: none
+      centralityHiggsSubLeadingRun2VBF: none
 
 # ----------------------------------------------------------------------
 # REQUIRED - EVENT - Complete list of resonance particles and daughters.
 # ----------------------------------------------------------------------
 EVENT:
+  h1:
+    - b1
+    - b2
+  h2:
+    - b3
+    - b4
   vbf:
     - q1
     - q2
@@ -30,6 +39,11 @@ EVENT:
 # ---------------------------------------------------------
 PERMUTATIONS:
   EVENT:
+    - [h1, h2]
+  h1:
+    - [b1, b2]
+  h2:
+    - [b3, b4]
   vbf:
     - [q1, q2]
 

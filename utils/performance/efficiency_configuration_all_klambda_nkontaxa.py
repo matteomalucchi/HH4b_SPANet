@@ -6,7 +6,7 @@ There are two dictionaries; one is a dictionary showing the actual datasets and 
 
 # uncomment the configurations that you want to use
 
-run2_dataset_MC = "true_allklambda_VBFPairing"
+run2_dataset_MC = "true_9jets_allklambda"
 run2_dataset_DATA = ""
 
 spanet_dict = {}
@@ -22,13 +22,13 @@ true_dir_nestor = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
 spanet_dict.update({
 
 #AllKlambda 9 jets 100e
-    # f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
-    #     "true": "true_9jets_allklambda",
-    #     "label": "9j all_Klambda 100e",
-    #     "color": "red",
-    #     "vbf": True,
-    # },
+    f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
+        "true": "true_9jets_allklambda", 
+        "label": "9j all_Klambda 100e",
+        "color": "red",
+        "vbf": True,
+    },
 
 ##AllKlambda 7 jets
     ##f"{spanet_dir_nestor}vbf/predictions_allKlambda_7jets_JetTotalSPANETPadded.h5": {
@@ -102,23 +102,23 @@ spanet_dict.update({
 #         "vbf": True,
 #     },
 
-# #100 epochs all_Klambda 9 jets extreme_classlossweights remake
-#     f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_5.h5": {
-#         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_5.h5",
-#        "true": "true_9jets_allklambda",
-#         "label": "9j all_Klambda ECLW (5.0) remake",
-#         "color": "blue",
-#         "vbf": True,
-#     },
-
 # #100 epochs all_Klambda 9 jets extreme_classlossweights 3
-#     f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_3.h5": {
-#         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_3.h5",
-#        "true": "true_9jets_allklambda",
-#         "label": "9j all_Klambda ECLW (3.0)",
-#         "color": "darkblue",
-#         "vbf": True,
-#     },
+     f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_3.h5": {
+         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_3.h5",
+        "true": "true_9jets_allklambda",
+         "label": "9j SPANet CLW (3.0)",
+         "color": "darkblue",
+         "vbf": True,
+     },
+
+# #100 epochs all_Klambda 9 jets extreme_classlossweights remake
+     f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_5.h5": {
+         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_5.h5",
+        "true": "true_9jets_allklambda",
+         "label": "9j SPANet CLW (5.0)",
+         "color": "blue",
+         "vbf": True,
+     },
 
 #100 epochs all_Klambda 9 jets extreme_classlossweights
     #f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_6.h5": {
@@ -130,22 +130,22 @@ spanet_dict.update({
     #},
 
 #100 epochs all_Klambda 9 jets extreme_classlossweights
-    #f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_7.h5": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_7.h5",
-    #   "true": "true_9jets_allklambda",
-    #    "label": "9j all_Klambda ECLW (7.0)",
-    #    "color": "darkgreen",
-    #    "vbf": True,
-    #},
+    f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_7.h5": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_7.h5",
+       "true": "true_9jets_allklambda",
+        "label": "9j SPANet CLW (7.0)",
+        "color": "darkgreen",
+        "vbf": True,
+    },
 
 #100 epochs all_Klambda 9 jets extreme_classlossweights
-    #f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_10.h5": {
-    #   "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_10.h5",
-    #   "true": "true_9jets_allklambda",
-    #    "label": "9j all_Klambda ECLW (10.0)",
-    #    "color": "purple",
-    #    "vbf": True,
-    #},
+    f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_10.h5": {
+       "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_10.h5",
+       "true": "true_9jets_allklambda",
+        "label": "9j SPANet CLW (10.0)",
+        "color": "purple",
+        "vbf": True,
+    },
 
     #allKlambda_HiggsPairing 100e
     ##f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5": {
@@ -166,14 +166,14 @@ spanet_dict.update({
     ##},
 
 # allKlambda_VBFPairing 100e
-    f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5": {
-       "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5",
-       "true": "true_allklambda_VBFPairing",
-       "label": "allKlambda VBFPairing 100e",
-       "color": "purple",
-       "vbf": True,
-       "n_higgs_jets": 0,
-    },
+    ##f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5": {
+    ##   "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5",
+    ##   "true": "true_allklambda_VBFPairing",
+    ##   "label": "allKlambda VBFPairing 100e",
+    ##   "color": "purple",
+    ##   "vbf": True,
+    ##   "n_higgs_jets": 0,
+    ##},
 })
 
 true_dict.update({
