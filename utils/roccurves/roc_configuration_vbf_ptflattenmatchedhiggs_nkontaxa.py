@@ -27,100 +27,100 @@ spanet_dict.update({
     ##},
 
     # ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_VBFHiggsFlatten 100e
-    "predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_VBFHiggsFlatten_100e": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_vbfhiggsFlatten_100e.h5",
-        "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
-        "label": "ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF VBFHiggsFlatten",
-        "color": "darkgrey",
-        "vbf": True,
-    },
+    ##"predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_VBFHiggsFlatten_100e": {
+    ##    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_vbfhiggsFlatten_100e.h5",
+    ##  "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
+    ##    "label": "ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF VBFHiggsFlatten",
+    ##    "color": "darkgrey",
+    ##    "vbf": True,
+    ##},
 
     # ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_HiggsVBFFlatten 100e ECL = 0.5
-    "predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_HiggsVBFFlatten_CLW_0_5.h5": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_HiggsVBFFLatten_CLW_0_5.h5",
-        "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
-        "label": "ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF HiggsFlatten CLW = 0.5",
-        "color": "grey",
-        "vbf": True,
-    },
+    ##"predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_HiggsVBFFlatten_CLW_0_5.h5": {
+    ##    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_HiggsVBFFLatten_CLW_0_5.h5",
+    ##    "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
+    ##    "label": "ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF HiggsFlatten CLW = 0.5",
+    ##    "color": "grey",
+    ##    "vbf": True,
+    ##},
 
-    # ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_VBFHiggsFlatten 100e ECL = 2.0
-    "predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_VBFHiggsFlatten_CLW_2.h5": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_HiggsVBFFLatten_CLW_2.h5",
-        "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
-        "label": "ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF VBFHiggsFlatten CLW = 2.0",
-        "color": "black",
-        "vbf": True,
-    },
+    ### ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_VBFHiggsFlatten 100e ECL = 2.0
+    ##"predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_VBFHiggsFlatten_CLW_2.h5": {
+    ##    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_HiggsVBFFLatten_CLW_2.h5",
+    ##    "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
+    ##    "label": "ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF VBFHiggsFlatten CLW = 2.0",
+    ##    "color": "black",
+    ##    "vbf": True,
+    ##},
 
     # vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality 100e
-    #"predictions_ptFlattenMatchedHiggs_DetaMjjCentrality_100e": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality.h5",
-    #    "true": "true_allklambda_DetaMjjCentrality",
-    #    "label": "SPANet ptFlattenMatchedHiggs DetaMjj Centrality 100e",
-    #    "color": "orange",
-    #    "vbf": True,
-    #},
+    "predictions_ptFlattenMatchedHiggs_DetaMjjCentrality_100e": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality.h5",
+        "true": "true_allklambda_DetaMjjCentrality",
+        "label": "9j SPANet + Centrality 100e",
+        "color": "orange",
+        "vbf": True,
+    },
 
     # vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality 100e ECLW (0.5)
-    #"predictions_ptFlattenMatchedHiggs_DetaMjjCentrality_ECL_0_5.h5": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_ECL_0_5.h5",
-    #    "true": "true_allklambda_DetaMjjCentrality",
-    #    "label": "ptFlattenMatchedHiggs DetaMjj Centrality 100e CLW = 0.5",
-    #    "color": "yellow",
-    #    "vbf": True,
-    #},
+    "predictions_ptFlattenMatchedHiggs_DetaMjjCentrality_ECL_0_5.h5": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_ECL_0_5.h5",
+        "true": "true_allklambda_DetaMjjCentrality",
+        "label": "9j SPANet + Centrality 100e CLW = 0.5",
+        "color": "yellow",
+        "vbf": True,
+        },
 
     # vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality 100e ECLW (2)
-    #"predictions_ptFlattenMatchedHiggs_DetaMjjCentrality_ECL_2.h5": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_ECL_2.h5",
-    #    "true": "true_allklambda_DetaMjjCentrality",
-    #    "label": "ptFlattenMatchedHiggs DetaMjj Centrality 100e CLW = 2.0",
-    #   "color": "brown",
-    #    "vbf": True,
-    #},
+    "predictions_ptFlattenMatchedHiggs_DetaMjjCentrality_ECL_2.h5": {
+    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_ECL_2.h5",
+        "true": "true_allklambda_DetaMjjCentrality",
+        "label": "9j SPANet + Centrality 100e CLW = 2.0",
+        "color": "brown",
+        "vbf": True,
+    },
 
-    # ptFlattenedMatchedHiggs_allKlambda_DetaMjj
+#ptFlattenedMatchedHiggs_allKlambda_DetaMjj
     #"predictions_ptFlattenMatchedHiggs_DetaMjj": {
     #    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj.h5",
     #    "true": "true_ptFlattenMatchedHiggs_detamjj",
-    #    "label": "SPANet ptFlattenedMatchedHiggs DetaMjj",
+    #    "label": "TMHF 200e",
     #    "color": "black",
     #    "vbf": True,
     #},
 
-    # ptFlattenedMatchedHiggs_allKlambda_DetaMjj_AddVBFJetOrder
+    #ptFlattenedMatchedHiggs_allKlambda_DetaMjj_AddVBFJetOrder
     #"predictions_ptFlattenMatchedHiggs_DetaMjj_AddVBFJetOrder": {
     #    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_AddVBFJetOrder.h5",
     #    "true": "true_ptFlattenMatchedHiggs_addVBFJetOrder",
-    #    "label": "SPANet ptFlattenedMatchedHiggs DetaMjj AddVBFJetOrder",
+    #   "label": "AddVBFJetOrder 200e",
     #    "color": "pink",
+    #    "vbf": True,
+    #}, # <--- ADD THIS COMMA TO FIX LINE 102 CRASH
+
+    #ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_1
+    #"predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_BothFlatten_200e": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_1.h5",
+    #    "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
+    #    "label": "SeparateHiggsVBF HiggsVBFFlatten 200e",
+    #    "color": "brown",
     #    "vbf": True,
     #},
 
-    # ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_1
-    # "predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_BothFlatten_200e": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_1.h5",
-    #     "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
-    #     "label": "SPANet ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF BothFlatten 200e",
-    #     "color": "brown",
-    #     "vbf": True,
-    # },
-
-    # ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_2
-    # "predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_OnlyHiggsFlatten_200e": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_2.h5",
-    #     "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
-    #     "label": "SPANet ptFlattenedMatchedHiggs DetaMjj SeparateHiggsVBF OnlyHiggsFlatten 200e",
-    #     "color": "darkgrey",
-    #     "vbf": True,
-    # },
+    #ptFlattenedMatchedHiggs_allKlambda_DetaMjj_SeparateHiggsVBF_MergedCollections_2
+    #"predictions_ptFlattenMatchedHiggs_DetaMjj_SeparateHiggsVBF_OnlyHiggsFlatten_200e": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_MergedCollections_FixNoneJets_2.h5",
+    #    "true": "true_ptFlattenMatchedHiggs_separateHiggsVBF",
+    #    "label": "SeparateHiggsVBF HiggsFlatten 200e",
+    #    "color": "darkgrey",
+    #    "vbf": True,
+    #},
 
     # AllKlambda 9 jets
     "predictions_allKlambda_100e": {
         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
         "true": "true_9jets_allklambda",
-        "label": "SPANet 9j all_Klambda 100e",
+        "label": "9j SPANet 100e",
         "color": "red",
         "vbf": True,
     },
@@ -152,7 +152,7 @@ true_dict.update({
     },
 
     "true_ptFlattenMatchedHiggs_detamjj": {
-        "name": f"{true_dir_nestor}vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj/JetTotalSPANetPadded_kl_combined_EVENT_test.h5",
+        "name": f"{true_dir_nestor}vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj/AllKlambda_DetaMjjJetTotalSPANetPtFlattenHiggsMatchedPadded_test.h5",
         "klambda": "postEE",
         "vbf": True,
     },
