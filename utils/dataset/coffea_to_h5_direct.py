@@ -589,8 +589,10 @@ def coffea_to_h5(
                                 np.array(payload[f"{jet_coll}_pt"]),
                                 jet_counts,
                             )
-                        else:
+                        elif jet_info_dict["max_num_jets"] <= 1:
                             jet_pt = ak.singletons(ak.Array(payload[f"{jet_coll}_pt"]))
+                        else:
+                            jet_pt = ak.Array(payload[f"{jet_coll}_pt"])
 
                         # Define the jet mask
                         mask_jet_pt = (
