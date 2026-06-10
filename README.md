@@ -315,6 +315,96 @@ This allows you to monitor:
 
 Press `CTRL+C` to stop the TensorBoard server.
 
+## Plot training metrics (static, HEP-style)
+
+As an alternative to the interactive TensorBoard interface, the script
+`scripts/plot_training_metrics.py` reads the `metrics.csv` file saved
+automatically by PyTorch Lightning in every `version_N/` directory and
+produces static, publication-quality plots using the same **HEPPlotter**
+style used throughout the repository.
+This is faster than opening TensorBoard and gives you ready-to-share images
+immediately after a training finishes.
+
+> [!NOTE]
+> The script reads `metrics.csv` by default (no extra dependencies).
+> If that file is absent it falls back to parsing the raw
+> `events.out.tfevents.*` binary files, which requires the `tensorboard`
+> Python package to be installed.
+
+### Plots produced
+
+| File name | Content |
+|---|---|
+| `total_loss` | Training and validation total loss vs epoch (solid / dashed) |
+| `assignment_loss` | Per-particle jet-assignment loss (training + validation) |
+| `detection_loss` | Per-particle particle-detection loss (training + validation) |
+| `symmetric_loss` | Jensen–Shannon divergence (symmetry) loss |
+| `regression_loss` | Regression auxiliary loss (if enabled) |
+| `classification_loss` | Classification auxiliary loss (if enabled) |
+| `validation_accuracy` | `validation_accuracy` and `validation_average_jet_accuracy` vs epoch |
+| `jet_accuracy` | All `jet/accuracy_N_of_M` completeness metrics vs epoch |
+| `particle_accuracy` | Particle-detection accuracy vs epoch |
+| `purity` | Purity metrics vs epoch |
+| `regression_{key}` | Per-key percent error and absolute error (if regressions are trained) |
+| `classification_{key}` | Per-key accuracy breakdown (overall, per-class, weighted) |
+| `learning_rate` | Learning-rate schedule vs step |
+
+Plots are saved in a `training_plots/` subdirectory inside the version
+directory (or in the directory specified with `-o`).
+
+### Usage
+
+```bash
+# Enter the singularity and activate the virtual environment
+spanet_singularity
+source spanet_env/bin/activate
+
+cd HH4b_SPANet
+```
+
+**Plot the most recent training version** (auto-detected):
+
+```bash
+python scripts/plot_training_metrics.py -d /eos/user/m/mmalucch/spanet_outputs/my_run
+# plots saved to: /eos/.../my_run/version_N/training_plots/
+```
+
+**Plot a specific version directory**:
+
+```bash
+python scripts/plot_training_metrics.py -d /eos/user/m/mmalucch/spanet_outputs/my_run/version_3
+# plots saved to: /eos/.../my_run/version_3/training_plots/
+```
+
+**Overlay all seeds / versions on the same plots** (e.g. to assess variability):
+
+```bash
+python scripts/plot_training_metrics.py \
+    -d /eos/user/m/mmalucch/spanet_outputs/my_run \
+    --all-versions
+# plots saved to: /eos/.../my_run/version_0/training_plots/
+```
+
+**Compare two different training configurations** side-by-side:
+
+```bash
+python scripts/plot_training_metrics.py \
+    -d /eos/spanet_outputs/run_A /eos/spanet_outputs/run_B \
+    -l "Config A" "Config B" \
+    -o ./comparison_plots
+```
+
+### CLI reference
+
+| Argument | Default | Description |
+|---|---|---|
+| `-d / --dirs` | *(required)* | One or more training output directories |
+| `-l / --labels` | directory names | Legend labels for each directory |
+| `-o / --output-dir` | `<first-dir>/training_plots/` | Where to save the plots |
+| `--all-versions` | off | Overlay all `version_N` subdirs (seeds study) |
+| `--cmstext` | `Private Work` | CMS label text on each plot |
+| `--lumitext` | `(13.6 TeV)` | Luminosity / energy label on each plot |
+
 ## Compute predictions
 
 In order to compute the predictions from a previously trained SPANet model, one has to run the following command in the singularity:
