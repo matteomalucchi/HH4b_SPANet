@@ -84,6 +84,28 @@ def _load_from_csv(version_dir: Path) -> Optional[pd.DataFrame]:
     return df
 
 
+def _infer_epochs(df: pd.DataFrame) -> pd.Series:
+    """Infer epoch numbers from step values when no explicit epoch column exists.
+
+    Metrics logged once per epoch (validation) have fewer rows than training
+    metrics.  Their steps mark epoch boundaries; every step up to and including
+    the n-th boundary is assigned to epoch n.
+    """
+    steps = df["step"].values
+    # Find the metric column with the fewest non-NaN values — that is the
+    # per-epoch (validation) metric, and its sorted unique steps are the
+    # epoch-end markers.
+    metric_cols = [c for c in df.columns if c not in ("step",)]
+    counts = {c: df[c].notna().sum() for c in metric_cols}
+    min_count = min(counts.values())
+    ref_col = next(c for c, n in counts.items() if n == min_count)
+    epoch_steps = np.sort(df.loc[df[ref_col].notna(), "step"].unique())
+    # np.searchsorted with side='left': step <= epoch_steps[i] → epoch i
+    epochs = np.searchsorted(epoch_steps, steps, side="left")
+    # Clip so steps beyond the last boundary stay at the final epoch index
+    return pd.Series(np.clip(epochs, 0, len(epoch_steps) - 1), index=df.index)
+
+
 def _load_from_tfevents(version_dir: Path) -> Optional[pd.DataFrame]:
     """Fallback: parse TensorBoard event files via the tensorboard package."""
     try:
@@ -109,8 +131,7 @@ def _load_from_tfevents(version_dir: Path) -> Optional[pd.DataFrame]:
         )
 
     df = pd.concat(per_tag, axis=1).reset_index()
-    if "epoch" not in df.columns:
-        df["epoch"] = np.nan
+    df["epoch"] = _infer_epochs(df)
     return df
 
 
