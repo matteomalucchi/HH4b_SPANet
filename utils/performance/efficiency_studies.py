@@ -196,32 +196,36 @@ def main():
         )
 
         n_higgs_jets = true_dict[file_dict["true"]].get("n_higgs_jets", 4)
+        n_higgs_jets_pred = file_dict.get("n_higgs_jets", n_higgs_jets)
+        jet_coll = true_dict[file_dict["true"]].get("jet_coll", "Jet")
+        jet_coll_pred = file_dict.get("jet_coll", jet_coll)
+        offset_jet_idx = file_dict.get("offset_jet_idx", 0)
 
         # define region mask
-        mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, do_vbf_pairing, n_higgs_jets=n_higgs_jets)
-        mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, n_higgs_jets=n_higgs_jets)
+        mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, do_vbf_pairing, jet_coll=jet_coll_pred, n_higgs_jets=n_higgs_jets_pred)
+        mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
         assert all(mask_region_spanet == mask_region_true)
 
         # define the class mask
         # take the one for the true file because
         # the prediction file might have the predicted class
         # and not the original one
-        mask_class_true = helpers.get_class_mask(args.class_label, truefile)
+        mask_class_true = helpers.get_class_mask(args.class_label, truefile, jet_coll=jet_coll)
 
         if args.num_events:
             mask_num_events = helpers.get_region_mask(
-                f"test_{args.num_events}", truefile, False, n_higgs_jets=n_higgs_jets
+                f"test_{args.num_events}", truefile, False, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets
             )
             logger.info(f"max num events {ak.sum(mask_num_events)}")
         else:
-            mask_num_events = ak.ones_like(truefile["INPUTS"]["Jet"]["MASK"][:, 0])
+            mask_num_events = ak.ones_like(truefile["INPUTS"][jet_coll]["MASK"][:, 0])
 
         mask_spanet = mask_region_spanet & mask_class_true & mask_num_events
         mask_true = mask_region_true & mask_class_true & mask_num_events
 
         logger.info(f"Number of events after the masks : {ak.sum(mask_true)}")
 
-        jet = helpers.get_jet_4vec(truefile, mask_true)
+        jet = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll)
 
         idx_true = load_jets_and_pairing(
             truefile, "true", higgs=not args.ignore_higgs, vbf=do_vbf_pairing
@@ -304,6 +308,7 @@ def main():
                 "fully matched",
                 higgs=not args.ignore_higgs,
                 vbf=do_vbf_pairing,
+                offset_jet_idx=offset_jet_idx,
             )
 
             # Omitting calculation of partially matched for now
@@ -434,19 +439,20 @@ def main():
     )
 
     n_higgs_jets = true_dict[run2_dataset].get("n_higgs_jets", 4)
+    jet_coll = true_dict[run2_dataset].get("jet_coll", "Jet")
 
     # define region mask
-    mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, n_higgs_jets=n_higgs_jets)
+    mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
     # assert all(mask_region_spanet == mask_region_true)
 
     # define the class mask
     # take the one for the true file because
     # the prediction file might have the predicted class
     # and not the original one
-    mask_class_true = helpers.get_class_mask(args.class_label, truefile)
+    mask_class_true = helpers.get_class_mask(args.class_label, truefile, jet_coll=jet_coll)
     mask_true = mask_region_true & mask_class_true
 
-    jet_for_idx = [helpers.get_jet_4vec(truefile, ak.ones_like(mask_true))]
+    jet_for_idx = [helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll)]
 
     jet_vbf_for_idx = [j[:, n_higgs_jets:] for j in jet_for_idx]
 

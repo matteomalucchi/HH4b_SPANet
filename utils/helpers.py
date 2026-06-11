@@ -104,7 +104,7 @@ def get_region_mask(region, column_file, do_vbf_pairing, jet_coll="Jet", n_higgs
 def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet", n_higgs_jets=4):
     jet_list = [
         get_jet_4vec(
-            column_file, ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
+            column_file, ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0]), jet_coll=jet_coll
         )
     ]
     jet_vbf = [j[:, n_higgs_jets:] for j in jet_list]

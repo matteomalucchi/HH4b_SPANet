@@ -131,6 +131,7 @@ def calculate_efficiencies(
     label,
     higgs=True,
     vbf=False,
+    offset_jet_idx=0,
 ):
     matching_eval_model = [ak.ones_like(true[:, 0, 0]) for true in true_idx]
 
@@ -138,12 +139,12 @@ def calculate_efficiencies(
         # higgs 1 and higgs 2
         matching_eval_model_higgs = [
             (
-                ak.all(true[:, 0] == prediction[:, 0], axis=1)
-                | ak.all(true[:, 0] == prediction[:, 1], axis=1)
+                ak.all(true[:, 0] == prediction[:, 0] + offset_jet_idx, axis=1)
+                | ak.all(true[:, 0] == prediction[:, 1] + offset_jet_idx, axis=1)
             )
             & (
-                ak.all(true[:, 1] == prediction[:, 0], axis=1)
-                | ak.all(true[:, 1] == prediction[:, 1], axis=1)
+                ak.all(true[:, 1] == prediction[:, 0] + offset_jet_idx, axis=1)
+                | ak.all(true[:, 1] == prediction[:, 1] + offset_jet_idx, axis=1)
             )
             for true, prediction in zip(true_idx, prediction_idx)
         ]
@@ -163,9 +164,9 @@ def calculate_efficiencies(
         # vbf
         matching_eval_model_vbf = [
             (
-                ak.all(true[:, idx_vbf] == prediction[:, idx_vbf], axis=1)
+                ak.all(true[:, idx_vbf] == prediction[:, idx_vbf] + offset_jet_idx, axis=1)
                 # check also if the idx are swapped (altought this shouldn't happen)
-                | ak.all(true[:, idx_vbf, ::-1] == prediction[:, idx_vbf], axis=1)
+                | ak.all(true[:, idx_vbf, ::-1] == prediction[:, idx_vbf] + offset_jet_idx, axis=1)
             )
             for true, prediction in zip(true_idx, prediction_idx)
         ]
