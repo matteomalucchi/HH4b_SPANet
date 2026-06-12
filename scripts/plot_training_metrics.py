@@ -87,22 +87,43 @@ def _load_from_csv(version_dir: Path) -> Optional[pd.DataFrame]:
 def _infer_epochs(df: pd.DataFrame) -> pd.Series:
     """Infer epoch numbers from step values when no explicit epoch column exists.
 
-    Metrics logged once per epoch (validation) have fewer rows than training
-    metrics.  Their steps mark epoch boundaries; every step up to and including
-    the n-th boundary is assigned to epoch n.
+    Validation metrics (logged once per epoch) are used as epoch-end markers.
+    Every step up to and including the n-th marker is assigned to epoch n.
     """
     steps = df["step"].values
-    # Find the metric column with the fewest non-NaN values — that is the
-    # per-epoch (validation) metric, and its sorted unique steps are the
-    # epoch-end markers.
     metric_cols = [c for c in df.columns if c not in ("step",)]
-    counts = {c: df[c].notna().sum() for c in metric_cols}
-    min_count = min(counts.values())
-    ref_col = next(c for c, n in counts.items() if n == min_count)
+
+    # Priority 1: metrics whose names guarantee once-per-epoch logging.
+    _VAL_PREFIXES = (
+        "validation_",
+        "REGRESSION/",
+        "CLASSIFICATION/",
+        "Purity/",
+        "jet/",
+        "particle/",
+    )
+    per_epoch_cols = [c for c in metric_cols if c.startswith(_VAL_PREFIXES)]
+
+    if per_epoch_cols:
+        # Among the candidates, pick whichever has the most data points
+        # (most complete training history).
+        ref_col = max(per_epoch_cols, key=lambda c: df[c].notna().sum())
+    else:
+        # Fallback: use the metric with the fewest events, but require at
+        # least 2 data points so a single stray scalar doesn't collapse
+        # all epochs to 0.
+        counts = {c: df[c].notna().sum() for c in metric_cols}
+        eligible = {c: n for c, n in counts.items() if n >= 2}
+        if not eligible:
+            return pd.Series(0, index=df.index)
+        ref_col = min(eligible, key=lambda c: eligible[c])
+
     epoch_steps = np.sort(df.loc[df[ref_col].notna(), "step"].unique())
-    # np.searchsorted with side='left': step <= epoch_steps[i] → epoch i
+    if len(epoch_steps) == 0:
+        return pd.Series(0, index=df.index)
+
+    # searchsorted side='left': every step <= epoch_steps[i] maps to epoch i
     epochs = np.searchsorted(epoch_steps, steps, side="left")
-    # Clip so steps beyond the last boundary stay at the final epoch index
     return pd.Series(np.clip(epochs, 0, len(epoch_steps) - 1), index=df.index)
 
 
