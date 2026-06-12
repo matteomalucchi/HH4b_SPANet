@@ -126,9 +126,11 @@ def _load_from_tfevents(version_dir: Path) -> Optional[pd.DataFrame]:
     per_tag = []
     for tag in tags:
         events = ea.Scalars(tag)
-        per_tag.append(
-            pd.DataFrame({"step": [e.step for e in events], tag: [e.value for e in events]}).set_index("step")
-        )
+        tag_df = pd.DataFrame({"step": [e.step for e in events], tag: [e.value for e in events]})
+        # Deduplicate steps: multiple event files (DDP, checkpoint resume) can
+        # produce the same step more than once — average the values.
+        tag_df = tag_df.groupby("step", sort=True)[tag].mean()
+        per_tag.append(tag_df)
 
     df = pd.concat(per_tag, axis=1).reset_index()
     df["epoch"] = _infer_epochs(df)
