@@ -12,6 +12,7 @@ from hist import Hist
 from sklearn.metrics import (
     average_precision_score,
     precision_recall_curve,
+    roc_auc_score,
     roc_curve,
 )
 
@@ -58,9 +59,23 @@ parser.add_argument(
 parser.add_argument(
     "-q",
     "--plot-quantile",
-    action="store_true",
-    default=True,
-    help="If active, the 99% background quantile will be printed in the histogram.",
+    type=float,
+    default=0.99,
+    help="Background quantile fraction to compute and print in the histogram (default: 0.99).",
+)
+parser.add_argument(
+    "-klb",
+    "--kl-background",
+    type=float,
+    default=None,
+    help="Select background events with this kl value. If not specified, all background events are included.",
+)
+parser.add_argument(
+    "-kls",
+    "--kl-signal",
+    nargs="+",
+    default=["all", "1"],
+    help="Signal kl values to plot. Use 'all' for the inclusive plot, numbers for specific kl values, or 'full' to plot every available kl (default: all 1).",
 )
 args = parser.parse_args()
 
@@ -156,26 +171,20 @@ def roc_curve_compare_weights(class_dict, roc_values_dict, plot_dir, fpr_cutoff,
     series = {}
 
     for model_name, sub_dict in class_dict.items():
-        kls = sub_dict["kls"]
-        if kl == "all":
-            mask_kl = np.ones_like(kls, dtype=bool)
-        elif np.any(kls == float(kl)):
-            mask_kl = (kls == float(kl)) | (kls == 9999.) | (sub_dict["true_class"] == 0)
-        else:
-            continue
-
-        spanet_class = sub_dict["spanet_class"][mask_kl]
-        true_class = sub_dict["true_class"][mask_kl]
-        weights = sub_dict["weights"][mask_kl]
+        spanet_class = sub_dict["spanet_class"]
+        true_class = sub_dict["true_class"]
+        weights = sub_dict["weights"]
 
         if no_weights:
             fpr, tpr, threshold = roc_curve(true_class, spanet_class)
             auc_score = my_roc_auc(true_class, spanet_class)
+            # auc_score = roc_auc_score(true_class, spanet_class)
         else:
             fpr, tpr, threshold = roc_curve(
                 true_class, spanet_class, sample_weight=weights
             )
             auc_score = my_roc_auc(true_class, spanet_class, weights)
+            # auc_score = roc_auc_score(true_class, spanet_class, sample_weight=weights)
 
         # compute the auc for the zoomed roc curve
         # fpr_zoom = fpr[fpr <= fpr_cutoff]
@@ -248,17 +257,9 @@ def precision_recall_curve_function(class_dict, plot_dir, no_weights, kl):
     series = {}
 
     for model_name, sub_dict in class_dict.items():
-        kls = sub_dict["kls"]
-        if kl == "all":
-            mask_kl = np.ones_like(kls, dtype=bool)
-        elif np.any(kls == float(kl)):
-            mask_kl = (kls == float(kl)) | (kls == 9999.) | (sub_dict["true_class"] == 0)
-        else:
-            continue
-
-        spanet_class = sub_dict["spanet_class"][mask_kl]
-        true_class = sub_dict["true_class"][mask_kl]
-        weights = sub_dict["weights"][mask_kl]
+        spanet_class = sub_dict["spanet_class"]
+        weights = sub_dict["weights"]
+        true_class = sub_dict["true_class"]
 
         if no_weights:
             precision, recall, threshold = precision_recall_curve(
@@ -320,17 +321,9 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl):
     series_all_models = {}
 
     for model_name, sub_dict in class_dict.items():
-        kls = sub_dict["kls"]
-        if kl == "all":
-            mask_kl = np.ones_like(kls, dtype=bool)
-        elif np.any(kls == float(kl)):
-            mask_kl = (kls == float(kl)) | (kls == 9999.) | (sub_dict["true_class"] == 0)
-        else:
-            continue
-
-        spanet_class = sub_dict["spanet_class"][mask_kl]
-        true_class = sub_dict["true_class"][mask_kl]
-        weights = sub_dict["weights"][mask_kl]
+        spanet_class = sub_dict["spanet_class"]
+        true_class = sub_dict["true_class"]
+        weights = sub_dict["weights"]
 
         mask_background = true_class == 0
 
@@ -341,23 +334,23 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl):
             weights_bkg = weights[mask_background]
             weights_sig = weights[~mask_background]
 
-        # Calculating a percentile (right now hardcoded to 99% of the background
+        # Calculating a percentile of the background
         bkg_scores = spanet_class[mask_background]
         sig_scores = spanet_class[~mask_background]
 
         if no_weights:
-            cut = np.quantile(bkg_scores, 0.99)
+            cut = np.quantile(bkg_scores, args.plot_quantile)
             sig_eff = np.mean(sig_scores > cut)  # Mean just gives me the ones passing divided by all
         else:
             sorted_idx = np.argsort(bkg_scores)
             cumulative_weights = np.cumsum(weights_bkg[sorted_idx]) / weights_bkg.sum()
-            cut = bkg_scores[sorted_idx[np.searchsorted(cumulative_weights, 0.99)]]
+            cut = bkg_scores[sorted_idx[np.searchsorted(cumulative_weights, args.plot_quantile)]]
 
             mask_signal_cut = sig_scores > cut
             sig_eff = weights_sig[mask_signal_cut].sum() / weights_sig.sum()
 
         logger.info("=============")
-        logger.info(f"Found 99% background quantile cut at: {cut:.4f} ")
+        logger.info(f"Found {args.plot_quantile*100:.4g}% background quantile cut at: {cut:.4f} ")
         logger.info(f"Signal efficiency at this point is: {sig_eff * 100:.2f}% ")
         logger.info("=============")
 
@@ -504,13 +497,44 @@ def main():
 
     kls_signal = list(np.unique(kls[true_class == 1]))
     print("Separating kl for signal", kls_signal)
+    if args.kl_background is not None:
+        print(f"Selecting background events with kl = {args.kl_background}")
+
+    if "full" in args.kl_signal:
+        kls_to_plot = ["all"] + kls_signal
+    else:
+        kl_signal_requested = set()
+        for v in args.kl_signal:
+            kl_signal_requested.add(v if v == "all" else float(v))
+        kls_to_plot = [kl for kl in ["all"] + kls_signal if (kl if kl == "all" else float(kl)) in kl_signal_requested]
+    print(f"Plotting kl values: {kls_to_plot}")
+
     roc_info_dict = {}
-    for kl in ["all"] + kls_signal:
+    for kl in kls_to_plot:
+        class_dict_kl = {}
+        for model_name, sub_dict in class_dict.items():
+            kls_arr = sub_dict["kls"]
+            is_bkg = sub_dict["true_class"] == 0
+            if args.kl_background is not None:
+                bkg_mask = is_bkg & (kls_arr == args.kl_background)
+            else:
+                bkg_mask = is_bkg
+            if kl == "all":
+                mask_kl = ~is_bkg | bkg_mask
+            elif np.any(kls_arr == float(kl)):
+                mask_kl = (kls_arr == float(kl)) | (kls_arr == 9999.) | bkg_mask
+            else:
+                continue
+            class_dict_kl[model_name] = {
+                k: (v[mask_kl] if isinstance(v, np.ndarray) else v)
+                for k, v in sub_dict.items()
+            }
+
         roc_curve_compare_weights(
-            class_dict, roc_values_dict, args.plot_dir, args.fpr_cutoff, args.no_weights, kl, roc_info_dict
+            class_dict_kl, roc_values_dict, args.plot_dir, args.fpr_cutoff, args.no_weights, kl, roc_info_dict
         )
-        precision_recall_curve_function(class_dict, args.plot_dir, args.no_weights, kl)
-        signal_background_hist(class_dict, args.plot_dir, args.no_weights, kl)
+        precision_recall_curve_function(class_dict_kl, args.plot_dir, args.no_weights, kl)
+        signal_background_hist(class_dict_kl, args.plot_dir, args.no_weights, kl)
 
     # save the fpr and tpr in a npz file
     np.savez(
