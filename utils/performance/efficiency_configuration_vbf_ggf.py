@@ -89,7 +89,7 @@ spanet_dict = {
     #     'color': 'green',
     #     'vbf': True,
     # },
-    ## 
+    ##
     'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars': {
         'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5',
         'true': '9jets_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars',
@@ -99,6 +99,13 @@ spanet_dict = {
         'jet_coll': 'JetVBF',
         'n_higgs_jets': 0,
         'offset_jet_idx': -4,
+    },
+    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars': {
+        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_test.h5',
+        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars',
+        'label': 'SPANet - VBF pairing+classification - DNN Vars (JetTotal)',
+        'color': 'green',
+        'vbf': True,
     },
 }
 
@@ -135,6 +142,10 @@ true_dict = {
         "klambda": "postEE",
         'jet_coll': 'JetVBF',
         'n_higgs_jets': 0
+    },
+    "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars": {
+        "name": f'{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_test.h5',
+        "klambda": "postEE",
     },
 }
 
