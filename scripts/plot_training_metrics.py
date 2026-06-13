@@ -3,29 +3,39 @@
 
 Reads the metrics.csv saved automatically by PyTorch Lightning alongside
 the TensorBoard event files, then produces HEPPlotter-styled plots of all
-relevant training quantities.
+relevant training quantities.  Each metric gets its own file; training and
+validation curves are overlaid on the same plot with solid/dashed lines.
 
 Usage examples
 --------------
-# Plot the most recent version in a training run directory:
+# Latest version of a single run (auto-detected):
     python plot_training_metrics.py -d /eos/spanet_outputs/my_run
 
-# Plot a specific version directory:
+# Specific version directory:
     python plot_training_metrics.py -d /eos/spanet_outputs/my_run/version_3
 
-# Overlay all versions (e.g. seed studies):
+# All seeds in a run directory overlaid (seed variability study):
     python plot_training_metrics.py -d /eos/spanet_outputs/my_run --all-versions
 
-# Compare two different training configurations:
+# Compare two configurations on the same plots:
     python plot_training_metrics.py \\
-        -d /eos/run_A /eos/run_B \\
-        -l "Config A" "Config B"
+        -d /eos/run_A /eos/run_B -l "Config A" "Config B"
+
+# Auto-discover multiple models inside a parent directory:
+    python plot_training_metrics.py -d /eos/spanet_outputs/
+
+# Save plots in category subfolders (losses/, accuracy/, …):
+    python plot_training_metrics.py -d /eos/my_run --subfolders
+
+# Apply smoothing (EMA factor 0–1; same scale as TensorBoard slider):
+    python plot_training_metrics.py -d /eos/my_run --smooth 0.9
 """
 
 import argparse
 import os
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -57,8 +67,8 @@ _COLORS = [
 # Directory helpers
 # ---------------------------------------------------------------------------
 
-def _version_index(path: Path) -> int:
-    m = re.match(r"version_(\d+)$", path.name)
+def _version_index(p: Path) -> int:
+    m = re.match(r"version_(\d+)$", p.name)
     return int(m.group(1)) if m else -1
 
 
@@ -66,8 +76,28 @@ def find_version_dirs(base: Path) -> List[Path]:
     """Return sorted version_N subdirs of *base*, or [base] if none exist."""
     if not base.is_dir():
         return []
-    versions = [p for p in base.iterdir() if p.is_dir() and re.match(r"version_\d+$", p.name)]
-    return sorted(versions, key=_version_index) if versions else [base]
+    vs = [p for p in base.iterdir() if p.is_dir() and re.match(r"version_\d+$", p.name)]
+    return sorted(vs, key=_version_index) if vs else [base]
+
+
+def _is_multi_model_dir(base: Path) -> bool:
+    """True when *base* has no direct version_N dirs but its children do.
+
+    This detects the layout::
+
+        parent_dir/
+          model_A/version_0/
+          model_B/version_0/
+    """
+    if not base.is_dir():
+        return False
+    if any(re.match(r"version_\d+$", p.name) for p in base.iterdir() if p.is_dir()):
+        return False  # already a single-model dir
+    for child in base.iterdir():
+        if child.is_dir() and not child.name.startswith("."):
+            if any(re.match(r"version_\d+$", p.name) for p in child.iterdir() if p.is_dir()):
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -75,43 +105,32 @@ def find_version_dirs(base: Path) -> List[Path]:
 # ---------------------------------------------------------------------------
 
 def _load_from_csv(version_dir: Path) -> Optional[pd.DataFrame]:
-    csv_path = version_dir / "metrics.csv"
-    if not csv_path.exists():
+    p = version_dir / "metrics.csv"
+    if not p.exists():
         return None
-    df = pd.read_csv(csv_path)
-    # Drop auto-generated index columns
-    df = df.loc[:, ~df.columns.str.match(r"^Unnamed")]
-    return df
+    df = pd.read_csv(p)
+    return df.loc[:, ~df.columns.str.match(r"^Unnamed")]
 
 
 def _infer_epochs(df: pd.DataFrame) -> pd.Series:
     """Infer epoch numbers from step values when no explicit epoch column exists.
 
-    Validation metrics (logged once per epoch) are used as epoch-end markers.
-    Every step up to and including the n-th marker is assigned to epoch n.
+    Prefers metrics whose names guarantee once-per-epoch logging (validation_*,
+    REGRESSION/*, …) as epoch-end markers; falls back to the min-count metric
+    otherwise (requiring ≥ 2 data points to ignore stray once-only scalars).
     """
     steps = df["step"].values
-    metric_cols = [c for c in df.columns if c not in ("step",)]
+    metric_cols = [c for c in df.columns if c != "step"]
 
-    # Priority 1: metrics whose names guarantee once-per-epoch logging.
     _VAL_PREFIXES = (
-        "validation_",
-        "REGRESSION/",
-        "CLASSIFICATION/",
-        "Purity/",
-        "jet/",
-        "particle/",
+        "validation_", "REGRESSION/", "CLASSIFICATION/",
+        "Purity/", "jet/", "particle/",
     )
     per_epoch_cols = [c for c in metric_cols if c.startswith(_VAL_PREFIXES)]
 
     if per_epoch_cols:
-        # Among the candidates, pick whichever has the most data points
-        # (most complete training history).
         ref_col = max(per_epoch_cols, key=lambda c: df[c].notna().sum())
     else:
-        # Fallback: use the metric with the fewest events, but require at
-        # least 2 data points so a single stray scalar doesn't collapse
-        # all epochs to 0.
         counts = {c: df[c].notna().sum() for c in metric_cols}
         eligible = {c: n for c, n in counts.items() if n >= 2}
         if not eligible:
@@ -122,7 +141,6 @@ def _infer_epochs(df: pd.DataFrame) -> pd.Series:
     if len(epoch_steps) == 0:
         return pd.Series(0, index=df.index)
 
-    # searchsorted side='left': every step <= epoch_steps[i] maps to epoch i
     epochs = np.searchsorted(epoch_steps, steps, side="left")
     return pd.Series(np.clip(epochs, 0, len(epoch_steps) - 1), index=df.index)
 
@@ -134,8 +152,7 @@ def _load_from_tfevents(version_dir: Path) -> Optional[pd.DataFrame]:
     except ImportError:
         return None
 
-    event_files = list(version_dir.glob("events.out.tfevents.*"))
-    if not event_files:
+    if not list(version_dir.glob("events.out.tfevents.*")):
         return None
 
     ea = EventAccumulator(str(version_dir))
@@ -147,11 +164,9 @@ def _load_from_tfevents(version_dir: Path) -> Optional[pd.DataFrame]:
     per_tag = []
     for tag in tags:
         events = ea.Scalars(tag)
-        tag_df = pd.DataFrame({"step": [e.step for e in events], tag: [e.value for e in events]})
-        # Deduplicate steps: multiple event files (DDP, checkpoint resume) can
-        # produce the same step more than once — average the values.
-        tag_df = tag_df.groupby("step", sort=True)[tag].mean()
-        per_tag.append(tag_df)
+        t = pd.DataFrame({"step": [e.step for e in events], tag: [e.value for e in events]})
+        # Deduplicate steps (DDP / checkpoint resume can log the same step twice)
+        per_tag.append(t.groupby("step", sort=True)[tag].mean())
 
     df = pd.concat(per_tag, axis=1).reset_index()
     df["epoch"] = _infer_epochs(df)
@@ -161,12 +176,29 @@ def _load_from_tfevents(version_dir: Path) -> Optional[pd.DataFrame]:
 def load_metrics(version_dir: Path) -> Optional[pd.DataFrame]:
     """Load training metrics, preferring metrics.csv over TensorBoard files."""
     df = _load_from_csv(version_dir)
-    if df is not None:
-        return df
-    df = _load_from_tfevents(version_dir)
+    if df is None:
+        df = _load_from_tfevents(version_dir)
     if df is None:
         print(f"  WARNING: no metrics found in {version_dir}")
     return df
+
+
+# ---------------------------------------------------------------------------
+# Smoothing
+# ---------------------------------------------------------------------------
+
+def ema_smooth(y: np.ndarray, factor: float) -> np.ndarray:
+    """Exponential moving average — identical to TensorBoard's smoothing slider.
+
+    *factor* is in [0, 1]:  0 = no smoothing,  ~0.9 = heavy smoothing.
+    """
+    if factor <= 0.0 or len(y) < 2:
+        return y
+    out = np.empty_like(y, dtype=float)
+    out[0] = y[0]
+    for i in range(1, len(y)):
+        out[i] = factor * out[i - 1] + (1.0 - factor) * y[i]
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -174,14 +206,14 @@ def load_metrics(version_dir: Path) -> Optional[pd.DataFrame]:
 # ---------------------------------------------------------------------------
 
 def _epoch_series(df: pd.DataFrame, col: str) -> Tuple[np.ndarray, np.ndarray]:
-    """Per-epoch mean of *col* (handles metrics logged at every step)."""
+    """Per-epoch mean of *col* (handles metrics logged multiple times per epoch)."""
     if col not in df.columns or "epoch" not in df.columns:
         return np.array([]), np.array([])
     sub = df[["epoch", col]].dropna()
     if sub.empty:
         return np.array([]), np.array([])
-    grouped = sub.groupby("epoch")[col].mean()
-    return grouped.index.values.astype(float), grouped.values.astype(float)
+    g = sub.groupby("epoch")[col].mean()
+    return g.index.values.astype(float), g.values.astype(float)
 
 
 def _step_series(df: pd.DataFrame, col: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -194,71 +226,93 @@ def _step_series(df: pd.DataFrame, col: str) -> Tuple[np.ndarray, np.ndarray]:
     return sub["step"].values.astype(float), sub[col].values.astype(float)
 
 
-def _graph_entry(x: np.ndarray, y: np.ndarray, color: str,
-                 marker: str = "", linestyle: str = "-") -> dict:
-    """Build a single series entry for HEPPlotter graph plots."""
-    return {
-        "data": {"x": [x, None], "y": [y, None]},
-        # Do not set color here; let HEPPlotter assign it automatically
-        "style": {"marker": marker, "linestyle": linestyle, "color": None},
-    }
-
-
 # ---------------------------------------------------------------------------
-# Metric categorisation
+# Metric classification
 # ---------------------------------------------------------------------------
 
-def group_metrics(df: pd.DataFrame) -> Dict[str, List[str]]:
-    """Partition metric column names into named groups."""
-    cols = [c for c in df.columns if c not in ("epoch", "step")]
-    groups: Dict[str, List[str]] = {}
-
-    def _add(group: str, col: str) -> None:
-        groups.setdefault(group, []).append(col)
-
-    for c in cols:
-        if c in ("loss/total_loss", "loss/total_loss_no_mdmm", "validation_loss/total_loss"):
-            _add("total_loss", c)
-        elif re.search(r"/assignment_loss$", c):
-            _add("assignment_loss", c)
-        elif re.search(r"/detection_loss$", c):
-            _add("detection_loss", c)
-        elif "symmetric_loss" in c:
-            _add("symmetric_loss", c)
-        elif c.startswith("loss/regression/") or c.startswith("validation_loss/regression/"):
-            _add("regression_loss", c)
-        elif c.startswith("loss/classification/") or c.startswith("validation_loss/classification/"):
-            _add("classification_loss", c)
-        elif c in ("validation_accuracy", "validation_average_jet_accuracy"):
-            _add("validation_accuracy", c)
-        elif c.startswith("jet/accuracy"):
-            _add("jet_accuracy", c)
-        elif c.startswith("particle/"):
-            _add("particle_accuracy", c)
-        elif c.startswith("Purity/"):
-            _add("purity", c)
-        elif c.startswith("REGRESSION/"):
-            _add("regression_metrics", c)
-        elif c.startswith("CLASSIFICATION/"):
-            _add("classification_metrics", c)
-        elif re.match(r"lr[-/]|learning_rate", c, re.IGNORECASE):
-            _add("learning_rate", c)
-        else:
-            _add("other", c)
-
-    return groups
+# DeviceStatsMonitor columns — skip these entirely
+_DEVICE_RE = re.compile(
+    r"^(GPU|CPU|TPU)\s*[\d_]"
+    r"|^(cpu|gpu|tpu)_"
+    r"|memory_used|memory_free|memory_total"
+    r"|sm_utilization|gpu_utilization|mem_utilization"
+    r"|gpu_temp|power_draw|fan_speed|clock_speed"
+    r"|MemAllocated|MemReserved|MemActive|MemPinned",
+    re.IGNORECASE,
+)
 
 
-def _short_name(col: str) -> str:
-    """Strip common long prefixes for cleaner legend labels."""
-    for prefix in ("loss/", "validation_loss/", "REGRESSION/", "CLASSIFICATION/", "Purity/"):
-        if col.startswith(prefix):
-            return col[len(prefix):]
+def _is_device_stat(col: str) -> bool:
+    return bool(_DEVICE_RE.search(col))
+
+
+def _get_category(col: str) -> str:
+    """Return the subfolder category for a column."""
+    if col.startswith("loss/") or col.startswith("validation_loss/"):
+        return "losses"
+    if col in ("validation_accuracy", "validation_average_jet_accuracy"):
+        return "accuracy"
+    if col.startswith("jet/") or col.startswith("particle/"):
+        return "accuracy"
+    if col.startswith("Purity/"):
+        return "purity"
+    if col.startswith("REGRESSION/"):
+        return "regression"
+    if col.startswith("CLASSIFICATION/"):
+        return "classification"
+    if re.match(r"lr[-/]|learning_rate", col, re.IGNORECASE):
+        return "learning_rate"
+    return "other"
+
+
+def _get_plot_key(col: str) -> str:
+    """Canonical plot identifier.
+
+    Training metric ``loss/X`` and validation metric ``validation_loss/X``
+    share the same key ``X`` so they are drawn on the same plot.
+    All other metrics use their full tag name as the key.
+    """
+    if col.startswith("validation_loss/"):
+        return col[len("validation_loss/"):]
+    if col.startswith("loss/"):
+        return col[len("loss/"):]
     return col
 
 
+def _is_train(col: str) -> bool:
+    """True for training-time metrics (loss/*, lr-*)."""
+    return col.startswith("loss/") or bool(
+        re.match(r"lr[-/]|learning_rate", col, re.IGNORECASE)
+    )
+
+
+def _is_lr(col: str) -> bool:
+    return bool(re.match(r"lr[-/]|learning_rate", col, re.IGNORECASE))
+
+
+def _sanitize(s: str) -> str:
+    return re.sub(r"[^\w]", "_", s).strip("_")
+
+
+def _get_ylabel(plot_key: str, category: str) -> str:
+    if "percent_error" in plot_key:
+        return "Percent Error"
+    if "absolute_error" in plot_key:
+        return "Absolute Error"
+    if "accuracy" in plot_key:
+        return "Accuracy"
+    if category == "purity" or "purity" in plot_key.lower():
+        return "Purity"
+    if category == "losses":
+        return "Loss"
+    if category == "learning_rate":
+        return "Learning Rate"
+    last = plot_key.split("/")[-1]
+    return last.replace("_", " ").title()
+
+
 # ---------------------------------------------------------------------------
-# Core plot generator
+# Core plot renderer
 # ---------------------------------------------------------------------------
 
 def _hepplot(
@@ -270,7 +324,6 @@ def _hepplot(
     lumitext: str = "(13.6 TeV)",
     figsize: Tuple[int, int] = (10, 8),
 ) -> None:
-    """Render one plot file via HEPPlotter; no-op when *series_dict* is empty."""
     if not series_dict:
         return
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
@@ -295,276 +348,164 @@ def _hepplot(
     )
 
 
-def _is_val_col(col: str) -> bool:
-    return col.startswith("validation") or col.startswith("REGRESSION") or \
-           col.startswith("CLASSIFICATION") or col.startswith("jet/") or \
-           col.startswith("particle/") or col.startswith("Purity/")
-
+# ---------------------------------------------------------------------------
+# Main plot generation
+# ---------------------------------------------------------------------------
 
 def plot_all_metrics(
     dfs: Dict[str, pd.DataFrame],
     output_dir: Path,
+    smooth: float = 0.0,
+    subfolders: bool = False,
     cmstext: str = "Private Work",
     lumitext: str = "(13.6 TeV)",
 ) -> None:
-    """Generate all plot files from one or more labelled DataFrames.
+    """Generate one plot file per metric from one or more labelled DataFrames.
+
+    Training and validation curves for the same underlying metric are drawn on
+    the same axes (solid = training, dashed = validation).  Each metric that
+    does not share a logical counterpart still gets its own file.
 
     Parameters
     ----------
     dfs:
-        Ordered dict mapping legend label -> metrics DataFrame.
+        Ordered dict  {legend_label → metrics DataFrame}.
     output_dir:
-        Directory where plot files are written.
+        Root directory where plot files are written.
+    smooth:
+        EMA smoothing factor in [0, 1].  0 = off.
+    subfolders:
+        When True, create category subdirectories (losses/, accuracy/, …).
     """
     multi = len(dfs) > 1
-    all_groups = {label: group_metrics(df) for label, df in dfs.items()}
-
-    # ------------------------------------------------------------------
-    # Colour assignment strategy
-    #   single label  → each metric column gets a unique colour
-    #   multi  label  → each label gets a base colour; train=solid val=dashed
-    # ------------------------------------------------------------------
     label_colors: Dict[str, str] = {
         label: _COLORS[i % len(_COLORS)] for i, label in enumerate(dfs)
     }
 
-    def _build_series(
-        group_name: str,
-        use_step: bool = False,
-    ) -> dict:
-        """Collect one series_dict for a given metric group."""
+    # ── Collect (category, plot_key) → [(label, col), …] mappings ───────────
+    plot_map: Dict[Tuple[str, str], List[Tuple[str, str]]] = defaultdict(list)
+    for label, df in dfs.items():
+        for col in df.columns:
+            if col in ("epoch", "step"):
+                continue
+            if _is_device_stat(col):
+                continue
+            plot_map[(_get_category(col), _get_plot_key(col))].append((label, col))
+
+    # ── One plot per (category, plot_key) ────────────────────────────────────
+    n_plots = 0
+    for (cat, plot_key), entries in sorted(plot_map.items()):
+
+        has_train = any(_is_train(col) for _, col in entries)
+        has_val   = any(not _is_train(col) for _, col in entries)
+        is_lr_plot = all(_is_lr(col) for _, col in entries)
+
         series: dict = {}
-        col_idx = 0  # used in single-label mode for unique colours
+        for label, col in entries:
+            df = dfs[label]
+            x, y = (_step_series if is_lr_plot else _epoch_series)(df, col)
+            if not len(x):
+                continue
 
-        for label, df in dfs.items():
-            cols = all_groups[label].get(group_name, [])
-            for col in cols:
-                is_val = _is_val_col(col)
-                x, y = (_step_series if use_step else _epoch_series)(df, col)
-                if not len(x):
-                    continue
+            y = ema_smooth(y, smooth)
+            color     = label_colors[label]
+            is_train  = _is_train(col)
+            linestyle = "-" if is_train else "--"
 
-                if multi:
-                    color = label_colors[label]
-                    linestyle = "--" if is_val else "-"
-                    tag = f"{label} / {_short_name(col)}"
+            # ── Legend label ─────────────────────────────────────────────
+            if multi:
+                # Multiple models: colour = model, style = train/val
+                if has_train and has_val:
+                    tv_tag = "Train" if is_train else "Val"
+                    tag = f"{label}  [{tv_tag}]"
                 else:
-                    color = _COLORS[col_idx % len(_COLORS)]
-                    linestyle = "--" if is_val else "-"
-                    tag = _short_name(col)
+                    tag = label
+            else:
+                # Single model: if both directions exist, say Train / Val
+                if has_train and has_val:
+                    tag = "Train" if is_train else "Val"
+                else:
+                    # Only one direction — use a clean short name
+                    inner = col
+                    for pfx in ("validation_loss/", "loss/", "validation_",
+                                "REGRESSION/", "CLASSIFICATION/",
+                                "Purity/", "jet/", "particle/"):
+                        if inner.startswith(pfx):
+                            inner = inner[len(pfx):]
+                            break
+                    tag = inner.replace("_", " ")
 
-                series[tag] = _graph_entry(x, y, color, linestyle=linestyle)
-                col_idx += 1
+            series[tag] = {
+                "data":  {"x": [x, None], "y": [y, None]},
+                "style": {"marker": "", "linestyle": linestyle, "color": color},
+            }
 
-        return series
+        if not series:
+            continue
 
-    # ------------------------------------------------------------------
-    # 1. Total loss  (training solid, validation dashed)
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("total_loss"),
-        xlabel="Epoch", ylabel="Total Loss",
-        output_path=str(output_dir / "total_loss"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
+        # ── Output path ─────────────────────────────────────────────────────
+        filename = _sanitize(plot_key)
+        if subfolders:
+            dest = output_dir / cat / filename
+        else:
+            dest = output_dir / filename
 
-    # ------------------------------------------------------------------
-    # 2. Assignment loss per particle
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("assignment_loss"),
-        xlabel="Epoch", ylabel="Assignment Loss",
-        output_path=str(output_dir / "assignment_loss"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
+        xlabel = "Step" if is_lr_plot else "Epoch"
+        ylabel = _get_ylabel(plot_key, cat)
 
-    # ------------------------------------------------------------------
-    # 3. Detection loss per particle
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("detection_loss"),
-        xlabel="Epoch", ylabel="Detection Loss",
-        output_path=str(output_dir / "detection_loss"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
+        _hepplot(series, xlabel, ylabel, str(dest),
+                 cmstext=cmstext, lumitext=lumitext)
+        n_plots += 1
 
-    # ------------------------------------------------------------------
-    # 4. Symmetric (Jensen–Shannon) loss
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("symmetric_loss"),
-        xlabel="Epoch", ylabel="Symmetric KL Loss",
-        output_path=str(output_dir / "symmetric_loss"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 5. Regression auxiliary loss
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("regression_loss"),
-        xlabel="Epoch", ylabel="Regression Loss",
-        output_path=str(output_dir / "regression_loss"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 6. Classification auxiliary loss
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("classification_loss"),
-        xlabel="Epoch", ylabel="Classification Loss",
-        output_path=str(output_dir / "classification_loss"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 7. Validation accuracy  (primary checkpoint metric)
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("validation_accuracy"),
-        xlabel="Epoch", ylabel="Accuracy",
-        output_path=str(output_dir / "validation_accuracy"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 8. Jet assignment accuracy breakdown  (N-of-M completeness)
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("jet_accuracy"),
-        xlabel="Epoch", ylabel="Jet Assignment Accuracy",
-        output_path=str(output_dir / "jet_accuracy"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 9. Particle detection accuracy
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("particle_accuracy"),
-        xlabel="Epoch", ylabel="Particle Detection Accuracy",
-        output_path=str(output_dir / "particle_accuracy"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 10. Purity metrics
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("purity"),
-        xlabel="Epoch", ylabel="Purity",
-        output_path=str(output_dir / "purity"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 11. Regression evaluation metrics — one plot per regression key
-    # ------------------------------------------------------------------
-    # Collect all (label, col) pairs and group by regression variable name
-    reg_by_key: Dict[str, List[Tuple[str, str]]] = {}
-    for label in dfs:
-        for col in all_groups[label].get("regression_metrics", []):
-            inner = col.replace("REGRESSION/", "")
-            m = re.match(r"^(.+?)_(percent_error|absolute_error)$", inner)
-            rkey = m.group(1) if m else inner
-            reg_by_key.setdefault(rkey, []).append((label, col))
-
-    for rkey, entries in reg_by_key.items():
-        series: dict = {}
-        col_idx = 0
-        for label, col in entries:
-            df = dfs[label]
-            x, y = _epoch_series(df, col)
-            if not len(x):
-                continue
-            inner = col.replace("REGRESSION/", "")
-            m = re.match(r"^(.+?)_(percent_error|absolute_error)$", inner)
-            rtype = m.group(2) if m else inner
-            tag = rtype if not multi else f"{label} / {rtype}"
-            color = label_colors[label] if multi else _COLORS[col_idx % len(_COLORS)]
-            series[tag] = _graph_entry(x, y, color)
-            col_idx += 1
-        safe = rkey.replace("/", "_")
-        _hepplot(
-            series,
-            xlabel="Epoch", ylabel=f"Regression Error  ({rkey})",
-            output_path=str(output_dir / f"regression_{safe}"),
-            cmstext=cmstext, lumitext=lumitext,
-        )
-
-    # ------------------------------------------------------------------
-    # 12. Classification evaluation metrics — one plot per class key
-    # ------------------------------------------------------------------
-    cls_by_key: Dict[str, List[Tuple[str, str]]] = {}
-    for label in dfs:
-        for col in all_groups[label].get("classification_metrics", []):
-            inner = col.replace("CLASSIFICATION/", "")
-            m = re.match(r"^(.+?)(_accuracy.*)$", inner)
-            ckey = m.group(1) if m else inner
-            cls_by_key.setdefault(ckey, []).append((label, col))
-
-    for ckey, entries in cls_by_key.items():
-        series = {}
-        col_idx = 0
-        for label, col in entries:
-            df = dfs[label]
-            x, y = _epoch_series(df, col)
-            if not len(x):
-                continue
-            inner = col.replace("CLASSIFICATION/", "")
-            m = re.match(r"^(.+?)(_accuracy.*)$", inner)
-            suffix = m.group(2).lstrip("_") if m else "accuracy"
-            tag = suffix if not multi else f"{label} / {suffix}"
-            color = label_colors[label] if multi else _COLORS[col_idx % len(_COLORS)]
-            series[tag] = _graph_entry(x, y, color)
-            col_idx += 1
-        safe = ckey.replace("/", "_")
-        _hepplot(
-            series,
-            xlabel="Epoch", ylabel=f"Classification Accuracy  ({ckey})",
-            output_path=str(output_dir / f"classification_{safe}"),
-            cmstext=cmstext, lumitext=lumitext,
-        )
-
-    # ------------------------------------------------------------------
-    # 13. Learning rate schedule
-    # ------------------------------------------------------------------
-    _hepplot(
-        _build_series("learning_rate", use_step=True),
-        xlabel="Step", ylabel="Learning Rate",
-        output_path=str(output_dir / "learning_rate"),
-        cmstext=cmstext, lumitext=lumitext,
-    )
-
-    # ------------------------------------------------------------------
-    # 14. Miscellaneous / unrecognised metrics
-    # ------------------------------------------------------------------
-    other_series = _build_series("other")
-    if other_series:
-        _hepplot(
-            other_series,
-            xlabel="Step / Epoch", ylabel="Value",
-            output_path=str(output_dir / "other_metrics"),
-            cmstext=cmstext, lumitext=lumitext,
-        )
+    print(f"  Generated {n_plots} plots in {output_dir}")
 
 
 # ---------------------------------------------------------------------------
-# CLI
+# CLI helpers
 # ---------------------------------------------------------------------------
 
-def _resolve_dirs(path: Path, all_versions: bool) -> List[Path]:
-    """Expand *path* to a list of version directories to process."""
-    # Already points to a version directory
+def _resolve_dirs(path: Path, all_versions: bool) -> List[Tuple[Path, str]]:
+    """Return a list of *(version_dir, auto_label)* pairs for *path*.
+
+    Handles three layouts:
+    1. ``path`` is already a ``version_N`` directory.
+    2. ``path`` is a single-model directory containing ``version_N`` subdirs.
+    3. ``path`` is a multi-model directory whose children each contain
+       ``version_N`` subdirs (auto-detected).
+    """
+    # Case 1 — explicit version directory
     if re.match(r"version_\d+$", path.name):
-        return [path]
+        return [(path, f"{path.parent.name}/{path.name}")]
 
+    # Case 3 — multi-model parent directory
+    if _is_multi_model_dir(path):
+        result: List[Tuple[Path, str]] = []
+        for child in sorted(path.iterdir()):
+            if not child.is_dir() or child.name.startswith("."):
+                continue
+            versions = find_version_dirs(child)
+            if not versions:
+                continue
+            selected = versions if all_versions else [versions[-1]]
+            for v in selected:
+                lbl = child.name if not all_versions else f"{child.name}/{v.name}"
+                result.append((v, lbl))
+        return result
+
+    # Case 2 — single-model directory
     versions = find_version_dirs(path)
     if not versions:
         return []
-    return versions if all_versions else [versions[-1]]
+    selected = versions if all_versions else [versions[-1]]
+    return [
+        (v, f"{v.parent.name}/{v.name}" if re.match(r"version_\d+$", v.name) else v.name)
+        for v in selected
+    ]
 
+
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -574,98 +515,106 @@ def main() -> None:
     )
     parser.add_argument(
         "-d", "--dirs", nargs="+", required=True, metavar="DIR",
-        help="Training output directory/directories (version_N dirs or their parents).",
+        help="Training output directory/directories. Accepts: a version_N dir, "
+             "a single-model dir (auto-selects latest version), a multi-model "
+             "parent dir (each subdir treated as a separate model), or multiple "
+             "paths for explicit comparison.",
     )
     parser.add_argument(
         "-l", "--labels", nargs="*", default=None, metavar="LABEL",
-        help="Legend labels for each directory (default: derived from directory names).",
+        help="Legend labels for each entry resolved from -d "
+             "(default: derived from directory names).",
     )
     parser.add_argument(
         "-o", "--output-dir", default=None, metavar="OUT",
-        help="Directory to save plots (default: <first-dir>/training_plots/).",
+        help="Root directory for plots (default: <first resolved dir>/training_plots/).",
     )
     parser.add_argument(
         "--all-versions", action="store_true",
-        help="When a parent directory is given, include ALL version_N subdirs "
-             "overlaid on the same plots (useful for seed variability studies).",
+        help="Include ALL version_N subdirs instead of just the latest. "
+             "Useful for seed variability studies.",
+    )
+    parser.add_argument(
+        "--smooth", type=float, default=0.0, metavar="FACTOR",
+        help="Exponential moving average smoothing factor in [0, 1]. "
+             "0 = no smoothing (default), ~0.9 = heavy smoothing. "
+             "Uses the same formula as TensorBoard's smoothing slider.",
+    )
+    parser.add_argument(
+        "--subfolders", action="store_true",
+        help="Organise plots into category subfolders: "
+             "losses/, accuracy/, regression/, classification/, purity/, "
+             "learning_rate/, other/.",
     )
     parser.add_argument(
         "--cmstext", default="Private Work",
-        help="CMS label text shown on every plot (default: 'Private Work').",
+        help="CMS label text on every plot (default: 'Private Work').",
     )
     parser.add_argument(
         "--lumitext", default="(13.6 TeV)",
-        help="Lumi / energy label shown on every plot (default: '(13.6 TeV)').",
+        help="Luminosity / energy label on every plot (default: '(13.6 TeV)').",
     )
     args = parser.parse_args()
 
-    # ------------------------------------------------------------------
-    # Resolve version directories
-    # ------------------------------------------------------------------
+    # ── Resolve version directories ─────────────────────────────────────────
+    raw_labels: List[str] = args.labels or []
     version_dirs: List[Path] = []
+    auto_labels:  List[str] = []
+
+    label_idx = 0
     for raw in args.dirs:
-        expanded = _resolve_dirs(Path(raw), args.all_versions)
-        if not expanded:
-            print(f"WARNING: no version directories found under {raw}")
-        version_dirs.extend(expanded)
+        resolved = _resolve_dirs(Path(raw), args.all_versions)
+        if not resolved:
+            print(f"WARNING: no training directories found under {raw}")
+        for vd, auto_lbl in resolved:
+            version_dirs.append(vd)
+            # User-supplied label overrides auto label, one-to-one
+            if label_idx < len(raw_labels):
+                auto_labels.append(raw_labels[label_idx])
+                label_idx += 1
+            else:
+                auto_labels.append(auto_lbl)
 
     if not version_dirs:
         print("No training directories to process. Exiting.")
         return
 
-    # ------------------------------------------------------------------
-    # Build label list
-    # ------------------------------------------------------------------
-    raw_labels: List[str] = args.labels or []
-    labels: List[str] = []
-    for i, vd in enumerate(version_dirs):
-        if i < len(raw_labels):
-            labels.append(raw_labels[i])
-        elif re.match(r"version_\d+$", vd.name):
-            labels.append(f"{vd.parent.name}/{vd.name}")
-        else:
-            labels.append(vd.name)
-
-    # ------------------------------------------------------------------
-    # Load metrics DataFrames
-    # ------------------------------------------------------------------
+    # ── Load metrics DataFrames ─────────────────────────────────────────────
     dfs: Dict[str, pd.DataFrame] = {}
-    for vd, label in zip(version_dirs, labels):
+    for vd, lbl in zip(version_dirs, auto_labels):
         print(f"Loading  {vd} …")
         df = load_metrics(vd)
         if df is None:
             continue
-        # Guarantee unique label keys
-        unique = label
-        counter = 1
+        unique, n = lbl, 1
         while unique in dfs:
-            unique = f"{label}_{counter}"
-            counter += 1
+            unique = f"{lbl}_{n}"; n += 1
         dfs[unique] = df
-        print(f"  → {len(df)} rows, {len([c for c in df.columns if c not in ('epoch','step')])} metrics")
+        n_metrics = len([c for c in df.columns if c not in ("epoch", "step")])
+        print(f"  → {len(df)} rows, {n_metrics} metrics")
 
     if not dfs:
         print("No metrics loaded. Exiting.")
         return
 
-    # ------------------------------------------------------------------
-    # Output directory
-    # ------------------------------------------------------------------
-    if args.output_dir:
-        output_dir = Path(args.output_dir)
-    else:
-        first = version_dirs[0]
-        output_dir = first / "training_plots"
+    # ── Output directory ─────────────────────────────────────────────────────
+    output_dir = Path(args.output_dir) if args.output_dir else version_dirs[0] / "training_plots"
     output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"\nSaving plots to {output_dir}\n")
+    smooth_info = f", smooth={args.smooth}" if args.smooth > 0 else ""
+    print(f"\nSaving plots to {output_dir}  (subfolders={args.subfolders}{smooth_info})\n")
 
-    # ------------------------------------------------------------------
-    # Generate plots
-    # ------------------------------------------------------------------
-    plot_all_metrics(dfs, output_dir, cmstext=args.cmstext, lumitext=args.lumitext)
+    # ── Generate plots ────────────────────────────────────────────────────────
+    plot_all_metrics(
+        dfs,
+        output_dir,
+        smooth=args.smooth,
+        subfolders=args.subfolders,
+        cmstext=args.cmstext,
+        lumitext=args.lumitext,
+    )
 
-    n_files = sum(1 for f in output_dir.iterdir() if f.is_file())
-    print(f"\nDone — {n_files} plot file(s) in {output_dir}")
+    n_png = sum(1 for _ in output_dir.rglob("*.png"))
+    print(f"\nDone — {n_png} PNG file(s) in {output_dir}")
 
 
 if __name__ == "__main__":
