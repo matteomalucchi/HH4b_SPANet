@@ -230,20 +230,8 @@ def _step_series(df: pd.DataFrame, col: str) -> Tuple[np.ndarray, np.ndarray]:
 # Metric classification
 # ---------------------------------------------------------------------------
 
-# DeviceStatsMonitor columns — skip these entirely
-_DEVICE_RE = re.compile(
-    r"^(GPU|CPU|TPU)\s*[\d_]"
-    r"|^(cpu|gpu|tpu)_"
-    r"|memory_used|memory_free|memory_total"
-    r"|sm_utilization|gpu_utilization|mem_utilization"
-    r"|gpu_temp|power_draw|fan_speed|clock_speed"
-    r"|MemAllocated|MemReserved|MemActive|MemPinned",
-    re.IGNORECASE,
-)
-
-
 def _is_device_stat(col: str) -> bool:
-    return bool(_DEVICE_RE.search(col))
+    return "DeviceStatsMonitor" in col
 
 
 def _get_category(col: str) -> str:
@@ -437,7 +425,7 @@ def plot_all_metrics(
 
             series[tag] = {
                 "data":  {"x": [x, None], "y": [y, None]},
-                "style": {"marker": "", "linestyle": linestyle, "color": color},
+                "style": {"marker": "", "linestyle": linestyle, "color": None},
             }
 
         if not series:
@@ -590,7 +578,7 @@ def main() -> None:
         while unique in dfs:
             unique = f"{lbl}_{n}"; n += 1
         dfs[unique] = df
-        n_metrics = len([c for c in df.columns if c not in ("epoch", "step")])
+        n_metrics = len([c for c in df.columns if c not in ("epoch", "step") and not _is_device_stat(c)])
         print(f"  → {len(df)} rows, {n_metrics} metrics")
 
     if not dfs:
