@@ -199,7 +199,8 @@ def _graph_entry(x: np.ndarray, y: np.ndarray, color: str,
     """Build a single series entry for HEPPlotter graph plots."""
     return {
         "data": {"x": [x, None], "y": [y, None]},
-        "style": {"marker": marker, "linestyle": linestyle, "color": color},
+        # Do not set color here; let HEPPlotter assign it automatically
+        "style": {"marker": marker, "linestyle": linestyle, "color": None},
     }
 
 
