@@ -57,6 +57,27 @@ spanet_dict = {
         'color': 'green',
         'vbf': True,
     },
+    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_ClassLoss7': {
+        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_ClassLoss7_test.h5',
+        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars',
+        'label': 'VBF pair+clas - JetTotal - DNN Vars - ClassLoss7',
+        'color': 'red',
+        'vbf': True,
+    },
+    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut': {
+        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5',
+        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut',
+        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train',
+        'color': 'purple',
+        'vbf': True,
+    },
+    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7': {
+        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_ClassLoss7_test.h5',
+        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut',
+        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7',
+        'color': 'magenta',
+        'vbf': True,
+    },
 }
 
 true_dict = {
@@ -84,6 +105,10 @@ true_dict = {
     },
     "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars": {
         "name": f'{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_test.h5',
+        "klambda": "postEE",
+    },
+    "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut": {
+        "name": f'{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5',
         "klambda": "postEE",
     },
 }
