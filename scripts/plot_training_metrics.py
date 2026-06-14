@@ -41,6 +41,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import mplhep as hep
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from utils_configs.plot.HEPPlotter import HEPPlotter
@@ -62,10 +63,29 @@ _COLORS = [
     "#17becf",  # teal
 ]
 
+hep.style.use("CMS")
+color_dict = list(hep.style.CMS["axes.prop_cycle"])
+_COLORS = [cycle["color"] for cycle in color_dict] + [
+    "black",
+    "darkgreen",
+    "blue",
+    "lightgreen",
+]
+
 
 # ---------------------------------------------------------------------------
 # Directory helpers
 # ---------------------------------------------------------------------------
+
+_SKIP_DIR_RE = re.compile(r"^(version_\d+|out_seed_trainings_\d+)$")
+
+
+def _meaningful_label(path: Path) -> str:
+    """Return the first ancestor name that is not a version_N or seed dir."""
+    for part in reversed(path.parts):
+        if not _SKIP_DIR_RE.match(part):
+            return part
+    return path.name
 
 def _version_index(p: Path) -> int:
     m = re.match(r"version_(\d+)$", p.name)
@@ -425,7 +445,7 @@ def plot_all_metrics(
 
             series[tag] = {
                 "data":  {"x": [x, None], "y": [y, None]},
-                "style": {"marker": "", "linestyle": linestyle, "color": None},
+                "style": {"fmt": linestyle, "color": color},
             }
 
         if not series:
@@ -463,7 +483,7 @@ def _resolve_dirs(path: Path, all_versions: bool) -> List[Tuple[Path, str]]:
     """
     # Case 1 — explicit version directory
     if re.match(r"version_\d+$", path.name):
-        return [(path, f"{path.parent.name}/{path.name}")]
+        return [(path, _meaningful_label(path))]
 
     # Case 3 — multi-model parent directory
     if _is_multi_model_dir(path):
@@ -476,7 +496,7 @@ def _resolve_dirs(path: Path, all_versions: bool) -> List[Tuple[Path, str]]:
                 continue
             selected = versions if all_versions else [versions[-1]]
             for v in selected:
-                lbl = child.name if not all_versions else f"{child.name}/{v.name}"
+                lbl = path.name if not all_versions else f"{path.name}/{child.name}/{v.name}"
                 result.append((v, lbl))
         return result
 
@@ -485,8 +505,9 @@ def _resolve_dirs(path: Path, all_versions: bool) -> List[Tuple[Path, str]]:
     if not versions:
         return []
     selected = versions if all_versions else [versions[-1]]
+    base = _meaningful_label(path)
     return [
-        (v, f"{v.parent.name}/{v.name}" if re.match(r"version_\d+$", v.name) else v.name)
+        (v, f"{base}/{v.name}" if all_versions and len(selected) > 1 else base)
         for v in selected
     ]
 
