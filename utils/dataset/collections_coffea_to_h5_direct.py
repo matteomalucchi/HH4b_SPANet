@@ -169,6 +169,18 @@ jet_collections_dict = {
     ]
 }
 
+jet_like_global_collections_dict = {
+    "JET_LIKE_GLOBAL_HIGGS_ORDERED": [
+        {
+            "JetGoodFromHiggsOrdered": {
+                "saved_name_coll": "Event",
+                "saved_name_var": "JetGoodFromHiggsOrdered",
+                "n_var": "JetGoodFromHiggsOrdered_N",
+            },
+        },
+    ],
+}
+
 global_collections_dict = {
     "GLOBAL_COLLECTIONS_VBF": [
         {
