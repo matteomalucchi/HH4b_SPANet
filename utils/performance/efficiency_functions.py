@@ -490,6 +490,7 @@ def plot_histos_1d(
     name="",
     plot_dir="plots",
     cmstext="Private",
+    region=None,
 ):
 
     xlabel = r"Leading $m_{H}$ [GeV]" if num == 1 else r"Subleading $m_{H}$ [GeV]"
@@ -621,11 +622,12 @@ def plot_histos_1d(
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.05, 0.92, region or "inclusive", fontsize=20, ha="left", va="top")
         .run()
     )
 
 
-def plot_mhh(bins, mhh, plot_dir="plots", name="mhh", cmstext="Private"):
+def plot_mhh(bins, mhh, plot_dir="plots", name="mhh", cmstext="Private", region=None):
 
     # ---------------------------------------------------------
     # Create normalized histogram
@@ -667,6 +669,7 @@ def plot_mhh(bins, mhh, plot_dir="plots", name="mhh", cmstext="Private"):
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.95, 0.92, region or "inclusive", fontsize=20, ha="right", va="top")
         .run()
     )
 
@@ -748,6 +751,7 @@ def plot_diff_eff(
     plot_dir,
     file_name,
     cmstext="Private",
+    region=None,
 ):
 
     # ---------------------------------------------------------
@@ -797,6 +801,7 @@ def plot_diff_eff(
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.05, 0.92, region or "inclusive", fontsize=20, ha="left", va="top")
         .run()
     )
 
@@ -811,6 +816,7 @@ def plot_diff_eff_klambda(
     plot_dir="plots",
     xlabels=None,  # dict: {kl_value: "label"}
     cmstext="Private",
+    region=None,
 ):
     """
     Parameters
@@ -897,6 +903,7 @@ def plot_diff_eff_klambda(
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.95, 0.92, region or "inclusive", fontsize=20, ha="right", va="top")
     )
 
     # ---------------------------------------------------------

@@ -657,6 +657,7 @@ def main():
                 plot_dir,
                 xlabels=cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None,
                 cmstext=args.cmstext,
+                region=args.region,
             )
             plot_diff_eff_klambda(
                 [
@@ -679,6 +680,7 @@ def main():
                 plot_dir,
                 xlabels=cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None,
                 cmstext=args.cmstext,
+                region=args.region,
             )
         if not args.ignore_higgs:
             logger.info("Plotting differential efficiencies")
@@ -695,6 +697,7 @@ def main():
                 plot_dir,
                 "diff_eff_spanet",
                 cmstext=args.cmstext,
+                region=args.region,
             )
             plot_diff_eff(
                 mhh_bins,
@@ -712,6 +715,7 @@ def main():
                 plot_dir,
                 "total_diff_eff_spanet",
                 cmstext=args.cmstext,
+                region=args.region,
             )
 
     if not args.ignore_higgs and args.histo_mass:
@@ -723,6 +727,7 @@ def main():
                 plot_dir,
                 "mhh_fully_matched",
                 cmstext=args.cmstext,
+                region=args.region,
             )
 
         logger.info("Plotting higgs 1d all events")
@@ -766,6 +771,7 @@ def main():
                         name=f"{name}_true_run2_kl_eval_{kl_name}",
                         plot_dir=f"{plot_dir}/kl_{kl_name}_massplot",
                         cmstext=args.cmstext,
+                        region=args.region,
                     )
                     # for true_model in df_collection.values():
                     #     plot_histos_1d(
