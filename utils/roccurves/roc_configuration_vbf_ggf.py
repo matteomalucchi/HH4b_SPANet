@@ -11,6 +11,10 @@ new_true_dir_matteo = (
     "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
 )
 
+spanet_dir_nestor = "/eos/user/n/nkontaxa/semester_project/spanet_outputs/"
+true_dir_nestor = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
+
+
 spanet_dict = {
     # --- VBF/ggF pairing ---
     # 'hh4b_pairing_vbf_ggf_pairing_classification': {
@@ -78,6 +82,28 @@ spanet_dict = {
         'color': 'magenta',
         'vbf': True,
     },
+    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e': {
+        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5',
+        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut',
+        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7 - 300e',
+        'color': 'dodgerblue',
+        'vbf': True,
+    },
+    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e': {
+        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfPreselJetTotalSPANetPadded_test.h5',
+        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel',
+        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFPresel - ClassLoss7 - 200e',
+        'color': 'firebrick',
+        'vbf': True,
+    },
+    "predictions_allKlambda_vbfpairing_remake": {
+         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_remake.h5",
+         "true": "true_allklambda_VBFPairing",
+         "label": "allKlambda VBFPairing 100e remake",
+         "color": "black",
+         "vbf": True,
+         "n_higgs_jets": 0,
+    },
 }
 
 true_dict = {
@@ -110,6 +136,16 @@ true_dict = {
     "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut": {
         "name": f'{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5',
         "klambda": "postEE",
+    },
+    "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel": {
+        "name": f'{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfPreselJetTotalSPANetPadded_test.h5',
+        "klambda": "postEE",
+    },
+    "true_allklambda_VBFPairing": {
+        "name": f"{true_dir_nestor}vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing/AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "klambda": "postEE",
+        "vbf": True,
+        "n_higgs_jets": 0,
     },
 }
 

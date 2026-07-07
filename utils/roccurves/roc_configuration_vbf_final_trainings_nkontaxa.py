@@ -126,7 +126,6 @@ true_dict.update({
         "klambda": "postEE",
         "vbf": True,
         "n_higgs_jets": 0,
-
     },
 
     "true_allklambda_DetaMjjCentrality": {
