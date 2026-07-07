@@ -312,7 +312,11 @@ def _get_ylabel(plot_key: str, category: str) -> str:
     if category == "purity" or "purity" in plot_key.lower():
         return "Purity"
     if category == "losses":
-        return "Loss"
+        name = plot_key.split("/")[-1]
+        if name.endswith("_loss"):
+            name = name[: -len("_loss")]
+        name = name.replace("_", " ").title()
+        return f"Loss ({name})" if name else "Loss"
     if category == "learning_rate":
         return "Learning Rate"
     last = plot_key.split("/")[-1]
