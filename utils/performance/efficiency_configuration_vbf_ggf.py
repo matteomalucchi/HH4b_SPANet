@@ -15,9 +15,7 @@ true_dir_thierry = "/eos/user/t/tharte/Analysis_data/spanet_samples/"
 true_dir_matteo = (
     "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/out_prediction_files/true_files/"
 )
-new_true_dir_matteo = (
-    "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
-)
+new_true_dir_matteo = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
 
 spanet_dir_nestor = "/eos/user/n/nkontaxa/semester_project/spanet_outputs/"
 true_dir_nestor = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
@@ -29,12 +27,20 @@ run2_dataset_MC = "9_jets_vbf_ggf_all_Klambda"
 run2_dataset_DATA = ""
 
 spanet_dict = {
-    # --- ggF pairing ---
+    # --- HIggs pairing ---
     # "5_jets_ptvary_btag_5wp_300e_3L1cuts_allklambda": {
     #     "file": f"/eos/user/t/tharte/Analysis_data/predictions/1_13_2_spanet_loose_MC_postEE_pt_vary_btagWP_s100_newLeptonVeto_3L1Cut_UpdateJetVetoMap_MC.h5",
     #     "true": "5_jets_pt_true_5wp_3L1cuts_allklambda",
     #     "label": "SPANet btag 5 WP - Flattened pt [0.3,1.7] - 3L1 triggers",
     #     "color": "firebrick",
+    # },
+    # allKlambda_HiggsPairing 100e
+    # f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5": {
+    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5",
+    #     "true": "true_allklambda_HiggsPairing",
+    #     "label": "SPANet - ggF/VBF - HiggsPairing",
+    #     "color": "orange",
+    #     "vbf": True,
     # },
     # --- VBF/ggF pairing ---
     # 'hh4b_pairing_vbf_ggf_pairing_classification': {
@@ -44,12 +50,12 @@ spanet_dict = {
     #     'color': 'orange',
     #     'vbf': True,
     # },
-    'hh4b_pairing_vbf_ggf_pairing_allKalmbda': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_1/JetTotalSPANetPadded_kl_combined_test_vbf_all_Klambda_predicitons.h5',
-        'true': '9_jets_vbf_ggf_all_Klambda',
-        'label': 'SPANet - baseline',
-        'color': 'orange',
-        'vbf': True,
+    "hh4b_pairing_vbf_ggf_pairing_allKalmbda": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_1/JetTotalSPANetPadded_kl_combined_test_vbf_all_Klambda_predicitons.h5",
+        "true": "9_jets_vbf_ggf_all_Klambda",
+        "label": "SPANet - baseline",
+        "color": "blue",
+        "vbf": True,
     },
     # 'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda': {
     #     'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_2/JetTotalSPANetPadded_kl_combined_EVENT_AllKlambda_classification_ptvarytraining_reverse_test.h5',
@@ -72,88 +78,102 @@ spanet_dict = {
     #     'color': 'red',
     #     'vbf': True,
     # },
-    ##'hh4b_pairing_vbf_ggf_pairing_allKalmbda': {
-    ##    'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_1/JetTotalSPANetPadded_kl_combined_test_vbf_all_Klambda_predicitons.h5',
-    ##    'true': '9_jets_vbf_ggf_all_Klambda',
-    ##    'label': 'SPANet - VBF/ggF - pairing',
-    ##    'color': 'orange',
-    ##    'vbf': True,
-    ##},
-    ##'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda': {
-    ##    'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_2/JetTotalSPANetPadded_kl_combined_EVENT_AllKlambda_classification_ptvarytraining_reverse_test.h5',
-    ##    'true': '9_jets_vbf_ggf_all_Klambda',
-    ##    'label': 'SPANet - VBF/ggF - pairing+classification',
-    ##    'color': 'blue',
-    ##    'vbf': True,
-    ##},
-    # 'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_SeparateHiggsVBF': {
-    #     'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF/out_seed_trainings_100/version_0/hh4b_pairing_vbf_ggf_pairing_classification_AllKlambda_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test_eval.h5',
-    #     'true': '9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF',
-    #     'label': 'SPANet - VBF/ggF - pairing+classification SeparateHiggsVBF',
-    #     'color': 'green',
-    #     'vbf': True,
+    #'hh4b_pairing_vbf_ggf_pairing_allKalmbda': {
+    #    'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_1/JetTotalSPANetPadded_kl_combined_test_vbf_all_Klambda_predicitons.h5',
+    #    'true': '9_jets_vbf_ggf_all_Klambda',
+    #    'label': 'SPANet - VBF/ggF - pairing',
+    #    'color': 'orange',
+    #    'vbf': True,
+    # },
+    #'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda': {
+    #    'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_2/JetTotalSPANetPadded_kl_combined_EVENT_AllKlambda_classification_ptvarytraining_reverse_test.h5',
+    #    'true': '9_jets_vbf_ggf_all_Klambda',
+    #    'label': 'SPANet - VBF/ggF - pairing+classification',
+    #    'color': 'blue',
+    #    'vbf': True,
     # },
     ##
-    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5',
-        'true': '9jets_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars',
-        'label': 'VBF pair+clas - JetVBFHiggs - DNN Vars',
-        'color': 'blue',
-        'vbf': True,
-        'jet_coll': 'JetVBF',
-        'n_higgs_jets': 0,
-        'offset_jet_idx': -4,
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars",
+    #     "label": "VBF pair+clas - JetVBFHiggs - DNN Vars",
+    #     "color": "blue",
+    #     "vbf": True,
+    #     "jet_coll": "JetVBF",
+    #     "n_higgs_jets": 0,
+    #     "offset_jet_idx": -4,
+    # },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars",
+    #     "label": "VBF pair+clas - JetTotal - DNN Vars",
+    #     "color": "green",
+    #     "vbf": True,
+    # },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_ClassLoss7": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_ClassLoss7_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars",
+    #     "label": "VBF pair+clas - JetTotal - DNN Vars - ClassLoss7",
+    #     "color": "red",
+    #     "vbf": True,
+    # },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut",
+    #     "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train",
+    #     "color": "purple",
+    #     "vbf": True,
+    # },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_ClassLoss7_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut",
+    #     "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7",
+    #     "color": "magenta",
+    #     "vbf": True,
+    # },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut",
+    #     "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7 - 300e",
+    #     "color": "dodgerblue",
+    #     "vbf": True,
+    # },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfPreselJetTotalSPANetPadded_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel",
+    #     "label": "VBF pair+clas - JetTotal - DNN Vars - VBFPresel - ClassLoss7 - 200e",
+    #     "color": "firebrick",
+    #     "vbf": True,
+    # },
+    # "predictions_allKlambda_vbfpairing_remake": {
+    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_remake.h5",
+    #     "true": "true_allklambda_VBFPairing",
+    #     "label": "allKlambda VBFPairing 100e remake",
+    #     "color": "black",
+    #     "vbf": True,
+    #     "n_higgs_jets": 0,
+    # },
+    ## Separate JetHiggs and JetVBF
+    "hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_SeparateHiggsVBF_VBFeff": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF/out_seed_trainings_100/version_0/hh4b_pairing_vbf_ggf_pairing_classification_AllKlambda_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test_eval.h5",
+        "true": "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_VBFeff",
+        "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF",
+        "color": "green",
+        "vbf": True,
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
+        "offset_jet_idx": -4,
     },
-    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_test.h5',
-        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars',
-        'label': 'VBF pair+clas - JetTotal - DNN Vars',
-        'color': 'green',
-        'vbf': True,
-    },
-    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_ClassLoss7': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_ClassLoss7_test.h5',
-        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars',
-        'label': 'VBF pair+clas - JetTotal - DNN Vars - ClassLoss7',
-        'color': 'red',
-        'vbf': True,
-    },
-    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5',
-        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut',
-        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train',
-        'color': 'purple',
-        'vbf': True,
-    },
-    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_ClassLoss7_test.h5',
-        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut',
-        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7',
-        'color': 'magenta',
-        'vbf': True,
-    },
-    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5',
-        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut',
-        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7 - 300e',
-        'color': 'dodgerblue',
-        'vbf': True,
-    },
-    'hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfPreselJetTotalSPANetPadded_test.h5',
-        'true': '9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel',
-        'label': 'VBF pair+clas - JetTotal - DNN Vars - VBFPresel - ClassLoss7 - 200e',
-        'color': 'firebrick',
-        'vbf': True,
-    },
-    "predictions_allKlambda_vbfpairing_remake": {
-         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing_remake.h5",
-         "true": "true_allklambda_VBFPairing",
-         "label": "allKlambda VBFPairing 100e remake",
-         "color": "black",
-         "vbf": True,
-         "n_higgs_jets": 0,
-    },
+    # "hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_SeparateHiggsVBF_Higgseff": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF/out_seed_trainings_100/version_0/hh4b_pairing_vbf_ggf_pairing_classification_AllKlambda_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test_eval.h5",
+    #     "true": "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_Higgseff",
+    #     "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF",
+    #     "color": "green",
+    #     "vbf": False,
+    #     "jet_coll": "JetHiggs",
+    #     "n_higgs_jets": 0,
+    #     "offset_jet_idx": 0,
+    # },
 }
 
 
@@ -180,26 +200,39 @@ true_dict = {
         "klambda": "postEE",
         "vbf": True,
     },
-    "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF": {
+    "true_allklambda_HiggsPairing": {
+        "name": f"{true_dir_nestor}vbf/vbf_ggf_all_Klambda_HiggsPairing/AllKlambda_VBFggF_HiggsPairing_JetGood_test.h5",
+        "klambda": "postEE",
+        "vbf": True,
+    },
+    "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_VBFeff": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF/AllKlambda_DetaMjj_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
         "klambda": "postEE",
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
+    },
+    "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_Higgseff": {
+        "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF/AllKlambda_DetaMjj_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "klambda": "postEE",
+        "jet_coll": "JetHiggs",
+        "n_higgs_jets": 0,
     },
     "9jets_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars": {
-        "name": f'{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5',
+        "name": f"{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5",
         "klambda": "postEE",
-        'jet_coll': 'JetVBF',
-        'n_higgs_jets': 0
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
     },
     "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars": {
-        "name": f'{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_test.h5',
+        "name": f"{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetTotalSPANetPadded_test.h5",
         "klambda": "postEE",
     },
     "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut": {
-        "name": f'{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5',
+        "name": f"{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5",
         "klambda": "postEE",
     },
     "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel": {
-        "name": f'{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfPreselJetTotalSPANetPadded_test.h5',
+        "name": f"{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfPreselJetTotalSPANetPadded_test.h5",
         "klambda": "postEE",
     },
     "true_allklambda_VBFPairing": {
@@ -209,4 +242,3 @@ true_dict = {
         "n_higgs_jets": 0,
     },
 }
-

@@ -104,6 +104,16 @@ spanet_dict = {
          "vbf": True,
          "n_higgs_jets": 0,
     },
+    ## Separate JetHiggs and JetVBF
+    "hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_SeparateHiggsVBF": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF/out_seed_trainings_100/version_0/hh4b_pairing_vbf_ggf_pairing_classification_AllKlambda_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test_eval.h5",
+        "true": "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF",
+        "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF",
+        "color": "green",
+        "vbf": True,
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
+    },
 }
 
 true_dict = {
@@ -145,6 +155,12 @@ true_dict = {
         "name": f"{true_dir_nestor}vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing/AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_JetGoodVBFMergedProvVBFPadded_test.h5",
         "klambda": "postEE",
         "vbf": True,
+        "n_higgs_jets": 0,
+    },
+    "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF": {
+        "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF/AllKlambda_DetaMjj_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "klambda": "postEE",
+        "jet_coll": "JetVBF",
         "n_higgs_jets": 0,
     },
 }
