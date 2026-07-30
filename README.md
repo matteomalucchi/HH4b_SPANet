@@ -333,6 +333,8 @@ immediately after a training finishes.
 
 ### Plots produced
 
+A detailed description of all metrics can be found at [SPANet/docs/TrainingMetrics.md](https://github.com/matteomalucchi/SPANet/blob/master/docs/TrainingMetrics.md)
+
 | File name | Content |
 |---|---|
 | `total_loss` | Training and validation total loss vs epoch (solid / dashed) |
