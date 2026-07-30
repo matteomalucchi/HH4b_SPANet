@@ -23,8 +23,8 @@ true_dir_nestor = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
 
 # uncomment the configurations that you want to use
 
-# run2_dataset_MC = "9_jets_vbf_ggf_all_Klambda"
-run2_dataset_MC = "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder_Higgseff"
+run2_dataset_MC = "9_jets_vbf_ggf_all_Klambda"
+# run2_dataset_MC = "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder"
 
 run2_dataset_DATA = ""
 
@@ -52,20 +52,20 @@ spanet_dict = {
     #     'color': 'orange',
     #     'vbf': True,
     # },
-    # "hh4b_pairing_vbf_ggf_pairing_allKalmbda": {
-    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_1/JetTotalSPANetPadded_kl_combined_test_vbf_all_Klambda_predicitons.h5",
-    #     "true": "9_jets_vbf_ggf_all_Klambda",
-    #     "label": "SPANet - baseline",
-    #     "color": "blue",
-    #     "vbf": True,
-    # },
-    # 'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda': {
-    #     'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_2/JetTotalSPANetPadded_kl_combined_EVENT_AllKlambda_classification_ptvarytraining_reverse_test.h5',
-    #     'true': '9_jets_vbf_ggf_all_Klambda',
-    #     'label': 'SPANet - VBF/ggF - pairing+classification - 9 jets',
-    #     'color': 'blue',
-    #     'vbf': True,
-    # },
+    "hh4b_pairing_vbf_ggf_pairing_allKalmbda": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_1/JetTotalSPANetPadded_kl_combined_test_vbf_all_Klambda_predicitons.h5",
+        "true": "9_jets_vbf_ggf_all_Klambda",
+        "label": "SPANet - baseline - pairing",
+        "color": "blue",
+        "vbf": True,
+    },
+    'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda': {
+        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_2/JetTotalSPANetPadded_kl_combined_EVENT_AllKlambda_classification_ptvarytraining_reverse_test.h5',
+        'true': '9_jets_vbf_ggf_all_Klambda',
+        'label': 'SPANet - VBF/ggF - pairing+classification - 9 jets',
+        'color': 'dodgerblue',
+        'vbf': True,
+    },
     # 'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_7jets_100e': {
     #     'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_7jets/out_seed_trainings_100/version_1/predict_7jets_100e_JetTotalSPANetPadded_test.h5',
     #     'true': '7_jets_vbf_ggf_all_Klambda',
@@ -101,7 +101,7 @@ spanet_dict = {
     #     "label": "VBF pair+clas - JetVBFHiggs - DNN Vars",
     #     "color": "blue",
     #     "vbf": True,
-    #     "jet_coll": "JetVBF",
+    #     "jet_coll_higgs": "JetVBF",
     #     "n_higgs_jets": 0,
     #     "offset_jet_idx": -4,
     # },
@@ -158,65 +158,40 @@ spanet_dict = {
     ##################################
     ## Separate JetHiggs and JetVBF ##
     ##################################
-    # "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_VBFeff": {
-    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_test.h5",
-    #     "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder_VBFeff",
-    #     "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF - AddVBFJetPtOrder",
-    #     "color": "red",
-    #     "vbf": True,
-    #     "jet_coll": "JetVBF",
-    #     "n_higgs_jets": 0,
-    #     "offset_jet_idx": -4,
-    # },
-    "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_Higgseff": {
+    "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder": {
         "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_test.h5",
-        "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder_Higgseff",
+        "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder",
         "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF - AddVBFJetPtOrder",
         "color": "red",
-        "vbf": False,
-        "jet_coll": "JetHiggs",
+        "jet_coll_higgs": "JetHiggs",
+        "jet_coll_vbf": "JetVBF",
         "n_higgs_jets": 0,
-        "offset_jet_idx": 0,
+        "offset_jet_idx_higgs": 0,
+        "offset_jet_idx_vbf": -4,
+        "resonances": "DEFAULT_RESONANCES",
     },
-    # "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_NoDetection_VBFeff": {
-    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_NoDetection/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_test.h5",
-    #     "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder_VBFeff",
-    #     "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF - AddVBFJetPtOrder - NoDetection",
-    #     "color": "orange",
-    #     "vbf": True,
-    #     "jet_coll": "JetVBF",
-    #     "n_higgs_jets": 0,
-    #     "offset_jet_idx": -4,
-    # },
-    "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_NoDetection_Higgseff": {
+    "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_NoDetection": {
         "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_NoDetection/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_test.h5",
-        "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder_Higgseff",
+        "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder",
         "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF - AddVBFJetPtOrder - NoDetection",
         "color": "orange",
-        "vbf": False,
-        "jet_coll": "JetHiggs",
+        "jet_coll_higgs": "JetHiggs",
+        "jet_coll_vbf": "JetVBF",
         "n_higgs_jets": 0,
-        "offset_jet_idx": 0,
+        "offset_jet_idx_higgs": 0,
+        "offset_jet_idx_vbf": -4,
+        "resonances": "DEFAULT_RESONANCES",
     },
-    # "hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_SeparateHiggsVBF_VBFeff": {
+    # "hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_SeparateHiggsVBF": {
     #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF/out_seed_trainings_100/version_0/hh4b_pairing_vbf_ggf_pairing_classification_AllKlambda_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test_eval.h5",
-    #     "true": "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_VBFeff",
+    #     "true": "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF",
     #     "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF",
     #     "color": "green",
-    #     "vbf": True,
-    #     "jet_coll": "JetVBF",
+    #     "jet_coll_higgs": "JetHiggs",
+    #     "jet_coll_vbf": "JetVBF",
     #     "n_higgs_jets": 0,
-    #     "offset_jet_idx": -4,
-    # },
-    # "hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_SeparateHiggsVBF_Higgseff": {
-    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF/out_seed_trainings_100/version_0/hh4b_pairing_vbf_ggf_pairing_classification_AllKlambda_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test_eval.h5",
-    #     "true": "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_Higgseff",
-    #     "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF",
-    #     "color": "green",
-    #     "vbf": False,
-    #     "jet_coll": "JetHiggs",
-    #     "n_higgs_jets": 0,
-    #     "offset_jet_idx": 0,
+    #     "offset_jet_idx_higgs": 0,
+    #     "offset_jet_idx_vbf": -4,
     # },
 }
 
@@ -249,34 +224,25 @@ true_dict = {
         "klambda": "postEE",
         "vbf": True,
     },
-    "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder_VBFeff": {
+    "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Fix/AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_test.h5",
         "klambda": "postEE",
-        "jet_coll": "JetVBF",
+        "jet_coll_higgs": "JetHiggs",
+        "jet_coll_vbf": "JetVBF",
         "n_higgs_jets": 0,
+        "resonances": "DEFAULT_RESONANCES",
     },
-    "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder_Higgseff": {
-        "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Fix/AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_test.h5",
-        "klambda": "postEE",
-        "jet_coll": "JetHiggs",
-        "n_higgs_jets": 0,
-    },
-    "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_VBFeff": {
+    "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF/AllKlambda_DetaMjj_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
         "klambda": "postEE",
-        "jet_coll": "JetVBF",
-        "n_higgs_jets": 0,
-    },
-    "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF_Higgseff": {
-        "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF/AllKlambda_DetaMjj_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
-        "klambda": "postEE",
-        "jet_coll": "JetHiggs",
+        "jet_coll_higgs": "JetHiggs",
+        "jet_coll_vbf": "JetVBF",
         "n_higgs_jets": 0,
     },
     "9jets_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5",
         "klambda": "postEE",
-        "jet_coll": "JetVBF",
+        "jet_coll_higgs": "JetVBF",
         "n_higgs_jets": 0,
     },
     "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars": {

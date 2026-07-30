@@ -22,9 +22,8 @@ from efficiency_functions import (
     separate_klambda,
 )
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import helpers
-
 
 vector.register_numba()
 vector.register_awkward()
@@ -195,26 +194,47 @@ def main():
             else False
         )
 
-        n_higgs_jets = true_dict[file_dict["true"]].get("n_higgs_jets", 4)
+        true_entry = true_dict[file_dict["true"]]
+        n_higgs_jets = true_entry.get("n_higgs_jets", 4)
         n_higgs_jets_pred = file_dict.get("n_higgs_jets", n_higgs_jets)
-        jet_coll = true_dict[file_dict["true"]].get("jet_coll", "Jet")
-        jet_coll_pred = file_dict.get("jet_coll", jet_coll)
-        offset_jet_idx = file_dict.get("offset_jet_idx", 0)
+        jet_coll = true_entry.get("jet_coll_higgs", "Jet")
+        jet_coll_pred = file_dict.get("jet_coll_higgs", jet_coll)
+        offset_jet_idx = file_dict.get(
+            "offset_jet_idx_higgs", file_dict.get("offset_jet_idx", 0)
+        )
 
         # define region mask
-        mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, do_vbf_pairing, jet_coll=jet_coll_pred, n_higgs_jets=n_higgs_jets_pred)
-        mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
+        mask_region_spanet = helpers.get_region_mask(
+            args.region,
+            spanetfile,
+            do_vbf_pairing,
+            jet_coll=jet_coll_pred,
+            n_higgs_jets=n_higgs_jets_pred,
+        )
+        mask_region_true = helpers.get_region_mask(
+            args.region,
+            truefile,
+            do_vbf_pairing,
+            jet_coll=jet_coll,
+            n_higgs_jets=n_higgs_jets,
+        )
         assert all(mask_region_spanet == mask_region_true)
 
         # define the class mask
         # take the one for the true file because
         # the prediction file might have the predicted class
         # and not the original one
-        mask_class_true = helpers.get_class_mask(args.class_label, truefile, jet_coll=jet_coll)
+        mask_class_true = helpers.get_class_mask(
+            args.class_label, truefile, jet_coll=jet_coll
+        )
 
         if args.num_events:
             mask_num_events = helpers.get_region_mask(
-                f"test_{args.num_events}", truefile, False, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets
+                f"test_{args.num_events}",
+                truefile,
+                False,
+                jet_coll=jet_coll,
+                n_higgs_jets=n_higgs_jets,
             )
             logger.info(f"max num events {ak.sum(mask_num_events)}")
         else:
@@ -227,11 +247,20 @@ def main():
 
         jet = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll)
 
+        resonances = file_dict.get("resonances")
         idx_true = load_jets_and_pairing(
-            truefile, "true", higgs=not args.ignore_higgs, vbf=do_vbf_pairing
+            truefile,
+            "true",
+            higgs=not args.ignore_higgs,
+            vbf=do_vbf_pairing,
+            resonances=resonances,
         )[mask_true]
         idx_spanet_pred = load_jets_and_pairing(
-            spanetfile, "spanet", higgs=not args.ignore_higgs, vbf=do_vbf_pairing
+            spanetfile,
+            "spanet",
+            higgs=not args.ignore_higgs,
+            vbf=do_vbf_pairing,
+            resonances=resonances,
         )[mask_spanet]
 
         # These lists are to be expanded. Didn't think of a better way than to copy them here already
@@ -438,21 +467,32 @@ def main():
         else False
     )
 
-    n_higgs_jets = true_dict[run2_dataset].get("n_higgs_jets", 4)
-    jet_coll = true_dict[run2_dataset].get("jet_coll", "Jet")
+    run2_true_entry = true_dict[run2_dataset]
+    n_higgs_jets = run2_true_entry.get("n_higgs_jets", 4)
+    jet_coll = run2_true_entry.get("jet_coll_higgs", "Jet")
 
     # define region mask
-    mask_region_true = helpers.get_region_mask(args.region, truefile, do_vbf_pairing, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
+    mask_region_true = helpers.get_region_mask(
+        args.region,
+        truefile,
+        do_vbf_pairing,
+        jet_coll=jet_coll,
+        n_higgs_jets=n_higgs_jets,
+    )
     # assert all(mask_region_spanet == mask_region_true)
 
     # define the class mask
     # take the one for the true file because
     # the prediction file might have the predicted class
     # and not the original one
-    mask_class_true = helpers.get_class_mask(args.class_label, truefile, jet_coll=jet_coll)
+    mask_class_true = helpers.get_class_mask(
+        args.class_label, truefile, jet_coll=jet_coll
+    )
     mask_true = mask_region_true & mask_class_true
 
-    jet_for_idx = [helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll)]
+    jet_for_idx = [
+        helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll)
+    ]
 
     jet_vbf_for_idx = [j[:, n_higgs_jets:] for j in jet_for_idx]
 
@@ -471,6 +511,7 @@ def main():
         allowed_idx_vbf=allowed_idx_vbf_run2,
         higgs=not args.ignore_higgs,
         vbf=do_vbf_pairing,
+        resonances=run2_true_entry.get("resonances"),
     )[mask_true]
 
     # keep only the correct jets
@@ -517,7 +558,11 @@ def main():
     )
 
     allrun2_idx_fully_matched = run2_algorithm(
-        alljet, mask_fully_matched, higgs=not args.ignore_higgs, vbf=do_vbf_pairing, n_higgs_jets=n_higgs_jets
+        alljet,
+        mask_fully_matched,
+        higgs=not args.ignore_higgs,
+        vbf=do_vbf_pairing,
+        n_higgs_jets=n_higgs_jets,
     )
 
     if not args.data:
@@ -655,7 +700,9 @@ def main():
                 + ["yellowgreen"],
                 "eff_fully_matched_allklambda",
                 plot_dir,
-                xlabels=cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None,
+                xlabels=(
+                    cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None
+                ),
                 cmstext=args.cmstext,
                 region=args.region,
             )
@@ -678,7 +725,9 @@ def main():
                 + ["yellowgreen"],
                 "tot_eff_fully_matched_allklambda",
                 plot_dir,
-                xlabels=cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None,
+                xlabels=(
+                    cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None
+                ),
                 cmstext=args.cmstext,
                 region=args.region,
             )

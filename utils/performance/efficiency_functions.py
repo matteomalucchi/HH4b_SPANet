@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 vector.register_awkward()
 vector.register_numba()
 
+RESONANCES_DICT = {
+    "OLD_RESONANCES": {
+        "h1": (1, ("b1", "b2")),
+        "h2": (2, ("b3", "b4")),
+        "vbf": (3, ("q1", "q2")),
+    },
+    "DEFAULT_RESONANCES": {
+        "h1": (1, ("b1", "b2")),
+        "h2": (2, ("b1", "b2")),
+        "vbf": (3, ("q1", "q2")),
+    }
+}
+
 
 def check_double_assignment_vectorized(full_idx_list, label):
     # Stack indices for each event: shape (N_events, 4)
@@ -47,52 +60,45 @@ def load_jets_and_pairing(
     allowed_idx_vbf=None,
     higgs=True,
     vbf=False,
+    resonances=None,
 ):
+    if resonances is None:
+        resonances = RESONANCES_DICT["OLD_RESONANCES"]
+    else:
+        resonances = RESONANCES_DICT[resonances]
+        
+    sorted_resonances = sorted(resonances.items(), key=lambda x: x[1][0])
+    higgs_resonances = sorted_resonances[:-1]
+    vbf_res_name, (_, (vbf_q1_name, vbf_q2_name)) = sorted_resonances[-1]
+
     full_idx_list = []
     if higgs:
-        idx_b1 = samplefile["TARGETS"]["h1"]["b1"][()]
-        idx_b2 = samplefile["TARGETS"]["h1"]["b2"][()]
-        idx_b3 = samplefile["TARGETS"]["h2"]["b3"][()]
-        idx_b4 = samplefile["TARGETS"]["h2"]["b4"][()]
+        for res_name, (_, (q1_name, q2_name)) in higgs_resonances:
+            idx_q1 = samplefile["TARGETS"][res_name][q1_name][()]
+            idx_q2 = samplefile["TARGETS"][res_name][q2_name][()]
 
-        if allowed_idx_higgs is not None:
-            # keep up to max_jets for the pairing
-            idx_b1 = ak.where(
-                ak.any(idx_b1[..., None] == allowed_idx_higgs, axis=-1), idx_b1, -1
-            )
-            idx_b2 = ak.where(
-                ak.any(idx_b2[..., None] == allowed_idx_higgs, axis=-1), idx_b2, -1
-            )
-            idx_b3 = ak.where(
-                ak.any(idx_b3[..., None] == allowed_idx_higgs, axis=-1), idx_b3, -1
-            )
-            idx_b4 = ak.where(
-                ak.any(idx_b4[..., None] == allowed_idx_higgs, axis=-1), idx_b4, -1
-            )
+            if allowed_idx_higgs is not None:
+                # keep up to max_jets for the pairing
+                idx_q1 = ak.where(
+                    ak.any(idx_q1[..., None] == allowed_idx_higgs, axis=-1), idx_q1, -1
+                )
+                idx_q2 = ak.where(
+                    ak.any(idx_q2[..., None] == allowed_idx_higgs, axis=-1), idx_q2, -1
+                )
 
-        idx_h1 = ak.concatenate(
-            (
-                ak.unflatten(idx_b1, ak.ones_like(idx_b1)),
-                ak.unflatten(idx_b2, ak.ones_like(idx_b2)),
-            ),
-            axis=1,
-        )
-        idx_h2 = ak.concatenate(
-            (
-                ak.unflatten(idx_b3, ak.ones_like(idx_b3)),
-                ak.unflatten(idx_b4, ak.ones_like(idx_b4)),
-            ),
-            axis=1,
-        )
-        full_idx_list += [
-            ak.unflatten(idx_h1, ak.ones_like(idx_h1[:, 0])),
-            ak.unflatten(idx_h2, ak.ones_like(idx_h2[:, 0])),
-        ]
+            idx_res = ak.concatenate(
+                (
+                    ak.unflatten(idx_q1, ak.ones_like(idx_q1)),
+                    ak.unflatten(idx_q2, ak.ones_like(idx_q2)),
+                ),
+                axis=1,
+            )
+            full_idx_list.append(ak.unflatten(idx_res, ak.ones_like(idx_res[:, 0])))
 
-    if vbf and "vbf" in samplefile["TARGETS"].keys():
+    if vbf and vbf_res_name in samplefile["TARGETS"].keys():
         # Include the VBF matching
-        idx_q1 = samplefile["TARGETS"]["vbf"]["q1"][()]
-        idx_q2 = samplefile["TARGETS"]["vbf"]["q2"][()]
+        idx_q1 = samplefile["TARGETS"][vbf_res_name][vbf_q1_name][()]
+        idx_q2 = samplefile["TARGETS"][vbf_res_name][vbf_q2_name][()]
 
         if allowed_idx_vbf is not None:
             # keep up to max_jets for the pairing
@@ -292,6 +298,16 @@ def best_reco_higgs(jet_collection, idx_collection, higgs=True):
         ak.fill_none(copy.copy(idx_collection), -1), dtype=np.int64
     )
     if len(jet_collection) > 0:
+        n_jets = int(ak.num(jet_collection, axis=1)[0])
+        oob = idx_collection_noNone >= n_jets
+        if np.any(oob):
+            import warnings
+            warnings.warn(
+                f"best_reco_higgs: {np.sum(oob)} indices >= n_jets={n_jets} "
+                "(prediction file may use global indices). Clipping to 0."
+            )
+            idx_collection_noNone = np.where(oob, 0, idx_collection_noNone)
+            # breakpoint()
         if higgs:
             higgs_1 = ak.unflatten(
                 jet_collection[
