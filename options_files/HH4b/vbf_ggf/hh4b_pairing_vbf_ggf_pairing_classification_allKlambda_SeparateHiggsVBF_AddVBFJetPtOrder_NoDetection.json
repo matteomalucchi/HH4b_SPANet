@@ -29,8 +29,8 @@
 
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
-    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification_allKlambda_DetaMjj_NGW_extravars_150epochs.yaml",
-    "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/vbf_all_Klambda_DetaMjj/SaveMjjDeta_NormGenWeights_JetTotalSPANetPtFlattenPadded_train.h5",
+    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_b1b2.yaml",
+    "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Fix/AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_train.h5",
 
     "normalize_features": true,
     "limit_to_num_jets": 0,
@@ -57,7 +57,7 @@
     "learning_rate_warmup_epochs": 0.0,
 
     "assignment_loss_scale": 1.0,
-    "detection_loss_scale": 1.0,
+    "detection_loss_scale": 0.0,
     "kl_loss_scale": 0.0,
     "regression_loss_scale": 0.0,
     "classification_loss_scale": 1.0,
@@ -67,7 +67,7 @@
     "dropout": 0.0059,
 
     "metric": "validation_accuracy",
-    "epochs": 150,
+    "epochs": 100,
     "num_gpu": 1,
     "verbose_output": true
 }
