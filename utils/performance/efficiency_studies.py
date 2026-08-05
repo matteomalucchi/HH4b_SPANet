@@ -199,6 +199,7 @@ def main():
         n_higgs_jets_pred = file_dict.get("n_higgs_jets", n_higgs_jets)
         jet_coll = true_entry.get("jet_coll_higgs", "Jet")
         jet_coll_pred = file_dict.get("jet_coll_higgs", jet_coll)
+        jet_coll_vbf = true_entry.get("jet_coll_vbf", None)
         offset_jet_idx = file_dict.get(
             "offset_jet_idx_higgs", file_dict.get("offset_jet_idx", 0)
         )
@@ -245,7 +246,14 @@ def main():
 
         logger.info(f"Number of events after the masks : {ak.sum(mask_true)}")
 
-        jet = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll)
+        if jet_coll_vbf is not None:
+            jet_higgs = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll)
+            jet_vbf = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll_vbf)
+            n_higgs_slots = truefile["INPUTS"][jet_coll]["MASK"].shape[1]
+            jet_vbf = ak.with_field(jet_vbf, jet_vbf.index + n_higgs_slots, "index")
+            jet = ak.concatenate([jet_higgs, jet_vbf], axis=1)
+        else:
+            jet = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll)
 
         resonances = file_dict.get("resonances")
         idx_true = load_jets_and_pairing(
@@ -470,6 +478,7 @@ def main():
     run2_true_entry = true_dict[run2_dataset]
     n_higgs_jets = run2_true_entry.get("n_higgs_jets", 4)
     jet_coll = run2_true_entry.get("jet_coll_higgs", "Jet")
+    jet_coll_vbf = run2_true_entry.get("jet_coll_vbf", None)
 
     # define region mask
     mask_region_true = helpers.get_region_mask(
@@ -490,11 +499,18 @@ def main():
     )
     mask_true = mask_region_true & mask_class_true
 
-    jet_for_idx = [
-        helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll)
-    ]
-
-    jet_vbf_for_idx = [j[:, n_higgs_jets:] for j in jet_for_idx]
+    if jet_coll_vbf is not None:
+        jet_higgs_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll)
+        jet_vbf_only_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll_vbf)
+        n_higgs_slots = truefile["INPUTS"][jet_coll]["MASK"].shape[1]
+        jet_vbf_global = ak.with_field(jet_vbf_only_for_idx, jet_vbf_only_for_idx.index + n_higgs_slots, "index")
+        jet_for_idx = [ak.concatenate([jet_higgs_for_idx, jet_vbf_global], axis=1)]
+        jet_vbf_for_idx = [jet_vbf_only_for_idx]
+    else:
+        jet_for_idx = [
+            helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll)
+        ]
+        jet_vbf_for_idx = [j[:, n_higgs_jets:] for j in jet_for_idx]
 
     if do_vbf_pairing:
         # get the idx of the 2 leading mjj jets (excluding the 4 jets leading in btag from higgs)

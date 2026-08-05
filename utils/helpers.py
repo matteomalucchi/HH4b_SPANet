@@ -97,7 +97,7 @@ def get_region_mask(region, column_file, do_vbf_pairing, jet_coll="Jet", n_higgs
     elif region == "vbf_no_kin_cuts" and do_vbf_pairing:
         mask = get_mask_vbf_region(column_file, 0, 0, jet_coll=jet_coll, n_higgs_jets=n_higgs_jets)
     else:
-        raise ValueError("Undefined region")
+        raise ValueError(f"Undefined region {region}!")
     return mask
 
 

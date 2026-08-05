@@ -298,16 +298,6 @@ def best_reco_higgs(jet_collection, idx_collection, higgs=True):
         ak.fill_none(copy.copy(idx_collection), -1), dtype=np.int64
     )
     if len(jet_collection) > 0:
-        n_jets = int(ak.num(jet_collection, axis=1)[0])
-        oob = idx_collection_noNone >= n_jets
-        if np.any(oob):
-            import warnings
-            warnings.warn(
-                f"best_reco_higgs: {np.sum(oob)} indices >= n_jets={n_jets} "
-                "(prediction file may use global indices). Clipping to 0."
-            )
-            idx_collection_noNone = np.where(oob, 0, idx_collection_noNone)
-            # breakpoint()
         if higgs:
             higgs_1 = ak.unflatten(
                 jet_collection[
