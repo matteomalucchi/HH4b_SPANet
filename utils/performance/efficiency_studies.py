@@ -200,9 +200,10 @@ def main():
         jet_coll = true_entry.get("jet_coll_higgs", "Jet")
         jet_coll_pred = file_dict.get("jet_coll_higgs", jet_coll)
         jet_coll_vbf = true_entry.get("jet_coll_vbf", None)
-        offset_jet_idx = file_dict.get(
+        offset_jet_idx_higgs = file_dict.get(
             "offset_jet_idx_higgs", file_dict.get("offset_jet_idx", 0)
         )
+        offset_jet_idx_vbf = file_dict.get("offset_jet_idx_vbf", 0)
 
         # define region mask
         mask_region_spanet = helpers.get_region_mask(
@@ -345,7 +346,8 @@ def main():
                 "fully matched",
                 higgs=not args.ignore_higgs,
                 vbf=do_vbf_pairing,
-                offset_jet_idx=offset_jet_idx,
+                offset_jet_idx_higgs=offset_jet_idx_higgs,
+                offset_jet_idx_vbf=offset_jet_idx_vbf,
             )
 
             # Omitting calculation of partially matched for now
