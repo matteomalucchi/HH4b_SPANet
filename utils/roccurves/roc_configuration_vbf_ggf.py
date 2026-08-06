@@ -172,7 +172,7 @@ true_dict = {
     "9jets_all_Klambda_VBFPairing_JetVBFHiggs_DNNVars": {
         "name": f'{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars/FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5',
         "klambda": "postEE",
-        'jet_coll': 'JetVBF',
+        'jet_coll_higgs': 'JetVBF',
         'n_higgs_jets': 0
     },
     "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars": {
@@ -196,19 +196,22 @@ true_dict = {
     "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Fix/AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_test.h5",
         "klambda": "postEE",
-            "jet_coll": "JetVBF",
-            "n_higgs_jets": 0,
+        "jet_coll_higgs": "JetHiggs",
+        "jet_coll_vbf": "JetVBF",
+        "n_higgs_jets": 0,
     },
     "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF/AllKlambda_DetaMjj_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
         "klambda": "postEE",
-        "jet_coll": "JetVBF",
+        "jet_coll_higgs": "JetHiggs",
+        "jet_coll_vbf": "JetVBF",
         "n_higgs_jets": 0,
     },
     "9jets_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FW_momenta/AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FW_momentaJetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
         "klambda": "postEE",
-        "jet_coll": "JetVBF",
+        "jet_coll_higgs": "JetHiggs",
+        "jet_coll_vbf": "JetVBF",
         "n_higgs_jets": 0,
     },
 }
