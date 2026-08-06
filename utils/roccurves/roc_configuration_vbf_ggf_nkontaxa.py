@@ -31,116 +31,125 @@ spanet_dict.update({
     #     "label": "SPANet 9j all_Klambda 500e",
     #     "color": "blue",
     #     "vbf": True,
-    # },
+    #},
 
     # 200 epochs all_Klambda 9 jets
-    # "predictions_allKlambda_200epochs": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_200epochs.h5",
-    #     "true": "true_9jets_allklambda",
-    #     "label": "SPANet 9j all_Klambda 200e",
-    #     "color": "magenta",
-    #     "vbf": True,
-    # },
+     "predictions_allKlambda_200epochs": {
+         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_200epochs.h5",
+         "true": "true_9jets_allklambda",
+         "label": "9j all_Klambda 200e",
+         "color": "red",
+         "vbf": True,
+     },
 
     # allKlambda_DetaMjj_NNGW_extravars_extreme_classlossweights
     #"predictions_allKlambda_DetaMjj_extravars_NNGW_extreme_classlossweights": {
     #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights_extreme_classlossweights.h5",
     #    "true": "true_detamjj_nngw",
-    #    "label": "SPANet DetaMjj NNGW extravars extreme classlossweights",
+    #    "label": "DetaMjj NNGW extravars CLW = 5.0",
     #    "color": "brown",
     #    "vbf": True,
     #},
 
     #allKlambda_VBFPairing 100e
-    "predictions_allKlambda_vbfpairing": {
-       "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5",
-       "true": "true_allklambda_VBFPairing",
-       "label": "allKlambda VBFPairing 100e",
-       "color": "green",
-       "vbf": True,
-       "n_higgs_jets": 0,
-    },
+    #"predictions_allKlambda_vbfpairing": {
+    #   "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_vbfpairing.h5",
+    #  "true": "true_allklambda_VBFPairing",
+    #   "label": "allKlambda VBFPairing 100e",
+    #   "color": "green",
+    #   "vbf": True,
+    #   "n_higgs_jets": 0,
+    #},
 
     # 100 epochs all_Klambda 9 jets extreme_classlossweights
     #"predictions_allKlambda_extreme_classlossweights": {
     #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights.h5",
     #    "true": "true_9jets_allklambda",
-    #    "label": "SPANet 9j all_Klambda ExtremeClassLossWeights",
+    #    "label": "9j all_Klambda ExtremeClassLossWeights",
     #    "color": "darkgreen",
     #    "vbf": True,
     #},
 
     # allKlambda_DetaMjj_NGW_noextravars
-    # "predictions_allKlambda_DetaMjj_novars_NGW": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
-    #     "true": "true_detamjj_ngw",
-    #     "label": "SPANet DetaMjj NGW noextravars (nkontaxa)",
-    #     "color": "black",
-    #     "vbf": True,
-    # },
+    #  "predictions_allKlambda_DetaMjj_novars_NGW": {
+    #      "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_NormGenWeights.h5",
+    #      "true": "true_detamjj_ngw",
+    #      "label": "9j SPANet NGW 200e",
+    #      "color": "black",
+    #      "vbf": True,
+    #},
 
     # allKlambda_DetaMjj_NNGW_noextravars
-    # "predictions_allKlambda_DetaMjj_novars_NNGW": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
-    #     "true": "true_detamjj_nngw",
-    #     "label": "SPANet DetaMjj NNGW noextravars (nkontaxa)",
-    #     "color": "green",
-    #     "vbf": True,
-    # },
-
-    # allKlambda_DetaMjj_NNGW_extravars
-    #"predictions_allKlambda_DetaMjj_extravars_NNGW_200e": {
-    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights.h5",
+    #"predictions_allKlambda_DetaMjj_novars_NNGW": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_novars_Non-NormGenWeights.h5",
     #    "true": "true_detamjj_nngw",
-    #    "label": "SPANet DetaMjj NNGW extravars 200e",
-    #    "color": "yellow",
+    #    "label": "DetaMjj NNGW noextravars",
+    #    "color": "green",
     #    "vbf": True,
     #},
 
-#100 epochs all_Klambda 9 jets extreme_classlossweights remake
-    f"predictions_allKlambda_extreme_classlossweights_5": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_5.h5",
-       "true": "true_9jets_allklambda",
-        "label": "9j all_Klambda ECLW (5.0) remake",
-        "color": "blue",
-        "vbf": True,
-    },
-
-#100 epochs all_Klambda 9 jets extreme_classlossweights remake
-    f"predictions_allKlambda_extreme_classlossweights_3": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_3.h5",
-       "true": "true_9jets_allklambda",
-        "label": "9j all_Klambda ECLW (3.0)",
-        "color": "darkblue",
-        "vbf": True,
-    },
-
-#100 epochs all_Klambda 9 jets extreme_classlossweights remake
-    f"predictions_allKlambda_extreme_classlossweights_7": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_7.h5",
-       "true": "true_9jets_allklambda",
-        "label": "9j all_Klambda ECLW (7.0)",
+    # allKlambda_DetaMjj_NNGW_extravars
+    "predictions_allKlambda_DetaMjj_extravars_NNGW_200e": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_DetaMjj_extravars_Non-NormGenWeights.h5",
+        "true": "true_detamjj_nngw",
+        "label": "9j SPANet Deta + mjj as extravars 200e",
         "color": "darkgreen",
         "vbf": True,
     },
 
-#100 epochs all_Klambda 9 jets extreme_classlossweights
-    "predictions_allKlambda_extreme_classlossweights_10": {
-       "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_10.h5",
-       "true": "true_9jets_allklambda",
-        "label": "9j all_Klambda ECLW (10.0)",
-        "color": "purple",
-        "vbf": True,
+    #vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality 100e
+    "predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality.h5",
+        "true": "true_allklambda_DetaMjjCentrality",
+        "label": "9j SPANet + Centrality 100e",
+       "color": "brown",
+       "vbf": True,
     },
 
+#100 epochs all_Klambda 9 jets extreme_classlossweights remake
+    #f"predictions_allKlambda_extreme_classlossweights_5": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_5.h5",
+    #   "true": "true_9jets_allklambda",
+    #    "label": "9j all_Klambda ECLW (5.0) remake",
+    #    "color": "blue",
+    #    "vbf": True,
+    #},
+
+#100 epochs all_Klambda 9 jets extreme_classlossweights 3.0 remake
+    #f"vbf/predictions_allKlambda_extreme_classlossweights_3.h5": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_3.h5",
+    #   "true": "true_9jets_allklambda",
+    #    "label": "9j all_Klambda ECLW (3.0)",
+    #    "color": "darkblue",
+    #    "vbf": True,
+    #},
+
+#100 epochs all_Klambda 9 jets extreme_classlossweights 
+    #f"vbf/predictions_allKlambda_extreme_classlossweights_7.h5": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_7.h5",
+    #   "true": "true_9jets_allklambda",
+    #    "label": "9j all_Klambda ECLW (7.0)",
+    #    "color": "darkgreen",
+    #    "vbf": True,
+    #},
+
+#100 epochs all_Klambda 9 jets extreme_classlossweights
+    #"predictions_allKlambda_extreme_classlossweights_10.h5": {
+    #   "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_extreme_classlossweights_10.h5",
+    #   "true": "true_9jets_allklambda",
+    #    "label": "9j all_Klambda ECLW (10.0)",
+    #    "color": "purple",
+    #    "vbf": True,
+    #},
+
     # AllKlambda 9 jets
-    "predictions_allKlambda_100e": {
-        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
-        "true": "true_9jets_allklambda",
-        "label": "9j all_Klambda 100e",
-        "color": "red",
-        "vbf": True,
-    },
+    #"predictions_allKlambda_100e": {
+    #    "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda.h5",
+    #    "true": "true_9jets_allklambda",
+    #    "label": "9j all_Klambda 100e",
+    #    "color": "red",
+    #    "vbf": True,
+    #},
 })
 
 true_dict.update({

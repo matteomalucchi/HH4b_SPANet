@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 vector.register_awkward()
 vector.register_numba()
 
+RESONANCES_DICT = {
+    "OLD_RESONANCES": {
+        "h1": (1, ("b1", "b2")),
+        "h2": (2, ("b3", "b4")),
+        "vbf": (3, ("q1", "q2")),
+    },
+    "DEFAULT_RESONANCES": {
+        "h1": (1, ("b1", "b2")),
+        "h2": (2, ("b1", "b2")),
+        "vbf": (3, ("q1", "q2")),
+    }
+}
+
 
 def check_double_assignment_vectorized(full_idx_list, label):
     # Stack indices for each event: shape (N_events, 4)
@@ -47,52 +60,45 @@ def load_jets_and_pairing(
     allowed_idx_vbf=None,
     higgs=True,
     vbf=False,
+    resonances=None,
 ):
+    if resonances is None:
+        resonances = RESONANCES_DICT["OLD_RESONANCES"]
+    else:
+        resonances = RESONANCES_DICT[resonances]
+        
+    sorted_resonances = sorted(resonances.items(), key=lambda x: x[1][0])
+    higgs_resonances = sorted_resonances[:-1]
+    vbf_res_name, (_, (vbf_q1_name, vbf_q2_name)) = sorted_resonances[-1]
+
     full_idx_list = []
     if higgs:
-        idx_b1 = samplefile["TARGETS"]["h1"]["b1"][()]
-        idx_b2 = samplefile["TARGETS"]["h1"]["b2"][()]
-        idx_b3 = samplefile["TARGETS"]["h2"]["b3"][()]
-        idx_b4 = samplefile["TARGETS"]["h2"]["b4"][()]
+        for res_name, (_, (q1_name, q2_name)) in higgs_resonances:
+            idx_q1 = samplefile["TARGETS"][res_name][q1_name][()]
+            idx_q2 = samplefile["TARGETS"][res_name][q2_name][()]
 
-        if allowed_idx_higgs is not None:
-            # keep up to max_jets for the pairing
-            idx_b1 = ak.where(
-                ak.any(idx_b1[..., None] == allowed_idx_higgs, axis=-1), idx_b1, -1
-            )
-            idx_b2 = ak.where(
-                ak.any(idx_b2[..., None] == allowed_idx_higgs, axis=-1), idx_b2, -1
-            )
-            idx_b3 = ak.where(
-                ak.any(idx_b3[..., None] == allowed_idx_higgs, axis=-1), idx_b3, -1
-            )
-            idx_b4 = ak.where(
-                ak.any(idx_b4[..., None] == allowed_idx_higgs, axis=-1), idx_b4, -1
-            )
+            if allowed_idx_higgs is not None:
+                # keep up to max_jets for the pairing
+                idx_q1 = ak.where(
+                    ak.any(idx_q1[..., None] == allowed_idx_higgs, axis=-1), idx_q1, -1
+                )
+                idx_q2 = ak.where(
+                    ak.any(idx_q2[..., None] == allowed_idx_higgs, axis=-1), idx_q2, -1
+                )
 
-        idx_h1 = ak.concatenate(
-            (
-                ak.unflatten(idx_b1, ak.ones_like(idx_b1)),
-                ak.unflatten(idx_b2, ak.ones_like(idx_b2)),
-            ),
-            axis=1,
-        )
-        idx_h2 = ak.concatenate(
-            (
-                ak.unflatten(idx_b3, ak.ones_like(idx_b3)),
-                ak.unflatten(idx_b4, ak.ones_like(idx_b4)),
-            ),
-            axis=1,
-        )
-        full_idx_list += [
-            ak.unflatten(idx_h1, ak.ones_like(idx_h1[:, 0])),
-            ak.unflatten(idx_h2, ak.ones_like(idx_h2[:, 0])),
-        ]
+            idx_res = ak.concatenate(
+                (
+                    ak.unflatten(idx_q1, ak.ones_like(idx_q1)),
+                    ak.unflatten(idx_q2, ak.ones_like(idx_q2)),
+                ),
+                axis=1,
+            )
+            full_idx_list.append(ak.unflatten(idx_res, ak.ones_like(idx_res[:, 0])))
 
-    if vbf and "vbf" in samplefile["TARGETS"].keys():
+    if vbf and vbf_res_name in samplefile["TARGETS"].keys():
         # Include the VBF matching
-        idx_q1 = samplefile["TARGETS"]["vbf"]["q1"][()]
-        idx_q2 = samplefile["TARGETS"]["vbf"]["q2"][()]
+        idx_q1 = samplefile["TARGETS"][vbf_res_name][vbf_q1_name][()]
+        idx_q2 = samplefile["TARGETS"][vbf_res_name][vbf_q2_name][()]
 
         if allowed_idx_vbf is not None:
             # keep up to max_jets for the pairing
@@ -131,6 +137,8 @@ def calculate_efficiencies(
     label,
     higgs=True,
     vbf=False,
+    offset_jet_idx_higgs=0,
+    offset_jet_idx_vbf=0,
 ):
     matching_eval_model = [ak.ones_like(true[:, 0, 0]) for true in true_idx]
 
@@ -138,12 +146,12 @@ def calculate_efficiencies(
         # higgs 1 and higgs 2
         matching_eval_model_higgs = [
             (
-                ak.all(true[:, 0] == prediction[:, 0], axis=1)
-                | ak.all(true[:, 0] == prediction[:, 1], axis=1)
+                ak.all(true[:, 0] == prediction[:, 0] + offset_jet_idx_higgs, axis=1)
+                | ak.all(true[:, 0] == prediction[:, 1] + offset_jet_idx_higgs, axis=1)
             )
             & (
-                ak.all(true[:, 1] == prediction[:, 0], axis=1)
-                | ak.all(true[:, 1] == prediction[:, 1], axis=1)
+                ak.all(true[:, 1] == prediction[:, 0] + offset_jet_idx_higgs, axis=1)
+                | ak.all(true[:, 1] == prediction[:, 1] + offset_jet_idx_higgs, axis=1)
             )
             for true, prediction in zip(true_idx, prediction_idx)
         ]
@@ -163,9 +171,9 @@ def calculate_efficiencies(
         # vbf
         matching_eval_model_vbf = [
             (
-                ak.all(true[:, idx_vbf] == prediction[:, idx_vbf], axis=1)
+                ak.all(true[:, idx_vbf] == prediction[:, idx_vbf] + offset_jet_idx_vbf, axis=1)
                 # check also if the idx are swapped (altought this shouldn't happen)
-                | ak.all(true[:, idx_vbf, ::-1] == prediction[:, idx_vbf], axis=1)
+                | ak.all(true[:, idx_vbf, ::-1] == prediction[:, idx_vbf] + offset_jet_idx_vbf, axis=1)
             )
             for true, prediction in zip(true_idx, prediction_idx)
         ]
@@ -489,6 +497,7 @@ def plot_histos_1d(
     name="",
     plot_dir="plots",
     cmstext="Private",
+    region=None,
 ):
 
     xlabel = r"Leading $m_{H}$ [GeV]" if num == 1 else r"Subleading $m_{H}$ [GeV]"
@@ -620,11 +629,12 @@ def plot_histos_1d(
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.05, 0.92, region or "inclusive", fontsize=20, ha="left", va="top")
         .run()
     )
 
 
-def plot_mhh(bins, mhh, plot_dir="plots", name="mhh", cmstext="Private"):
+def plot_mhh(bins, mhh, plot_dir="plots", name="mhh", cmstext="Private", region=None):
 
     # ---------------------------------------------------------
     # Create normalized histogram
@@ -666,6 +676,7 @@ def plot_mhh(bins, mhh, plot_dir="plots", name="mhh", cmstext="Private"):
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.95, 0.92, region or "inclusive", fontsize=20, ha="right", va="top")
         .run()
     )
 
@@ -747,6 +758,7 @@ def plot_diff_eff(
     plot_dir,
     file_name,
     cmstext="Private",
+    region=None,
 ):
 
     # ---------------------------------------------------------
@@ -796,6 +808,7 @@ def plot_diff_eff(
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.05, 0.92, region or "inclusive", fontsize=20, ha="left", va="top")
         .run()
     )
 
@@ -810,6 +823,7 @@ def plot_diff_eff_klambda(
     plot_dir="plots",
     xlabels=None,  # dict: {kl_value: "label"}
     cmstext="Private",
+    region=None,
 ):
     """
     Parameters
@@ -896,6 +910,7 @@ def plot_diff_eff_klambda(
             lumitext="(13.6 TeV)", cmstext=cmstext,
             figsize=[13, 13],
         )
+        .add_annotation(0.95, 0.92, region or "inclusive", fontsize=20, ha="right", va="top")
     )
 
     # ---------------------------------------------------------

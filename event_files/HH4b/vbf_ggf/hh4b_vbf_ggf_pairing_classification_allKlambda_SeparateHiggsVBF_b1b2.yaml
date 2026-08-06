@@ -6,7 +6,12 @@ INPUTS:
   # REQUIRED - SEQUENTIAL - inputs which can have an arbitrary number of vectors.
   # -----------------------------------------------------------------------------
   SEQUENTIAL:
-    Jet:
+    JetHiggs:
+      pt: log_normalize
+      eta: normalize
+      phi: normalize
+      btagPNetB_5wp: none
+    JetVBF:
       pt: log_normalize
       eta: normalize
       phi: normalize
@@ -21,15 +26,26 @@ INPUTS:
 # REQUIRED - EVENT - Complete list of resonance particles and daughters.
 # ----------------------------------------------------------------------
 EVENT:
+  h1:
+    - b1: JetHiggs
+    - b2: JetHiggs
+  h2:
+    - b1: JetHiggs
+    - b2: JetHiggs
   vbf:
-    - q1
-    - q2
+    - q1: JetVBF
+    - q2: JetVBF
 
 # ---------------------------------------------------------
 # REQUIRED KEY - PERMUTATIONS - List of valid permutations.
 # ---------------------------------------------------------
 PERMUTATIONS:
   EVENT:
+    - [h1, h2]
+  h1:
+    - [b1, b2]
+  h2:
+    - [b1, b2]
   vbf:
     - [q1, q2]
 
