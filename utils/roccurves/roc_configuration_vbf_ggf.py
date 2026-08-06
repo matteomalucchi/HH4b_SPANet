@@ -132,6 +132,24 @@ spanet_dict = {
     #     "jet_coll": "JetVBF",
     #     "n_higgs_jets": 0,
     # },
+    "hh4b_pairing_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FW_momentaJetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "true": "9jets_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11",
+        "label": "SPANet - VBF/ggF - pair+clas - DetaMjjCentrality - SeparateHiggsVBF - AddVBFJetPtOrder - FW - mom - 0 - 11",
+        "color": "lime",
+        "vbf": True,
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
+    },
+    "hh4b_pairing_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11_CLASS_100e_NoDetection": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11_CLASS_100e_NoDetection/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FW_momentaJetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "true": "9jets_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11",
+        "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF - AddVBFJetPtOrder - FW mom 0 11 - CLASS 100e - NoDetection",
+        "color": "purple",
+        "vbf": True,
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
+    },
 }
 
 true_dict = {
@@ -183,6 +201,12 @@ true_dict = {
     },
     "9_jets_vbf_ggf_all_Klambda_SeparateHiggsVBF": {
         "name": f"{new_true_dir_matteo}/vbf/vbf_ptFlattenMatchedHiggs_all_Klambda_DetaMjj_SeparateHiggsVBF/AllKlambda_DetaMjj_SeparateHiggsVBF_JetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "klambda": "postEE",
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
+    },
+    "9jets_all_Klambda_DetaMjjCentrality_SeparateHiggsVBF_AddVBFJetPtOrder_FW_mom_0_11": {
+        "name": f"{new_true_dir_matteo}/vbf/vbf_ggf_all_Klambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FW_momenta/AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FW_momentaJetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
         "klambda": "postEE",
         "jet_coll": "JetVBF",
         "n_higgs_jets": 0,
