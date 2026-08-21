@@ -776,6 +776,21 @@ def coffea_to_h5(
                                 glob_var = global_collections_dict[global_variables[0]][
                                     j
                                 ][name]["saved_name_var"]
+                            elif (
+                                (
+                                    len(global_variables) == 1
+                                    and global_variables[0].isupper()
+                                    and global_variables[0] in global_collections_dict
+                                    and global_collections_dict[global_variables[0]][j].get("__save_all_remaining__", False)
+                                    and name not in global_collections_dict[global_variables[0]][j]
+                                    and f"{coll}_N" not in payload_columns
+                                )
+                                and jet_i == 0
+                                and type(arr_u[0]) is not np.ndarray
+                            ):
+                                is_global = True
+                                glob_coll = coll
+                                glob_var = var
                             else:
                                 is_global = False
                                 glob_coll = None
