@@ -141,6 +141,15 @@ spanet_dict = {
         "jet_coll": "JetVBF",
         "n_higgs_jets": 0,
     },
+    "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder_seed_1": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder/out_seed_trainings_1/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder",
+        "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF - AddVBFJetPtOrder - seed 1",
+        "color": "cyan",
+        "vbf": True,
+        "jet_coll": "JetVBF",
+        "n_higgs_jets": 0,
+    },
 }
 
 true_dict = {
