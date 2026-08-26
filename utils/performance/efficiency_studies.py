@@ -716,7 +716,7 @@ def main():
                 [model["kl_values"] for model in df_collection.values()]
                 + [r2_model["kl_values"]],
                 [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"$D_{HH}$-method"],
+                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
                 [model["file_dict"]["color"] for model in df_collection.values()]
                 + ["yellowgreen"],
                 "eff_fully_matched_allklambda",
@@ -741,7 +741,7 @@ def main():
                 [model["kl_values"] for model in df_collection.values()]
                 + [r2_model["kl_values"]],
                 [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"$D_{HH}$-method"],
+                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
                 [model["file_dict"]["color"] for model in df_collection.values()]
                 + ["yellowgreen"],
                 "tot_eff_fully_matched_allklambda",
@@ -761,7 +761,7 @@ def main():
                 [model["unc_diff_eff_spanet"][0] for model in df_collection.values()]
                 + [r2_model["unc_diff_eff_run2"][0]],
                 [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"$D_{HH}$-method"],
+                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
                 [model["file_dict"]["color"] for model in df_collection.values()]
                 + ["yellowgreen"],
                 plot_dir,
@@ -779,7 +779,7 @@ def main():
                 ]
                 + [r2_model["total_unc_diff_eff_run2"][0]],
                 [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"$D_{HH}$-method"],
+                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
                 [model["file_dict"]["color"] for model in df_collection.values()]
                 + ["yellowgreen"],
                 plot_dir,
