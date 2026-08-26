@@ -106,7 +106,7 @@ spanet_dict = {
     },
     ## Separate JetHiggs and JetVBF
     "hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder": {
-        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_SeparateHiggsVBF_AddVBFJetPtOrder/out_seed_trainings_100/version_1/predict_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_FixJetGoodProvHiggsPadded_JetGoodVBFMergedProvVBFPadded_test.h5",
         "true": "9jets_all_Klambda_SeparateHiggsVBF_AddVBFJetPtOrder",
         "label": "SPANet - VBF/ggF - pair+clas - SeparateHiggsVBF - AddVBFJetPtOrder",
         "color": "darkorange",
