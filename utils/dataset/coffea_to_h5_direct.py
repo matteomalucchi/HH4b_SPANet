@@ -27,6 +27,7 @@ COFFEA_PADDING_VALUE = -999.0
 H5_PADDING_VALUE = 9999.0
 SEED = 9999
 _permutations = {}
+_pt_flatten_mixing_warned = False
 
 DEFAULT_RESONANCES = {
     "h1": (1, ("b1", "b2")),
@@ -754,43 +755,44 @@ def coffea_to_h5(
                                     len(global_variables) == 1
                                     and global_variables[0].isupper()
                                     and global_variables[0] in global_collections_dict
-                                    and name
-                                    in global_collections_dict[global_variables[0]][j]
-                                )
-                                and jet_i == 0
-                                and type(arr_u[0]) is not np.ndarray
-                            ):
-                                if (
-                                    "PtFlatten" in jet_coll and "PtFlatten" not in name
-                                ) or (
-                                    "PtFlatten" not in jet_coll and "PtFlatten" in name
-                                ):
-                                    print(
-                                        f"WARNING: Mixing pt-flatten and non-pt-flatten collections! \nMaybe need to change the global variable configuration, maybe you just need to reorder the global variables."
+                                    and (
+                                        (
+                                            name in global_collections_dict[global_variables[0]][j]
+                                            and isinstance(global_collections_dict[global_variables[0]][j][name], dict)
+                                        )
+                                        or (
+                                            global_collections_dict[global_variables[0]][j].get(
+                                                "__save_all_remaining__", False
+                                            )
+                                            and f"{coll}_N" not in payload_columns
+                                        )
                                     )
-
-                                is_global = True
-                                glob_coll = global_collections_dict[
-                                    global_variables[0]
-                                ][j][name]["saved_name_coll"]
-                                glob_var = global_collections_dict[global_variables[0]][
-                                    j
-                                ][name]["saved_name_var"]
-                            elif (
-                                (
-                                    len(global_variables) == 1
-                                    and global_variables[0].isupper()
-                                    and global_variables[0] in global_collections_dict
-                                    and global_collections_dict[global_variables[0]][j].get("__save_all_remaining__", False)
-                                    and name not in global_collections_dict[global_variables[0]][j]
-                                    and f"{coll}_N" not in payload_columns
                                 )
                                 and jet_i == 0
                                 and type(arr_u[0]) is not np.ndarray
                             ):
-                                is_global = True
-                                glob_coll = coll
-                                glob_var = var
+                                coll_dict = global_collections_dict[global_variables[0]][j]
+                                if (
+                                    name in coll_dict
+                                    and isinstance(coll_dict[name], dict)
+                                ):
+                                    if (
+                                        "PtFlatten" in jet_coll and "PtFlatten" not in name
+                                    ) or (
+                                        "PtFlatten" not in jet_coll and "PtFlatten" in name
+                                    ):
+                                        global _pt_flatten_mixing_warned
+                                        _pt_flatten_mixing_warned = True
+                                        print(
+                                            f"WARNING: Mixing pt-flatten and non-pt-flatten collections! \nMaybe need to change the global variable configuration, maybe you just need to reorder the global variables."
+                                        )
+                                    is_global = True
+                                    glob_coll = coll_dict[name]["saved_name_coll"]
+                                    glob_var = coll_dict[name]["saved_name_var"]
+                                else:
+                                    is_global = True
+                                    glob_coll = coll
+                                    glob_var = var
                             else:
                                 is_global = False
                                 glob_coll = None
@@ -918,3 +920,10 @@ if __name__ == "__main__":
         train_frac=args.train_frac,
         do_data_shuffling=not args.no_shuffle,
     )
+
+    if _pt_flatten_mixing_warned:
+        print("\n" + "!" * 80)
+        print("!!! WARNING: Mixing pt-flatten and non-pt-flatten collections detected !!!")
+        print("!!! Maybe need to change the global variable configuration,            !!!")
+        print("!!! maybe you just need to reorder the global variables.               !!!")
+        print("!" * 80 + "\n")
