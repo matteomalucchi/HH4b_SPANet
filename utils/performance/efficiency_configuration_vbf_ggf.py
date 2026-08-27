@@ -223,6 +223,13 @@ spanet_dict = {
         "offset_jet_idx_vbf": -4,
         "resonances": "DEFAULT_RESONANCES",
     },
+    "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_FW_mom_0_11": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_FW_mom_0_11/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_VBFPairingAfterHiggsPairing_AddVBFJetPtOrder_FW_momenta_vbfNoKinCut_JetTotalSPANetPadded_test.h5",
+        "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_FW_mom_0_11",
+        "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7 - FW - mom - 0 - 11",
+        "color": "firebrick",
+        "vbf": True,
+    },
 }
 
 
@@ -300,5 +307,9 @@ true_dict = {
         "jet_coll_vbf": "JetVBF",
         "n_higgs_jets": 0,
         "resonances": "DEFAULT_RESONANCES",
+    },
+    "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_FW_mom_0_11": {
+        "name": f"{new_true_dir_matteo}/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_FW_momenta_vbf_regions/AllKlambda_DetaMjj_VBFPairingAfterHiggsPairing_AddVBFJetPtOrder_FW_momenta_vbfNoKinCut_JetTotalSPANetPadded_test.h5",
+        "klambda": "postEE",
     },
 }
