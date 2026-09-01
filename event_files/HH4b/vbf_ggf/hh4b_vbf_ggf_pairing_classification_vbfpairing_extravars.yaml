@@ -16,6 +16,10 @@ INPUTS:
   # REQUIRED - GLOBAL - inputs which will have a single vector per event.
   # ---------------------------------------------------------------------
   GLOBAL:
+    Event:
+      centralityHiggsLeadingJetGoodVBFMergedProvVBFPadded: none
+      centralityHiggsSubLeadingJetGoodVBFMergedProvVBFPadded: none
+      detaJetGoodVBFMergedProvVBFPadded: normalize
 
 # ----------------------------------------------------------------------
 # REQUIRED - EVENT - Complete list of resonance particles and daughters.

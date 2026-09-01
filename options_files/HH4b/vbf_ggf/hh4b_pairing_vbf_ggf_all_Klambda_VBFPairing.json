@@ -28,7 +28,7 @@
     "masking": "Filling",
 
     "skip_connections": true,
-    "initial_embedding_skip_connections": true,'0'
+    "initial_embedding_skip_connections": true,
     "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification_vbfpairing.yaml",
     "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/vbf_ggf_all_Klambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing/AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_JetGoodVBFMergedProvVBFPadded_train.h5",
 

@@ -407,7 +407,8 @@ def load_cols_parquet(rootdir):
             for variation_dir in region_dir.iterdir():
                 if not variation_dir.is_dir():
                     continue
-
+                
+                print(f"Loading parquet dataset from dataset '{dataset_dir.name}', region '{region_dir.name}', variation '{variation_dir.name}'")
                 cols[dataset_dir.name][dataset_dir.name][region_dir.name][
                     variation_dir.name
                 ] = ds.dataset(variation_dir, format="parquet")
@@ -476,7 +477,11 @@ def coffea_to_h5(
 
         h5_tr = f"{path_base}{jet_coll_group_str}_train.h5"
         h5_te = f"{path_base}{jet_coll_group_str}_test.h5"
-
+        
+        print("\n\n\n######################################################################")
+        print("SAVING JET COLLECTION GROUP:", jet_coll_group_str)
+        print("#######################################################################\n")
+        
         with h5py.File(h5_tr, "w") as ftr, h5py.File(h5_te, "w") as fte:
 
             def mk(f):
@@ -584,8 +589,10 @@ def coffea_to_h5(
                                 np.array(payload[f"{jet_coll}_pt"]),
                                 jet_counts,
                             )
-                        else:
+                        elif jet_info_dict["max_num_jets"] <= 1:
                             jet_pt = ak.singletons(ak.Array(payload[f"{jet_coll}_pt"]))
+                        else:
+                            jet_pt = ak.Array(payload[f"{jet_coll}_pt"])
 
                         # Define the jet mask
                         mask_jet_pt = (

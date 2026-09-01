@@ -19,6 +19,8 @@ INPUTS:
     Event:
       centralityHiggsLeadingRun2VBF: none
       centralityHiggsSubLeadingRun2VBF: none
+      detaVBF: normalize
+      mjjVBF: log_normalize
 
 # ----------------------------------------------------------------------
 # REQUIRED - EVENT - Complete list of resonance particles and daughters.

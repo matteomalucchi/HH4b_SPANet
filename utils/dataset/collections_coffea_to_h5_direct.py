@@ -8,12 +8,14 @@ jet_collections_dict = {
                 "max_num_jets": 4,
                 "resonances": ["h1", "h2"],
                 "prov_key": "provenance",
+                "min_num_jets": 4,
             },
             "JetGoodVBFMergedProvVBFPtFlattenPadded": {
                 "saved_name": "JetVBF",
                 "max_num_jets": 5,
                 "resonances": ["vbf"],
                 "prov_key": "provenance",
+                "min_num_jets": 0,
             },
         },
         {
@@ -22,12 +24,14 @@ jet_collections_dict = {
                 "max_num_jets": 4,
                 "resonances": ["h1", "h2"],
                 "prov_key": "provenance",
+                "min_num_jets": 4,
             },
             "JetGoodVBFMergedProvVBFPadded": {
                 "saved_name": "JetVBF",
                 "max_num_jets": 5,
                 "resonances": ["vbf"],
                 "prov_key": "provenance",
+                "min_num_jets": 0,
             },
         },
         {
@@ -36,12 +40,14 @@ jet_collections_dict = {
                 "max_num_jets": 4,
                 "resonances": ["h1", "h2"],
                 "prov_key": "provenance",
+                "min_num_jets": 4,
             },
             "JetGoodVBFMergedProvVBFPadded": {
                 "saved_name": "JetVBF",
                 "max_num_jets": 5,
                 "resonances": ["vbf"],
                 "prov_key": "provenance",
+                "min_num_jets": 0,
             },
         },
     ],
@@ -104,6 +110,42 @@ jet_collections_dict = {
                 "resonances": ["vbf"],
                 "min_num_jets": 0,
                 "prov_key": "provenance",
+            },
+        },
+    ],
+    "JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL": [
+        {
+            "JetGoodVBFMergedProvVBFPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 5,
+                "resonances": ["vbf"],
+                "min_num_jets": 0,
+                "prov_key": "provenance_vbf",
+            },
+        },
+        {
+            "JetGoodVBFMergedProvVBFPadded": {
+                "saved_name": "JetVBF",
+                "max_num_jets": 5,
+                "resonances": ["vbf"],
+                "min_num_jets": 0,
+                "prov_key": "provenance_vbf",
+            },
+            "JetGoodProvHiggsPadded": {
+                "saved_name": "JetHiggs",
+                "max_num_jets": 4,
+                "resonances": [],
+                "min_num_jets": 4,
+                "prov_key": "provenance_higgs",
+            },
+        },
+        {
+            "JetTotalSPANetPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 9,
+                "resonances": ["vbf"],
+                "min_num_jets": 4,
+                "prov_key": "provenance_vbf",
             },
         },
     ],
