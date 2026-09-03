@@ -17,6 +17,7 @@ from collections_coffea_to_h5_direct import (
     KEEP_TOGETHER_COLLECTIONS,
     jet_collections_dict,
     global_collections_dict,
+    jet_like_global_collections_dict,
 )
 from weights_handling_coffea_to_h5_direct import (
     compute_weight_norm_map,
@@ -93,6 +94,14 @@ p.add_argument(
     nargs="+",
     default=["all"],
     help="Global variables to save, or 'all' to save all non-jet variables as global variables."+ "\nIf the value is one of the predefined uppercase collection groups (e.g. 'GLOBAL_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of variables defined in collections_coffea_to_h5_direct.py.",
+)
+p.add_argument(
+    "-jg",
+    "--jet-like-global-vars",
+    nargs="+",
+    default=[],
+    help="Jet-like collections to save as unpacked 1-D global variables (e.g. Jet_1, Jet_2 …)."
+    + "\nIf the value is one of the predefined uppercase collection groups (e.g. 'JET_LIKE_GLOBAL_HIGGS_ORDERED'), it will be replaced by the corresponding list defined in collections_coffea_to_h5_direct.py.",
 )
 p.add_argument(
     "-m", "--max-jets", nargs="+", type=int, default=[5, 5], help="Max jets to keep"
@@ -488,6 +497,7 @@ def coffea_to_h5(
     class_labels,
     jet_collections,
     global_variables,
+    jet_like_global_variables,
     max_jets,
     train_frac,
     do_data_shuffling,
@@ -528,6 +538,15 @@ def coffea_to_h5(
         and jet_collections[0] in jet_collections_dict
     ):
         jet_collections = jet_collections_dict[jet_collections[0]]
+
+    if (
+        len(jet_like_global_variables) == 1
+        and jet_like_global_variables[0].isupper()
+        and jet_like_global_variables[0] in jet_like_global_collections_dict
+    ):
+        jet_like_global_variables = jet_like_global_collections_dict[
+            jet_like_global_variables[0]
+        ]
 
     for j, jet_coll_group in enumerate(jet_collections):
 
@@ -863,6 +882,44 @@ def coffea_to_h5(
                                     shuffle,
                                 )
 
+                    # Jet-like global variables: unpack per-jet into 1-D global vars
+                    for jlg_entry in jet_like_global_variables:
+                        for jlg_coll, jlg_info in jlg_entry.items():
+                            n_var = jlg_info["n_var"]
+                            if n_var not in payload_columns:
+                                continue
+                            jet_n = np.array(payload[n_var])
+                            saved_coll = jlg_info["saved_name_coll"]
+                            saved_var_base = jlg_info["saved_name_var"]
+                            for var_name in payload_columns:
+                                var_coll, var = infer_collection_and_var(var_name)
+                                if var_coll != jlg_coll or var == "N":
+                                    continue
+                                arr_jlg = np.array(payload[var_name])
+                                jagged = unflatten_to_jagged(arr_jlg, jet_n)
+                                n_jets = int(ak.max(jet_n))
+                                for idx in range(n_jets):
+                                    per_jet = ak.pad_none(jagged, idx + 1, axis=1)[:, idx]
+                                    per_jet = ak.fill_none(per_jet, COFFEA_PADDING_VALUE)
+                                    per_jet = ak.where(
+                                        per_jet == COFFEA_PADDING_VALUE,
+                                        H5_PADDING_VALUE,
+                                        per_jet,
+                                    )
+                                    out_var = f"{saved_var_base}_{var}_{idx + 1}"
+                                    print(
+                                        f"Processing jet-like global {var_name}[{idx}] -> [{saved_coll}, {out_var}]"
+                                    )
+                                    write_block_split(
+                                        tr_in,
+                                        te_in,
+                                        [saved_coll, out_var],
+                                        cast_floats32(per_jet),
+                                        train_mask,
+                                        test_mask,
+                                        shuffle,
+                                    )
+
                     # Get the various k-values for each dataset
                     if "GluGlu" in dataset:
                         kl_val = extract_param_value(dataset, "kl")
@@ -916,6 +973,7 @@ if __name__ == "__main__":
         class_labels=args.class_labels,
         jet_collections=args.jets,
         global_variables=args.global_vars,
+        jet_like_global_variables=args.jet_like_global_vars,
         max_jets=args.max_jets,
         train_frac=args.train_frac,
         do_data_shuffling=not args.no_shuffle,
