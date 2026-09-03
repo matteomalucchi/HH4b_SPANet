@@ -92,11 +92,13 @@ jupyterlab_server==2.27.3
 jupyterlab_widgets==3.0.13
 keras==3.9.2
 kiwisolver==1.4.7
+law==0.1.20
 libclang==18.1.1
 lightning-utilities==0.11.7
 littleutils==0.2.4
 llvmlite==0.43.0
 locket==1.0.0
+luigi==3.8.1
 lz4==4.3.3
 Markdown==3.7
 markdown-it-py==3.0.0

@@ -2,6 +2,13 @@
 
 Repository with [SPANet](https://github.com/matteomalucchi/SPANet) configuration for HH4b analysis. Originally forked from <https://github.com/mmarchegiani/ttHbb_SPANet>.
 
+> [!TIP]
+> The whole chain described below -- training, predictions, training metrics,
+> efficiency and ROC plots -- is automated with [law](https://github.com/riga/law):
+> a single `law run hh4b.Performance --options-file <options>` runs the steps
+> that are missing. See [`law_tasks/README.md`](law_tasks/README.md) and the
+> [Automated pipeline with law](#automated-pipeline-with-law) section.
+
 ## Running SPANet within the `cmsml` docker container
 
 In order to use the SPANet package we use the prebuilt **apptainer** image for machine learning applications in CMS, [`cmsml`](https://hub.docker.com/r/cmsml/cmsml).
@@ -218,6 +225,14 @@ In order to train the SPANet model on HTCondor, one must first define 2 environm
 ```bash
 export SPANET_MAIN_DIR="/afs/cern.ch/user/m/mmalucch" # main directory where the SPANet and HH4b_SPANet repositories are saved
 export SPANET_ENV_DIR="/afs/cern.ch/user/m/mmalucch/spanet_env" # path to the virtual environment 
+```
+
+The jobs bind `/afs`, the EOS home of `$USER` and the output directory into the
+container. To read samples from somebody else's EOS area, list the additional
+paths in `SPANET_APPTAINER_BINDS`:
+
+```bash
+export SPANET_APPTAINER_BINDS="/eos/user/m/mmalucch,/eos/user/t/tharte"
 ```
 
 Subsequently, one can use the following command outside the singularity but inside the venv:
@@ -548,3 +563,43 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 # e.g. for VBF
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r vbf_no_kin_cuts
 ```
+
+## Automated pipeline with law
+
+All the steps above -- submitting the training, computing the predictions,
+plotting the training metrics, registering the model in the performance
+configurations and producing the efficiency and ROC plots -- are chained
+together with [law](https://github.com/riga/law). Every step declares its
+outputs, so only what is missing is executed: running the pipeline on a model
+that is already trained starts directly with the predictions.
+
+```bash
+# once per session, inside the virtual environment and outside the singularity
+source setup_law.sh
+
+# train (or reuse the training), predict and produce every performance plot
+law run hh4b.Performance \
+    --options-file options_files/HH4b/vbf_ggf/hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetHiggsGlobal_DNNVars_VBFNoKinCut_ClassLoss7.json \
+    --seed 100
+
+# what is done and what is missing
+law run hh4b.Performance --options-file <options_file> --print-status -1
+
+# single steps
+law run hh4b.Predict --options-file <options_file>
+law run hh4b.EfficiencyPlots --options-file <options_file>
+law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
+```
+
+The test file, the prediction name, the `true_dict` key, the label, the color
+and the plot directories are derived from the options file with the
+conventions used so far, and each of them can be overridden on the command
+line. The performance configurations tracked in git are not modified: a
+configuration importing them and adding the new model is generated per model
+(add `--update-base-config` to also append the entries to the tracked files).
+
+Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
+`SPANET_ENV_DIR`, `EOS_SPANET`, ...) or, as a last resort, from generic
+`$USER` based defaults, so no path has to be edited to use the pipeline.
+
+The full documentation is in [`law_tasks/README.md`](law_tasks/README.md).
