@@ -6,6 +6,7 @@ import os
 import sys
 
 import h5py
+import mplhep as hep
 import numpy as np
 import vector
 from hist import Hist
@@ -23,6 +24,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import helpers
 from utils_configs.plot.HEPPlotter import HEPPlotter
 from utils_configs.plot.weighted_quantile import weighted_quantile
+
+# CMS colour palette of mplhep: the first colour is used for the background
+# and the second one for the signal, consistently in all the plotting scripts
+CMS_COLORS = [cycle["color"] for cycle in hep.style.CMS["axes.prop_cycle"]]
+BKG_COLOR = CMS_COLORS[0]
+SIG_COLOR = CMS_COLORS[1]
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--title", type=str, default="", help="Title of the plot")
@@ -58,18 +65,18 @@ parser.add_argument(
     help="Configuration with the models to consider",
 )
 parser.add_argument(
-    "-q",
-    "--plot-quantile",
+    "-s",
+    "--sig-efficiency",
     type=float,
-    default=0.99,
-    help="Background quantile fraction to compute and print in the histogram (default: 0.99).",
+    default=0.8,
+    help="Signal efficiency to compute and print in the histogram (default: 0.8).",
 )
 parser.add_argument(
     "-klb",
     "--kl-background",
     nargs="+",
-    default=["all"],
-    help="Background kl values to plot. Use 'all' for the inclusive plot, numbers for specific kl values, or 'full' to plot every available kl (default: all).",
+    default=["all", "1"],
+    help="Background kl values to plot. Use 'all' for the inclusive plot, numbers for specific kl values, or 'full' to plot every available kl (default: all 1).",
 )
 parser.add_argument(
     "-kls",
@@ -166,7 +173,7 @@ def roc_curve_compare_weights(class_dict, roc_values_dict, plot_dir, fpr_cutoff,
     kl_string = kl if type(kl) == str else f"{kl:.2f}"
     kl_tag = kl_string.replace("-", "m").replace(".", "p")
     kl_bkg_string = kl_bkg if type(kl_bkg) == str else f"{kl_bkg:.2f}"
-    logger.info(f"Plotting roc curves for kl = {kl_string} ...")
+    logger.info(f"Plotting roc curves for signal kl = {kl_string}, background kl = {kl_bkg_string} ...")
 
     assert 1e-6 < fpr_cutoff < 1e-1
 
@@ -194,7 +201,7 @@ def roc_curve_compare_weights(class_dict, roc_values_dict, plot_dir, fpr_cutoff,
         # auc_score_zoom = auc(fpr_zoom, tpr_zoom)
         # auc_score = auc(fpr, tpr)
 
-        name = f"{sub_dict['label']} | kl={kl_string} | AUC={auc_score:.3f}"
+        name = f"{sub_dict['label']} | AUC={auc_score:.3f}"
 
         series[name] = {
             "data": {"x": [tpr, None], "y": [fpr, None]},
@@ -212,7 +219,7 @@ def roc_curve_compare_weights(class_dict, roc_values_dict, plot_dir, fpr_cutoff,
         tpr = tpr_fpr_dict[f"tpr_kl_{kl}"]
         fpr = tpr_fpr_dict[f"fpr_kl_{kl}"]
 
-        name = f"{tpr_fpr_dict['label']} | kl={kl_string}"
+        name = tpr_fpr_dict["label"]
 
         series[name] = {
             "data": {"x": [tpr, None], "y": [fpr, None]},
@@ -220,13 +227,13 @@ def roc_curve_compare_weights(class_dict, roc_values_dict, plot_dir, fpr_cutoff,
         }
 
     if series != {}:
-        os.makedirs(f"{plot_dir}/roc_curves/kl_{kl_tag}", exist_ok=True)
+        os.makedirs(f"{plot_dir}/roc_curves/sig_kl_{kl_tag}", exist_ok=True)
         for log in [False, True]:
             for zoom in [True, False]:
                 (
                     HEPPlotter("CMS")
                     .set_output(
-                        f"{plot_dir}/roc_curves/kl_{kl_tag}/ROC_curve_kl_{kl_tag}{'_zoomed' if zoom else ''}{'_log' if log else ''}"
+                        f"{plot_dir}/roc_curves/sig_kl_{kl_tag}/ROC_curve_sig_kl_{kl_tag}{'_zoomed' if zoom else ''}{'_log' if log else ''}"
                     )
                     .set_data(series, plot_type="graph")
                     .set_labels(
@@ -258,7 +265,7 @@ def precision_recall_curve_function(class_dict, plot_dir, no_weights, kl, kl_bkg
     kl_string = kl if type(kl) == str else f"{kl:.2f}"
     kl_tag = kl_string.replace("-", "m").replace(".", "p")
     kl_bkg_string = kl_bkg if type(kl_bkg) == str else f"{kl_bkg:.2f}"
-    logger.info(f"Plotting precision-recall curves for kl = {kl_string} ...")
+    logger.info(f"Plotting precision-recall curves for signal kl = {kl_string}, background kl = {kl_bkg_string} ...")
 
     series = {}
 
@@ -281,7 +288,7 @@ def precision_recall_curve_function(class_dict, plot_dir, no_weights, kl, kl_bkg
                 true_class, spanet_class, sample_weight=weights
             )
 
-        label = f"{sub_dict['label']} | kl={kl_string} | AP={ap_score:.3f}"
+        label = f"{sub_dict['label']} | AP={ap_score:.3f}"
 
         series[label] = {
             "data": {"x": [recall, None], "y": [precision, None]},
@@ -289,12 +296,12 @@ def precision_recall_curve_function(class_dict, plot_dir, no_weights, kl, kl_bkg
         }
 
     if series != {}:
-        os.makedirs(f"{plot_dir}/precision_recall_curve/kl_{kl_tag}", exist_ok=True)
+        os.makedirs(f"{plot_dir}/precision_recall_curve/sig_kl_{kl_tag}", exist_ok=True)
         for log in [False, True]:
             (
                 HEPPlotter("CMS")
                 .set_output(
-                    f"{plot_dir}/precision_recall_curve/kl_{kl_tag}/precision_recall_curve_kl_{kl_tag}{'_log' if log else ''}"
+                    f"{plot_dir}/precision_recall_curve/sig_kl_{kl_tag}/precision_recall_curve_sig_kl_{kl_tag}{'_log' if log else ''}"
                 )
                 .set_data(series, plot_type="graph")
                 .set_labels(
@@ -326,7 +333,7 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
     kl_string = kl if type(kl) == str else f"{kl:.2f}"
     kl_tag = kl_string.replace("-", "m").replace(".", "p")
     kl_bkg_string = kl_bkg if type(kl_bkg) == str else f"{kl_bkg:.2f}"
-    logger.info(f"Plotting score histogram for kl = {kl_string}...")
+    logger.info(f"Plotting score histogram for signal kl = {kl_string}, background kl = {kl_bkg_string}...")
 
     series_all_models = {}
 
@@ -334,6 +341,7 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
         spanet_class = sub_dict["spanet_class"]
         true_class = sub_dict["true_class"]
         weights = sub_dict["weights"]
+        label = sub_dict["label"]
 
         mask_background = true_class == 0
 
@@ -349,48 +357,52 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
         sig_scores = spanet_class[~mask_background]
 
         if no_weights:
-            cut = np.quantile(bkg_scores, args.plot_quantile)
+            cut = np.quantile(sig_scores, 1 - args.sig_efficiency)
             sig_eff = np.mean(sig_scores > cut)  # Mean just gives me the ones passing divided by all
+            bkg_rej = np.mean(bkg_scores <= cut)
         else:
-            cut = float(weighted_quantile(bkg_scores, args.plot_quantile, weights=weights_bkg))
-            # sorted_idx = np.argsort(bkg_scores)
-            # cumulative_weights = np.cumsum(weights_bkg[sorted_idx]) / weights_bkg.sum()
-            # cut = bkg_scores[sorted_idx[np.searchsorted(cumulative_weights, args.plot_quantile)]]
+            cut = float(weighted_quantile(sig_scores, 1 - args.sig_efficiency, weights=weights_sig))
 
             mask_signal_cut = sig_scores > cut
             sig_eff = weights_sig[mask_signal_cut].sum() / weights_sig.sum()
 
+            mask_bkg_cut = bkg_scores <= cut
+            bkg_rej = weights_bkg[mask_bkg_cut].sum() / weights_bkg.sum()
+
         logger.info("=============")
         logger.info(f"For model {model_name} with kl={kl_string}:")
-        logger.info(f"Found {args.plot_quantile*100:.4g}% background quantile cut at: {cut:.4f} ")
+        logger.info(f"Found score cut at: {cut:.4f} for target signal efficiency of {args.sig_efficiency*100:.4g}%")
         logger.info(f"Signal efficiency at this point is: {sig_eff * 100:.2f}% ")
+        logger.info(f"Background rejection at this point is: {bkg_rej * 100:.2f}% ")
         logger.info("=============")
 
         hist_bkg = Hist.new.Regular(
             50, 0, 1, name="SPANet Classification Score", flow=False
         ).Weight()
-        hist_bkg.fill(spanet_class[mask_background], weight=weights_bkg / (weights_bkg.sum() * hist_bkg.axes[0].widths[0]) if weights_bkg is not None else None)
+        hist_bkg.fill(spanet_class[mask_background], weight=weights_bkg) # / (weights_bkg.sum() * hist_bkg.axes[0].widths[0]) if weights_bkg is not None else None)
 
         hist_sig = Hist.new.Regular(
             50, 0, 1, name="SPANet Classification Score", flow=False
         ).Weight()
-        hist_sig.fill(spanet_class[~mask_background], weight=weights_sig / (weights_sig.sum() * hist_sig.axes[0].widths[0]) if weights_sig is not None else None)
+        hist_sig.fill(spanet_class[~mask_background], weight=weights_sig) # / (weights_sig.sum() * hist_sig.axes[0].widths[0]) if weights_sig is not None else None)
 
         series = {
-            f"Background - {sub_dict['label']}": {
+            f"Background": {
                 "data": hist_bkg,
                 "style": {
                     "histtype": "step",
                     "alpha": 0.5,
                     "weights": weights_bkg,
+                    "color": BKG_COLOR,
                 },
             },
-            f"Signal (kl={kl_string}) - {sub_dict['label']}": {
+            f"Signal": {
                 "data": hist_sig,
                 "style": {
                     "histtype": "step",
                     "alpha": 0.5,
                     "weights": weights_sig,
+                    "color": SIG_COLOR,
                 },
             },
         }
@@ -398,62 +410,88 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
         series_all_models.update(series)
 
         if series != {}:
-            os.makedirs(f"{plot_dir}/background_signal_hist/{model_name}/kl_{kl_tag}", exist_ok=True)
+            os.makedirs(f"{plot_dir}/background_signal_hist/{model_name}/sig_kl_{kl_tag}", exist_ok=True)
             for log in [False, True]:
                 histplot = (
                     HEPPlotter("CMS")
                     .set_output(
-                        f"{plot_dir}/background_signal_hist/{model_name}/kl_{kl_tag}/background_signal_hist_{model_name}_kl_{kl_tag}{'_log' if log else ''}"
+                        f"{plot_dir}/background_signal_hist/{model_name}/sig_kl_{kl_tag}/background_signal_hist_{model_name}_sig_kl_{kl_tag}{'_log' if log else ''}"
                     )
                     .set_data(series)
                     .set_labels(
-                        xlabel="SPANet Classification Score",
-                        ylabel="Classification Probability Density",
+                        xlabel=f"{label} - Class Score",
+                        ylabel="Normalized Counts",
+                        xlabel_fontsize=16,
+                        ylabel_fontsize=16,
                     )
                     .set_options(
-                        set_ylim=False,
-                        legend_font_size="16",
+                        normalize_1d_histo=True,
+                        legend_font_size=20,
                         y_log=True if log else False,
                         legend=True,
+                        legend_loc="upper left",
                         grid=True,
+                        ylim_bottom_value=1e-4 if log else 0.0,
+                        ylim_top_value=5 if log else 0.3,
+                        # ylim_top_factor=2,
                     )
                     .set_plot_config(
+                        figsize=[13, 13],
                         cmstext="Private"
                     )
                 )
-                # if args.plot_quantile:
-                histplot.add_line(orientation="v", x=cut, color="black", linestyle="dotted")  # 0 and 1 should not have a particular effect. its just to have two points on the line
-                histplot.add_annotation(0.03, 0.97, f"Region: {args.region}", ha="left", va="top", fontsize=14)
-                histplot.add_annotation(0.03, 0.91, rf"sig $\kappa_\lambda$ = {kl_string}", ha="left", va="top", fontsize=14)
-                histplot.add_annotation(0.03, 0.85, rf"bkg $\kappa_\lambda$ = {kl_bkg_string}", ha="left", va="top", fontsize=14)
+                histplot.add_line(
+                    orientation="v",
+                    x=cut,
+                    color="grey",
+                    linestyle="--",
+                    label=(
+                        f"Sig efficiency = {sig_eff :.2f}\n"
+                        f"Bkg rejection = {bkg_rej:.2f}\n"
+                        f"SPANet score cut = {cut:.2f}"
+                    ),
+                )  # 0 and 1 should not have a particular effect. its just to have two points on the line
+                histplot.add_annotation(0.6, 0.95, f"Region: {args.region}", ha="left", va="center", fontsize=20)
+                histplot.add_annotation(0.6, 0.90, rf"sig $\kappa_\lambda$ = {kl_string}", ha="left", va="center", fontsize=20, color=SIG_COLOR)
+                histplot.add_annotation(0.6, 0.85, rf"bkg $\kappa_\lambda$ = {kl_bkg_string}", ha="left", va="center", fontsize=20, color=BKG_COLOR)
                 histplot.run()
 
     if len(series_all_models) > 2:  # to avoid plotting the combined plot with all the models if there's only one model
-        os.makedirs(f"{plot_dir}/background_signal_hist/models_all/kl_{kl_tag}", exist_ok=True)
+        os.makedirs(f"{plot_dir}/background_signal_hist/models_all/sig_kl_{kl_tag}", exist_ok=True)
+        #remove the colors from the series_all_models to avoid confusion in the legend, since all models will have the same color for signal and background
+        for key in series_all_models:
+            series_all_models[key]["style"].pop("color", None)
+            
         for log in [False, True]:
             (
                 HEPPlotter("CMS")
                 .set_output(
-                    f"{plot_dir}/background_signal_hist/models_all/kl_{kl_tag}/background_signal_hist_models_all_kl_{kl_tag}{'_log' if log else ''}"
+                    f"{plot_dir}/background_signal_hist/models_all/sig_kl_{kl_tag}/background_signal_hist_models_all_sig_kl_{kl_tag}{'_log' if log else ''}"
                 )
                 .set_data(series_all_models)
                 .set_labels(
                     xlabel="SPANet Classification Score",
-                    ylabel="Classification Probability Density",
+                    ylabel="Normalized Counts",
                 )
                 .set_options(
-                    set_ylim=False,
-                    legend_font_size=16,
+                    normalize_1d_histo=True,
+                    set_ylim=True,
+                    legend_font_size=20,
                     y_log=True if log else False,
                     legend=True,
+                    legend_loc="upper left",
                     grid=True,
+                    ylim_bottom_value=1e-4 if log else 0.0,
+                    ylim_top_value=5 if log else 0.3,
+                    # ylim_top_factor=2,
                 )
                 .set_plot_config(
+                    figsize=[13, 13],
                     cmstext="Private"
                 )
-                .add_annotation(0.03, 0.97, f"Region: {args.region}", ha="left", va="top", fontsize=14)
-                .add_annotation(0.03, 0.91, rf"sig $\kappa_\lambda$ = {kl_string}", ha="left", va="top", fontsize=14)
-                .add_annotation(0.03, 0.85, rf"bkg $\kappa_\lambda$ = {kl_bkg_string}", ha="left", va="top", fontsize=14)
+                .add_annotation(0.6, 0.95, f"Region: {args.region}", ha="left", va="center", fontsize=20)
+                .add_annotation(0.6, 0.90, rf"sig $\kappa_\lambda$ = {kl_string}", ha="left", va="center", fontsize=20)
+                .add_annotation(0.6, 0.85, rf"bkg $\kappa_\lambda$ = {kl_bkg_string}", ha="left", va="center", fontsize=20)
                 .run()
             )
 
@@ -540,7 +578,7 @@ def main():
     for kl_bkg in kls_background_to_plot:
         kl_bkg_string = kl_bkg if type(kl_bkg) == str else f"{kl_bkg:.2f}"
         kl_bkg_tag = kl_bkg_string.replace("-", "m").replace(".", "p")
-        plot_dir_bkg = args.plot_dir if kl_bkg == "all" else f"{args.plot_dir}/bkg_kl_{kl_bkg_tag}"
+        plot_dir_bkg = f"{args.plot_dir}/bkg_kl_{kl_bkg_tag}"
         logger.info(f"Plotting for background kl = {kl_bkg_string} in {plot_dir_bkg}")
 
         roc_info_dict = {}

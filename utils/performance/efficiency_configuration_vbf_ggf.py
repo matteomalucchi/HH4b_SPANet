@@ -133,13 +133,13 @@ spanet_dict = {
     #     "color": "magenta",
     #     "vbf": True,
     # },
-    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e": {
-    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5",
-    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut",
-    #     "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7 - 300e",
-    #     "color": "dodgerblue",
-    #     "vbf": True,
-    # },
+    "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_300e/out_seed_trainings_100/version_0/predict_epoch78_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_test.h5",
+        "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut",
+        "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7 - 300e",
+        "color": "dodgerblue",
+        "vbf": True,
+    },
     # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e": {
     #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel_ClassLoss7_200e/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfPreselJetTotalSPANetPadded_test.h5",
     #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFPresel",
