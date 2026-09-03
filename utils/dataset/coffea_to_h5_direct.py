@@ -886,39 +886,72 @@ def coffea_to_h5(
                     for jlg_entry in jet_like_global_variables:
                         for jlg_coll, jlg_info in jlg_entry.items():
                             n_var = jlg_info["n_var"]
-                            if n_var not in payload_columns:
-                                continue
-                            jet_n = np.array(payload[n_var])
-                            saved_coll = jlg_info["saved_name_coll"]
-                            saved_var_base = jlg_info["saved_name_var"]
+                            is_padded_2d = n_var is None or n_var not in payload_columns
+                            if is_padded_2d and n_var is not None:
+                                matching = [c for c in payload_columns if jlg_coll.lower() in c.lower()]
+                                print(f"INFO: '{n_var}' not found, treating '{jlg_coll}' as 2D padded. Columns: {matching}")
                             for var_name in payload_columns:
                                 var_coll, var = infer_collection_and_var(var_name)
                                 if var_coll != jlg_coll or var == "N":
                                     continue
+                                saved_var_base = jlg_info["saved_name_var"] if jlg_info["saved_name_var"] is not None else var_coll
                                 arr_jlg = np.array(payload[var_name])
-                                jagged = unflatten_to_jagged(arr_jlg, jet_n)
-                                n_jets = int(ak.max(jet_n))
-                                for idx in range(n_jets):
-                                    per_jet = ak.pad_none(jagged, idx + 1, axis=1)[:, idx]
-                                    per_jet = ak.fill_none(per_jet, COFFEA_PADDING_VALUE)
-                                    per_jet = ak.where(
-                                        per_jet == COFFEA_PADDING_VALUE,
-                                        H5_PADDING_VALUE,
-                                        per_jet,
+                                if is_padded_2d:
+                                    max_jets = jlg_info["max_jets"]
+                                    arr_jlg=np.stack(arr_jlg)
+                                    # arr_jlg = arr_jlg.reshape(-1, max_jets)
+                                    # n_jets = arr_jlg.shape[1]
+                                    # breakpoint()
+                                    for idx in range(max_jets):
+                                        per_jet = ak.Array(arr_jlg[:, idx])
+                                        per_jet = ak.where(
+                                            per_jet == COFFEA_PADDING_VALUE,
+                                            H5_PADDING_VALUE,
+                                            per_jet,
+                                        )
+                                        out_coll = f"{saved_var_base}_{idx}"
+                                        print(
+                                            f"Processing jet-like global {var_name}[{idx}] -> [{out_coll}, {var}]"
+                                        )
+                                        write_block_split(
+                                            tr_in,
+                                            te_in,
+                                            [out_coll, var],
+                                            cast_floats32(per_jet),
+                                            train_mask,
+                                            test_mask,
+                                            shuffle,
+                                        )
+                                else:
+                                    raise ValueError(
+                                        f"Jet-like global variable '{var_name}' with n_var='{n_var}' "
+                                        f"(non-padded 2D / jagged path) has not been tested. "
+                                        f"Please verify correctness before using this code path."
                                     )
-                                    out_var = f"{saved_var_base}_{var}_{idx + 1}"
-                                    print(
-                                        f"Processing jet-like global {var_name}[{idx}] -> [{saved_coll}, {out_var}]"
-                                    )
-                                    write_block_split(
-                                        tr_in,
-                                        te_in,
-                                        [saved_coll, out_var],
-                                        cast_floats32(per_jet),
-                                        train_mask,
-                                        test_mask,
-                                        shuffle,
-                                    )
+                                    jet_n = np.array(payload[n_var])
+                                    jagged = unflatten_to_jagged(arr_jlg, jet_n)
+                                    n_jets = int(ak.max(jet_n))
+                                    for idx in range(n_jets):
+                                        per_jet = ak.pad_none(jagged, idx + 1, axis=1)[:, idx]
+                                        per_jet = ak.fill_none(per_jet, COFFEA_PADDING_VALUE)
+                                        per_jet = ak.where(
+                                            per_jet == COFFEA_PADDING_VALUE,
+                                            H5_PADDING_VALUE,
+                                            per_jet,
+                                        )
+                                        out_coll = f"{saved_var_base}_{idx}"
+                                        print(
+                                            f"Processing jet-like global {var_name}[{idx}] -> [{out_coll}, {var}]"
+                                        )
+                                        write_block_split(
+                                            tr_in,
+                                            te_in,
+                                            [out_coll, var],
+                                            cast_floats32(per_jet),
+                                            train_mask,
+                                            test_mask,
+                                            shuffle,
+                                        )
 
                     # Get the various k-values for each dataset
                     if "GluGlu" in dataset:
