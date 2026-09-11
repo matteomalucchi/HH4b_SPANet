@@ -3,11 +3,13 @@
 Repository with [SPANet](https://github.com/matteomalucchi/SPANet) configuration for HH4b analysis. Originally forked from <https://github.com/mmarchegiani/ttHbb_SPANet>.
 
 > [!TIP]
-> The whole chain described below -- training, predictions, training metrics,
-> efficiency and ROC plots -- is automated with [law](https://github.com/riga/law):
-> a single `law run hh4b.Performance --options-file <options>` runs the steps
-> that are missing. See [`law_tasks/README.md`](law_tasks/README.md) and the
-> [Automated pipeline with law](#automated-pipeline-with-law) section.
+> The whole chain described below -- dataset conversion, training, predictions,
+> training metrics, efficiency and ROC plots -- is automated with
+> [law](https://github.com/riga/law): `law run hh4b.Dataset --dataset <name>`
+> on the machine with the coffea files, then
+> `law run hh4b.Performance --options-file <options>` on lxplus, each running
+> only the steps that are missing. See [`law_tasks/README.md`](law_tasks/README.md)
+> and the [Automated pipeline with law](#automated-pipeline-with-law) section.
 
 ## Running SPANet within the `cmsml` docker container
 
@@ -566,12 +568,34 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 
 ## Automated pipeline with law
 
-All the steps above -- submitting the training, computing the predictions,
+All the steps above -- converting the coffea files into SPANet inputs and
+copying them to EOS, submitting the training, computing the predictions,
 plotting the training metrics, registering the model in the performance
 configurations and producing the efficiency and ROC plots -- are chained
 together with [law](https://github.com/riga/law). Every step declares its
 outputs, so only what is missing is executed: running the pipeline on a model
 that is already trained starts directly with the predictions.
+
+The chain spans the two machines it always did: the conversion runs where the
+coffea files are, the training and the performance run on lxplus.
+
+```bash
+# on the machine holding the coffea files, in the analysis environment
+export SPANET_COFFEA_BASE="/work/${USER}/out_hh4b"
+export SPANET_REMOTE_HOST="<cern user>@lxplus.cern.ch"
+source setup_law.sh
+
+# convert output_all.coffea into the h5 inputs and rsync them to EOS;
+# the datasets are described in law_tasks/datasets.yaml
+law run hh4b.Dataset --dataset vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal
+
+# a dataset that is not in the file needs no edit
+law run hh4b.Dataset --dataset my_study --coffea-dir VBF/out_my_study \
+    --output-prefix My_Study_ --regions "my_region my_region" --remote-dir vbf/out_my_study
+```
+
+The summary prints the `training_file` path to put into the options file. From
+there on, everything runs on lxplus:
 
 ```bash
 # once per session, inside the virtual environment and outside the singularity
@@ -599,7 +623,8 @@ configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
 
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
-`SPANET_ENV_DIR`, `EOS_SPANET`, ...) or, as a last resort, from generic
-`$USER` based defaults, so no path has to be edited to use the pipeline.
+`SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
+`SPANET_REMOTE_INPUT_DIR`, ...) or, as a last resort, from generic `$USER`
+based defaults, so no path has to be edited to use the pipeline.
 
 The full documentation is in [`law_tasks/README.md`](law_tasks/README.md).

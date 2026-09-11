@@ -8,6 +8,10 @@
 # All paths are derived from $USER / the location of this file, so the script
 # works for every user; export SPANET_ENV_DIR (and optionally SPANET_MAIN_DIR,
 # EOS_SPANET) in your .bashrc to pin your own setup.
+#
+# On the machine that only converts the coffea files, SPANET_ENV_DIR does not
+# have to be set: the current environment is kept, and the dataset tasks
+# (hh4b.Dataset) run in it.
 
 _law_setup() {
     local this_file="${BASH_SOURCE[0]:-${(%):-%x}}"
@@ -22,11 +26,10 @@ _law_setup() {
         export SPANET_ENV_DIR="${VIRTUAL_ENV}"
     fi
     if [ -z "${SPANET_ENV_DIR}" ]; then
-        echo "setup_law.sh: set SPANET_ENV_DIR to your virtual environment" >&2
-        echo "  e.g. export SPANET_ENV_DIR=/eos/user/\${USER:0:1}/\${USER}/spanet_infos/spanet_env_test_eos" >&2
-        return 1
-    fi
-    if [ "${VIRTUAL_ENV}" != "${SPANET_ENV_DIR}" ]; then
+        echo "setup_law.sh: SPANET_ENV_DIR is not set, keeping the current environment."
+        echo "  Only the dataset tasks work without it; for the training set e.g."
+        echo "  export SPANET_ENV_DIR=/eos/user/\${USER:0:1}/\${USER}/spanet_infos/spanet_env_test_eos"
+    elif [ "${VIRTUAL_ENV}" != "${SPANET_ENV_DIR}" ]; then
         # shellcheck disable=SC1091
         source "${SPANET_ENV_DIR}/bin/activate" || return 1
     fi
@@ -36,7 +39,7 @@ _law_setup() {
     export PYTHONPATH="${repo_dir}:${PYTHONPATH}"
 
     if ! command -v law >/dev/null 2>&1; then
-        echo "setup_law.sh: law is not installed in ${SPANET_ENV_DIR}" >&2
+        echo "setup_law.sh: law is not installed in ${SPANET_ENV_DIR:-${VIRTUAL_ENV:-the current environment}}" >&2
         echo "  pip install law" >&2
         return 1
     fi
@@ -47,7 +50,7 @@ _law_setup() {
 
     echo "law is set up:"
     echo "  repository:  ${repo_dir}"
-    echo "  environment: ${SPANET_ENV_DIR}"
+    echo "  environment: ${SPANET_ENV_DIR:-${VIRTUAL_ENV:-system python}}"
     echo "  config:      ${LAW_CONFIG_FILE}"
     echo "  law home:    ${LAW_HOME}"
 }

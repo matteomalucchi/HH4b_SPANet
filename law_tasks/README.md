@@ -1,9 +1,19 @@
-# law pipeline: from the training to the performance plots
+# law pipeline: from the coffea files to the performance plots
 
 [law](https://github.com/riga/law) tasks that chain the whole workflow of a
-SPANet model: submit (or reuse) the **training**, compute the **predictions**,
-plot the **training metrics**, register the model in the performance
-configurations and produce the **efficiency** and **ROC** plots.
+SPANet model: **convert** the coffea outputs into h5 inputs and **transfer**
+them to the training machine, submit (or reuse) the **training**, compute the
+**predictions**, plot the **training metrics**, register the model in the
+performance configurations and produce the **efficiency** and **ROC** plots.
+
+The chain spans two machines, as it does by hand: the conversion runs where
+the coffea files are, everything else runs on lxplus.
+
+```
+analysis machine                     lxplus
+----------------                     ------
+hh4b.Dataset  --- rsync to EOS --->  hh4b.Performance
+```
 
 Every task knows its outputs, so nothing is computed twice: rerunning the
 pipeline after a crash, or for a model that is already trained, only executes
@@ -11,7 +21,7 @@ what is missing.
 
 ## Setup
 
-All commands run inside the SPANet virtual environment (e.g.
+On **lxplus**, all commands run inside the SPANet virtual environment (e.g.
 `spanet_env_test_eos`), *outside* the apptainer container: the tasks enter the
 container themselves whenever a payload needs it.
 
@@ -31,7 +41,92 @@ source setup_law.sh
 auto-completion).  `law` itself is part of `requirements.txt`; install it with
 `pip install law` if the environment predates it.
 
-## The one command
+On the **analysis machine** (the one with the coffea files) only the dataset
+tasks run, in the environment that reads coffea. `SPANET_ENV_DIR` is not
+needed there; `law` has to be installed in that environment:
+
+```bash
+export SPANET_COFFEA_BASE="/work/${USER}/out_hh4b"          # where the coffea outputs live
+export SPANET_REMOTE_HOST="<cern user>@lxplus.cern.ch"      # default: $USER@lxplus.cern.ch
+export SPANET_REMOTE_INPUT_DIR="/eos/user/x/xyz/spanet_infos/spanet_inputs"
+
+cd HH4b_SPANet
+source setup_law.sh
+```
+
+## Step 0: the inputs (on the analysis machine)
+
+```bash
+law run hh4b.Dataset --dataset vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal
+```
+
+replaces the manual
+
+```bash
+cd <coffea dir>
+python utils/dataset/coffea_to_h5_direct.py --input output_all.coffea --output <prefix> \
+    --regions <region> <region> --class-labels GluGlu VBF -j <jets> -jg <jet-like globals>
+rsync <prefix>*<collection>_*.h5 <user>@lxplus.cern.ch:<eos input dir>/
+```
+
+| task | what it does |
+|---|---|
+| `hh4b.ConvertDataset` | runs `coffea_to_h5_direct.py`; its outputs are the h5 files, so a dataset that is already converted is not converted again |
+| `hh4b.TransferDataset` | creates the destination directory and `rsync`s the h5 files to the training machine |
+| `hh4b.Dataset` | wrapper, writes a summary with the `training_file` path to put into the options file |
+
+The datasets live in `law_tasks/datasets.yaml` (`dataset_config` in `law.cfg`):
+
+```yaml
+defaults:                       # applied to every dataset
+  coffea_file: output_all.coffea
+  class_labels: [GluGlu, VBF]
+  jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
+  jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
+
+datasets:
+  vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_..._vbfregions   # relative to coffea_base
+    output_prefix: FixMASK_AllKlambda_..._JetGoodProvHiggsPaddedGlobal_
+    regions: [hh4b_vbf_..._nokincut_region, hh4b_vbf_..._nokincut_region]
+    collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
+    remote_dir: vbf/out_ggf_vbf_spanet_input_..._vbfregions   # relative to remote_input_base
+```
+
+Fields: `coffea_dir`, `coffea_file`, `output_dir` (default: the coffea
+directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
+`jet_like_global_vars`, `max_jets`, `convert_args` (anything else for the
+converter), `collections` (which jet collection groups to transfer, default:
+all) and `remote_dir`.
+
+Every one of them is also a command line option, so a dataset that is not in
+the file needs no edit:
+
+```bash
+law run hh4b.Dataset --dataset my_study \
+    --coffea-dir VBF/out_my_study --output-prefix My_Study_ \
+    --regions "my_region my_region" --remote-dir vbf/out_my_study
+```
+
+### Which files are produced
+
+`coffea_to_h5_direct.py` writes one `<prefix><jet collection group>_train.h5`
+and `_test.h5` pair per jet collection group, and a named group such as
+`JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL` expands to several
+groups. The tasks expand the group the same way, which is how they know their
+outputs up front. `collections` selects the groups that are worth copying.
+
+Once the transfer is done, the summary prints the `training_file` to put into
+the options file, e.g.
+
+```
+training_file entries for the options file:
+  "JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded": "/eos/user/x/xyz/spanet_infos/spanet_inputs/vbf/out_..._vbfregions/FixMASK_..._train.h5"
+```
+
+From there on, everything runs on lxplus.
+
+## The one command (on lxplus)
 
 ```bash
 law run hh4b.Performance \
@@ -123,6 +218,11 @@ derived from `$USER`:
 | what | law.cfg (`[hh4b_spanet]`) | environment | default |
 |---|---|---|---|
 | checkouts | `spanet_main_dir` | `$SPANET_MAIN_DIR` | parent of this repository |
+| coffea outputs | `coffea_base` | `$SPANET_COFFEA_BASE` | the current directory |
+| dataset list | `dataset_config` | `$SPANET_DATASET_CONFIG` | `law_tasks/datasets.yaml` |
+| conversion env | `conversion_env` | `$SPANET_CONVERSION_ENV` | the environment law runs in |
+| transfer target | `remote_host`, `remote_input_base` | `$SPANET_REMOTE_HOST`, `$SPANET_REMOTE_INPUT_DIR` | `$USER@lxplus.cern.ch`, the remote user's `spanet_infos/spanet_inputs` |
+| h5 inputs (lxplus) | `input_base` | `$SPANET_INPUT_DIR` | `<eos_base>/spanet_inputs` |
 | virtual env | `spanet_env_dir` | `$SPANET_ENV_DIR` | `$VIRTUAL_ENV` |
 | output base | `eos_base` | `$SPANET_EOS_BASE` | `/eos/user/${USER:0:1}/$USER/spanet_infos` |
 | trainings | `output_base` | `$EOS_SPANET` | `<eos_base>/spanet_outputs` |
@@ -166,6 +266,10 @@ Payloads that need the CMS ML image (prediction, plots) are wrapped in
 `apptainer exec ... bash -c "source <env>/bin/activate && ..."` automatically.
 `--apptainer no` skips the container (when law is already started inside one),
 `--apptainer yes` forces it; the default `auto` detects it.
+
+The dataset tasks are the exception: they run on the analysis machine in its
+own environment, so they never enter the container unless `--apptainer yes` is
+given, and they only activate `conversion_env` if it is configured.
 
 Flags that are on by default are switched off by passing the value explicitly,
 e.g. `--gpu False` to predict on the CPU or `--vbf False` for a model that is

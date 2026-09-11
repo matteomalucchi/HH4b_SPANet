@@ -1,5 +1,10 @@
 """Task collection, imported by law through the ``[modules]`` section of law.cfg."""
 
+from law_tasks.tasks.dataset import (  # noqa: F401
+    ConvertDataset,
+    TransferDataset,
+    Dataset,
+)
 from law_tasks.tasks.training import Training  # noqa: F401
 from law_tasks.tasks.predict import Predict  # noqa: F401
 from law_tasks.tasks.register import RegisterModel  # noqa: F401

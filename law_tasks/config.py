@@ -228,6 +228,82 @@ class Settings(object):
             ),
         )
 
+    # -- dataset conversion and transfer -----------------------------------
+
+    @property
+    def coffea_base(self):
+        """Directory holding the coffea outputs on the conversion machine."""
+        return cfg_get("coffea_base", "SPANET_COFFEA_BASE", os.getcwd())
+
+    @property
+    def input_base(self):
+        """Local directory holding the SPANet h5 inputs."""
+        return cfg_get(
+            "input_base",
+            "SPANET_INPUT_DIR",
+            os.path.join(self.eos_base, "spanet_inputs"),
+        )
+
+    @property
+    def remote_host(self):
+        """``user@host`` the converted files are copied to; empty means local."""
+        user = _user()
+        default = "{}@lxplus.cern.ch".format(user) if user else ""
+        return cfg_get("remote_host", "SPANET_REMOTE_HOST", default)
+
+    @property
+    def remote_input_base(self):
+        """Directory on :py:attr:`remote_host` holding the SPANet h5 inputs."""
+        host = self.remote_host
+        user = host.split("@")[0] if "@" in host else _user()
+        default = self.input_base
+        if user:
+            default = "/eos/user/{}/{}/spanet_infos/spanet_inputs".format(user[0], user)
+        return cfg_get("remote_input_base", "SPANET_REMOTE_INPUT_DIR", default)
+
+    @property
+    def rsync_options(self):
+        return cfg_get("rsync_options", "SPANET_RSYNC_OPTIONS", "-avh --partial")
+
+    @property
+    def converter_script(self):
+        return cfg_get(
+            "converter_script",
+            None,
+            os.path.join(
+                self.repo_dir, "utils", "dataset", "coffea_to_h5_direct.py"
+            ),
+        )
+
+    @property
+    def collections_module(self):
+        """Module defining the named jet/global collection groups."""
+        return cfg_get(
+            "collections_module",
+            None,
+            os.path.join(
+                self.repo_dir, "utils", "dataset", "collections_coffea_to_h5_direct.py"
+            ),
+        )
+
+    @property
+    def conversion_env(self):
+        """Virtual environment sourced for the conversion; empty: current one."""
+        return cfg_get("conversion_env", "SPANET_CONVERSION_ENV", "")
+
+    @property
+    def conversion_python(self):
+        return cfg_get("conversion_python", "SPANET_CONVERSION_PYTHON", "python3")
+
+    @property
+    def dataset_config(self):
+        """YAML file describing the datasets that can be converted."""
+        return cfg_get(
+            "dataset_config",
+            "SPANET_DATASET_CONFIG",
+            os.path.join(REPO_DIR, "law_tasks", "datasets.yaml"),
+        )
+
     # -- apptainer --------------------------------------------------------
 
     @property
