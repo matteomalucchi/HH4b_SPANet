@@ -1,0 +1,33 @@
+# Datasets that hh4b.Dataset converts from coffea to SPANet h5 inputs.
+#
+# Paths are generic: `coffea_dir` is relative to the coffea base directory
+# (law.cfg `coffea_base` / $SPANET_COFFEA_BASE, default: the current directory)
+# and `remote_dir` is relative to the input directory on the training machine
+# (law.cfg `remote_input_base` / $SPANET_REMOTE_INPUT_DIR, default:
+# /eos/user/${USER:0:1}/$USER/spanet_infos/spanet_inputs).
+#
+# Every field can also be given on the command line, e.g.
+#   law run hh4b.Dataset --dataset my_study --coffea-dir ... --output-prefix ...
+# which is enough to convert a dataset that is not listed here.
+
+# applied to every dataset below
+defaults:
+  coffea_file: output_all.coffea
+  class_labels: [GluGlu, VBF]
+  jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
+  jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
+
+datasets:
+
+  # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,
+  # VBF regions without kinematic cuts, Higgs jets also as global variables
+  vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
+    output_prefix: FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCut_JetGoodProvHiggsPaddedGlobal_
+    regions:
+      - hh4b_vbf_best_candidates_6_jets_nokincut_region
+      - hh4b_vbf_best_candidates_6_jets_nokincut_region
+    # only this jet collection group is copied to the training machine;
+    # remove the key to transfer all of them
+    collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
