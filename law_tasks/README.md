@@ -160,8 +160,14 @@ and does, in order:
 
 Useful law flags: `--print-status -1` (what is done and what is missing),
 `--print-deps -1`, `--remove-output 0` (drop the outputs of a task and rerun
-it), `--workers 4`, `--local-scheduler` (default when no central scheduler is
-configured).
+it), `--workers 4`, `--log-level DEBUG` (luigi's verbose output).
+
+The tasks run without a central scheduler: `law.cfg` sets
+`[luigi_core] local_scheduler: True`, so nothing has to be started before
+`law run`.  Without it luigi tries to reach `luigid` on `localhost:8082` and
+waits in `Failed connecting to remote scheduler ... Retrying attempt 2 of 3`.
+To use a central scheduler instead, set that option to `False` and start
+`luigid`.
 
 Single steps can be run on their own, e.g. only the plots of a model that is
 already predicted:
