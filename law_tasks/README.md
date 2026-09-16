@@ -177,6 +177,47 @@ law run hh4b.EfficiencyPlots --options-file <options> --seed 100
 law run hh4b.RocPlot --options-file <options> --plot-name vbf_presel
 ```
 
+## Evaluate an existing model on another test file
+
+Nothing has to be trained again: `hh4b.Training` adopts the trained
+`version_N` that is already there, so the same command evaluates a model on a
+different sample by pointing it at that sample.
+
+```bash
+law run hh4b.Performance \
+    --options-file options_files/HH4b/vbf_ggf/<model>.json --seed 100 \
+    --test-file /eos/user/x/xyz/spanet_infos/spanet_inputs/vbf/<dir>/<other>_test.h5
+```
+
+It predicts on that file, registers the model against it and produces every
+efficiency and ROC plot, as for the model's own test file.
+
+The evaluation gets a name, printed as `evaluation:` in the summary and
+derived from the tokens that the two file names do not share (e.g.
+`vbfPresel...` for a model whose own test file is the `vbfNoKinCut` one), or
+from the directory when the two names are equal. It keeps the evaluations
+apart, so a model evaluated on several samples does not overwrite itself:
+
+| | own test file | another test file |
+|---|---|---|
+| prediction | `predict_<own test>.h5` | `predict_<other test>.h5` |
+| configurations | `<work_dir>/configs/<model>/` | `<work_dir>/configs/<model>_<evaluation>/` |
+| plots | `plots_<model>/` | `plots_<model>_<evaluation>/` |
+| summary | `law/performance.json` | `law/performance_<evaluation>.json` |
+| legend | the usual label | the label plus ` - <evaluation>` |
+
+`--eval-tag <name>` replaces the derived name when it is too long or not
+telling enough, and `--plot-dir` still overrides the plot directory outright.
+A model trained by somebody else is evaluated by adding `--output-base
+<their out_spanet_outputs parent>`; `--model-version N` pins a version other
+than the latest.
+
+Single steps work the same way, e.g. only the predictions:
+
+```bash
+law run hh4b.Predict --options-file <options> --test-file <other test file>
+```
+
 ## Derived names
 
 Everything follows from the options file, exactly like in the manual
@@ -191,9 +232,9 @@ procedure:
 | color | the color the model already has in a configuration, else the first unused one of the palette (identical in both configurations) | `teal` |
 | plot directory | `plots_` + options basename without the `hh4b_pairing_vbf_ggf_all_Klambda_` prefix | `plots_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7` |
 
-Each of them can be overridden: `--test-file`, `--label`, `--color`,
-`--true-key`, `--plot-dir`, and `--extra-spanet-keys` / `--extra-true-keys`
-(JSON dicts) for entries such as `{"jet_coll": "JetVBF"}`.
+Each of them can be overridden: `--test-file`, `--eval-tag`, `--label`,
+`--color`, `--true-key`, `--plot-dir`, and `--extra-spanet-keys` /
+`--extra-true-keys` (JSON dicts) for entries such as `{"jet_coll": "JetVBF"}`.
 
 ## The generated configurations
 

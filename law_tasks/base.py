@@ -132,6 +132,12 @@ class ModelTask(BaseTask):
         description="file the model is evaluated on; default: derived from the "
         "training file of the options file",
     )
+    eval_tag = luigi.Parameter(
+        default="",
+        description="name of the evaluation, keeping the predictions, the "
+        "configurations and the plots of a model evaluated on several test "
+        "files apart; default: derived from --test-file",
+    )
 
     # -- paths -------------------------------------------------------------
 
@@ -172,6 +178,11 @@ class ModelTask(BaseTask):
 
     def marker(self, name):
         return law.LocalFileTarget(os.path.join(self.marker_dir, name))
+
+    def eval_marker(self, name):
+        """Marker of a task that depends on the file the model is evaluated on."""
+        stem, ext = os.path.splitext(name)
+        return self.marker("{}{}{}".format(stem, self.eval_suffix, ext))
 
     def write_marker(self, target, **content):
         content.setdefault("task", self.__class__.__name__)
@@ -224,6 +235,26 @@ class ModelTask(BaseTask):
         if self.test_file:
             return os.path.expandvars(os.path.expanduser(self.test_file))
         return naming.derive_test_file(self.training_file)
+
+    @property
+    def eval_key(self):
+        """Short name of this evaluation, empty for the model's own test file."""
+        if self.eval_tag:
+            return self.eval_tag
+        if not self.test_file:
+            return ""
+
+        try:
+            default = naming.derive_test_file(self.training_file)
+        except ValueError:
+            default = ""
+        if default and os.path.realpath(self.evaluation_file) == os.path.realpath(default):
+            return ""
+        return naming.derive_eval_tag(self.evaluation_file, default)
+
+    @property
+    def eval_suffix(self):
+        return "_{}".format(self.eval_key) if self.eval_key else ""
 
     @property
     def prediction_name(self):

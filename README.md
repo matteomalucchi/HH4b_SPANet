@@ -618,7 +618,10 @@ law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
 The test file, the prediction name, the `true_dict` key, the label, the color
 and the plot directories are derived from the options file with the
 conventions used so far, and each of them can be overridden on the command
-line. The performance configurations tracked in git are not modified: a
+line. Adding `--test-file <other file>` evaluates a model that is already
+trained on another sample: the training is reused and the predictions, the
+configurations and the plots of that evaluation are kept apart from the ones
+of the model's own test file. The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
 

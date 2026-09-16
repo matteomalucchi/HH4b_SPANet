@@ -62,7 +62,9 @@ class RegisterModel(ModelTask):
 
     @property
     def config_dir(self):
-        return os.path.join(self.cfg.work_dir, "configs", self.model_key)
+        return os.path.join(
+            self.cfg.work_dir, "configs", self.model_key + self.eval_suffix
+        )
 
     def config_path(self, kind):
         return os.path.join(
@@ -111,12 +113,18 @@ class RegisterModel(ModelTask):
         )
         color = self._pick_color(modules)
 
+        label = self.label
+        if not label and self.eval_key:
+            # keep the legend unambiguous when a model is evaluated on
+            # several samples
+            label = "{} - {}".format(naming.derive_label(self.model_key), self.eval_key)
+
         spanet_entry, true_entry = registry.build_entries(
             self.model_key,
             prediction_file=prediction,
             test_file=evaluation_file,
             color=color,
-            label=self.label or None,
+            label=label or None,
             true_key=true_key,
             vbf=self.vbf,
             extra_spanet=json.loads(self.extra_spanet_keys or "{}"),

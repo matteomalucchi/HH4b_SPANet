@@ -35,7 +35,7 @@ class Predict(ModelTask):
         version = self.resolve_version()
         if version is None:
             # the training has not run yet, the path is only known afterwards
-            return self.marker("prediction_pending.json")
+            return self.eval_marker("prediction_pending.json")
         return law.LocalFileTarget(self.prediction_path(version))
 
     def run(self):

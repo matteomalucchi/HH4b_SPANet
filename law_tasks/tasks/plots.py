@@ -92,14 +92,16 @@ class PlotTask(ModelTask):
 
     @property
     def main_dir(self):
-        return self.plot_dir or naming.derive_plot_dir(self.model_key)
+        if self.plot_dir:
+            return self.plot_dir
+        return naming.derive_plot_dir(self.model_key) + self.eval_suffix
 
     @property
     def target_dir(self):
         return os.path.join(self.plot_base, self.main_dir, self.plot_name)
 
     def output(self):
-        return self.marker("{}_{}.json".format(self.kind, self.plot_name))
+        return self.eval_marker("{}_{}.json".format(self.kind, self.plot_name))
 
     def check_target_dir(self):
         """Refuse to silently write into a directory that already holds plots."""

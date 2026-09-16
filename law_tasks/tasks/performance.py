@@ -37,7 +37,7 @@ class Performance(ModelTask):
         }
 
     def output(self):
-        return self.marker("performance.json")
+        return self.eval_marker("performance.json")
 
     def run(self):
         with open(self.input()["registration"]["summary"].path) as fobj:
@@ -56,6 +56,7 @@ class Performance(ModelTask):
         self.write_marker(
             self.output(),
             model_key=self.model_key,
+            eval_tag=self.eval_key,
             seed=self.seed,
             version_dir=self.version_dir(),
             prediction_file=registration["prediction_file"],
@@ -69,6 +70,9 @@ class Performance(ModelTask):
 
         self.publish_message("")
         self.publish_message("model:            {}".format(self.model_key))
+        if self.eval_key:
+            self.publish_message("evaluation:       {}".format(self.eval_key))
+            self.publish_message("test file:        {}".format(registration["test_file"]))
         self.publish_message("training:         {}".format(self.version_dir()))
         self.publish_message("prediction:       {}".format(registration["prediction_file"]))
         self.publish_message("training plots:   {}".format(metrics["plot_dir"]))

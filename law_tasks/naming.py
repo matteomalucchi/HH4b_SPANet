@@ -111,6 +111,33 @@ def derive_plot_dir(key):
     return "plots_" + _strip_model_prefix(key)
 
 
+def derive_eval_tag(test_file, default_test_file, max_length=50):
+    """Short name of an evaluation on a file other than the model's own one.
+
+    The tokens that the two file names do not share identify the sample, e.g.
+    ``..._vbfPreselJetTotalSPANetPadded_test.h5`` evaluated by a model whose
+    own test file is ``..._vbfNoKinCutJetTotalSPANetPadded_test.h5`` gives
+    ``vbfPreselJetTotalSPANetPadded``.  When the two names are identical the
+    directory holding the file is used instead.
+    """
+    stem = os.path.basename(test_file)
+    for suffix in ("_test.h5", ".h5"):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
+            break
+
+    default_stem = os.path.basename(default_test_file or "")
+    known = set(default_stem.split("_"))
+    tokens = [t for t in stem.split("_") if t and t not in known]
+
+    if not tokens:
+        directory = os.path.basename(os.path.dirname(os.path.abspath(test_file)))
+        tokens = [re.sub(r"\A(out_|out_spanet_input_)", "", directory)]
+
+    tag = re.sub(r"[^A-Za-z0-9_.-]+", "", "_".join(tokens)).strip("_")
+    return tag[:max_length].strip("_") or "eval"
+
+
 def pick_color(used_colors, palette=None):
     """First color of the palette that is not used by another model yet."""
     palette = palette or settings().palette
