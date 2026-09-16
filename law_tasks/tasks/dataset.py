@@ -141,7 +141,7 @@ class DatasetTask(BaseTask):
             for line in process.stdout.decode("utf-8", "replace").splitlines()
             if line.strip()
         ]
-        if existing and not self.overwrite:
+        if existing and not self.force_overwrite:
             raise RuntimeError(
                 "refusing to overwrite {} file(s) already on {}:\n  {}\n"
                 "pass --overwrite to replace them".format(
@@ -271,6 +271,8 @@ class Dataset(DatasetTask):
     It writes a summary with the ``training_file`` paths to put into the
     SPANet options file.
     """
+
+    propagates_overwrite = True
 
     def requires(self):
         return self.clone(TransferDataset)

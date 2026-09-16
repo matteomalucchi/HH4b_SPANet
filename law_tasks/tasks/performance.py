@@ -17,6 +17,8 @@ class Performance(ModelTask):
         law run hh4b.Performance --options-file options_files/HH4b/vbf_ggf/<model>.json
     """
 
+    propagates_overwrite = True
+
     plot_dir = luigi.Parameter(
         default="",
         description="parent directory of all plots of this model; default: "

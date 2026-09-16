@@ -29,25 +29,39 @@ class BaseTask(law.Task):
         "the container when already inside one; default: auto",
     )
 
+    #: tasks that only drive other ones hand --overwrite down to them
+    propagates_overwrite = False
+
     overwrite = luigi.BoolParameter(
         default=False,
         significant=False,
-        description="replace files that are already there; without it a task "
-        "that would clobber existing output stops instead; default: False",
+        description="redo this task and replace what is already there; on the "
+        "tasks that only drive others (hh4b.Dataset, hh4b.Performance, "
+        "hh4b.EfficiencyPlots, hh4b.RocPlots) it applies to the steps they "
+        "drive as well; default: False",
+    )
+    overwrite_all = luigi.BoolParameter(
+        default=False,
+        significant=False,
+        description="redo this task and everything it depends on, whatever "
+        "the task; default: False",
     )
 
     @property
     def cfg(self):
         return settings()
 
+    @property
+    def force_overwrite(self):
+        return bool(self.overwrite or self.overwrite_all)
+
     def __init__(self, *args, **kwargs):
         super(BaseTask, self).__init__(*args, **kwargs)
 
-        # --overwrite redoes the task that was asked for, even when its
-        # outputs are already there; the flag below keeps it complete once it
-        # has actually run
+        # an overwrite redoes the task even when its outputs are already
+        # there; the flag below keeps it complete once it has actually run
         self._overwrite_done = False
-        if self.overwrite:
+        if self.force_overwrite:
             inner_run = self.run
 
             def run_and_mark(*args, **kwargs):
@@ -59,20 +73,24 @@ class BaseTask(law.Task):
             self.run = run_and_mark
 
     def complete(self):
-        if self.overwrite and not self._overwrite_done:
+        if self.force_overwrite and not self._overwrite_done:
             return False
         return super(BaseTask, self).complete()
 
     def clone(self, cls=None, **kwargs):
-        # --overwrite does not propagate to the dependencies: a rerun of one
-        # task must not recompute (and replace) everything below it
-        kwargs.setdefault("overwrite", False)
+        # --overwrite alone redoes the task it is given, so that redrawing one
+        # plot does not recompute the prediction below it.  It reaches the
+        # dependencies through --overwrite-all, and through the tasks that
+        # only drive others, where it would mean nothing otherwise
+        spread = self.overwrite_all or (self.overwrite and self.propagates_overwrite)
+        kwargs.setdefault("overwrite", spread)
+        kwargs.setdefault("overwrite_all", spread)
         return super(BaseTask, self).clone(cls, **kwargs)
 
     def check_no_overwrite(self, paths, what="file"):
         """Stop unless ``--overwrite`` is given and something is in the way."""
         existing = sorted(path for path in paths if os.path.exists(path))
-        if existing and not self.overwrite:
+        if existing and not self.force_overwrite:
             raise RuntimeError(
                 "refusing to overwrite {} {}(s) that {} already there:\n  {}\n"
                 "pass --overwrite to replace them".format(

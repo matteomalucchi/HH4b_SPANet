@@ -139,10 +139,12 @@ law run hh4b.Dataset --dataset <name> --convert-args="-n -m 5 5"   # several of 
 ```
 
 Changing the flags does not change the file names, so the h5 files of an
-earlier conversion are in the way: add `--overwrite` to replace them.
+earlier conversion are in the way: add `--overwrite` to replace them, on
+`hh4b.Dataset` to redo the conversion *and* the copy to EOS, or on
+`hh4b.ConvertDataset` to redo the conversion alone.
 
 ```bash
-law run hh4b.ConvertDataset --dataset <name> --convert-args="-n" --overwrite
+law run hh4b.Dataset --dataset <name> --convert-args="-n" --overwrite
 ```
 
 Check what came out with
@@ -284,15 +286,31 @@ the list of files in the way:
 | `hh4b.Predict` | the prediction file, which is its own output |
 
 `--overwrite` lifts the refusal **and** reruns the task even when law would
-have called it complete:
+have called it complete.
+
+On the tasks that only drive other ones -- `hh4b.Dataset`,
+`hh4b.Performance`, `hh4b.EfficiencyPlots`, `hh4b.RocPlots` -- it applies to
+the whole chain they drive, which is what makes a rerun with different
+arguments do something:
+
+```bash
+law run hh4b.Dataset --dataset <name> --convert-args="-n" --overwrite
+law run hh4b.Performance --options-file <options> --overwrite
+```
+
+On any other task it applies to that task alone, so redrawing one plot does
+not recompute the prediction below it:
 
 ```bash
 law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite
 ```
 
-It applies to the task that is asked for, not to its dependencies: the command
-above redraws that one plot without recomputing the prediction below it. To
-redo a step further down, ask for that step with `--overwrite`.
+`--overwrite-all` redoes a task *and* everything it depends on, whatever the
+task:
+
+```bash
+law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite-all
+```
 
 ## Derived names
 

@@ -629,8 +629,9 @@ are not redone, and the predictions, the configurations and the plots of that
 evaluation are kept apart from the ones of the model's own test file.
 
 No task replaces a file that is already there; it stops and names it instead.
-`--overwrite` lifts that and reruns the task it is given, without recomputing
-the steps below it. The performance configurations tracked in git are not modified: a
+`--overwrite` lifts that and reruns the task it is given, on `hh4b.Dataset`
+and `hh4b.Performance` together with the steps they drive; `--overwrite-all`
+reruns any task together with everything below it. The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
 
