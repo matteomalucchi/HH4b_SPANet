@@ -22,19 +22,17 @@ class Performance(ModelTask):
         description="parent directory of all plots of this model; default: "
         "derived from the options basename",
     )
-    overwrite = luigi.BoolParameter(
-        default=False,
-        significant=False,
-        description="write into existing plot directories; default: False",
-    )
-
     def requires(self):
-        return {
-            "metrics": self.clone(TrainingMetrics),
+        reqs = {
             "efficiency": self.clone(EfficiencyPlots),
             "roc": self.clone(RocPlots),
             "registration": self.clone(RegisterModel),
         }
+        # the training metrics belong to the training, not to the sample it is
+        # evaluated on: they are made once, with the model's own test file
+        if not self.eval_key:
+            reqs["metrics"] = self.clone(TrainingMetrics)
+        return reqs
 
     def output(self):
         return self.eval_marker("performance.json")
@@ -43,8 +41,10 @@ class Performance(ModelTask):
         with open(self.input()["registration"]["summary"].path) as fobj:
             registration = json.load(fobj)
 
-        with open(self.input()["metrics"].path) as fobj:
-            metrics = json.load(fobj)
+        metrics = {}
+        if "metrics" in self.input():
+            with open(self.input()["metrics"].path) as fobj:
+                metrics = json.load(fobj)
 
         efficiency = {
             task.plot_name: task.target_dir for task in self.requires()["efficiency"].requires()
@@ -63,7 +63,7 @@ class Performance(ModelTask):
             test_file=registration["test_file"],
             label=registration["label"],
             color=registration["color"],
-            training_plots=metrics["plot_dir"],
+            training_plots=metrics.get("plot_dir"),
             efficiency_plots=efficiency,
             roc_plots=roc,
         )
@@ -75,7 +75,8 @@ class Performance(ModelTask):
             self.publish_message("test file:        {}".format(registration["test_file"]))
         self.publish_message("training:         {}".format(self.version_dir()))
         self.publish_message("prediction:       {}".format(registration["prediction_file"]))
-        self.publish_message("training plots:   {}".format(metrics["plot_dir"]))
+        if metrics:
+            self.publish_message("training plots:   {}".format(metrics["plot_dir"]))
         for name, path in sorted(efficiency.items()):
             self.publish_message("efficiency plots: {}".format(path))
         for name, path in sorted(roc.items()):

@@ -55,9 +55,15 @@ def derive_test_file(train_file):
     return os.path.join(directory, basename)
 
 
-def prediction_name(test_file):
-    """Name of the prediction file written by ``spanet.predict``."""
-    return "predict_" + os.path.basename(test_file)
+def prediction_name(test_file, eval_tag=""):
+    """Name of the prediction file written by ``spanet.predict``.
+
+    The evaluation tag is part of the name, so evaluating a model on two files
+    that share a basename but live in different directories cannot produce the
+    same prediction twice.
+    """
+    prefix = "predict_{}_".format(eval_tag) if eval_tag else "predict_"
+    return prefix + os.path.basename(test_file)
 
 
 def _strip_model_prefix(key):

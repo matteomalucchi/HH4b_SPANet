@@ -12,6 +12,7 @@ with the ``training_file`` of the options file pointing at the transferred h5.
 import json
 import os
 import shlex
+import subprocess
 
 import law
 import luigi
@@ -122,6 +123,32 @@ class DatasetTask(BaseTask):
             shlex.quote(os.path.join(env_dir, "bin", "activate"))
         )
 
+    def check_remote_no_overwrite(self, host, paths):
+        """Stop when the destination already holds one of the files."""
+        paths = sorted(paths)
+        listing = " ".join(shlex.quote(path) for path in paths)
+        command = "ssh {} {}".format(
+            shlex.quote(host), shlex.quote("ls -d -- {} 2>/dev/null".format(listing))
+        )
+        full = self.wrap_command(command)
+        self.publish_message("checking the destination: {}".format(full))
+
+        process = subprocess.run(
+            full, shell=True, executable="/bin/bash", stdout=subprocess.PIPE
+        )
+        existing = [
+            line.strip()
+            for line in process.stdout.decode("utf-8", "replace").splitlines()
+            if line.strip()
+        ]
+        if existing and not self.overwrite:
+            raise RuntimeError(
+                "refusing to overwrite {} file(s) already on {}:\n  {}\n"
+                "pass --overwrite to replace them".format(
+                    len(existing), host, "\n  ".join(existing)
+                )
+            )
+
     # -- markers -----------------------------------------------------------
 
     def marker(self, name):
@@ -158,6 +185,8 @@ class ConvertDataset(DatasetTask):
             raise RuntimeError(
                 "coffea file '{}' does not exist".format(spec.coffea_path)
             )
+
+        self.check_no_overwrite(spec.all_files().values(), what="h5")
 
         os.makedirs(spec.local_dir, exist_ok=True)
         command = spec.convert_command(
@@ -198,8 +227,10 @@ class TransferDataset(DatasetTask):
         host = self.cfg.remote_host
         target = spec.remote_path
         local = " ".join(shlex.quote(path) for path in sorted(files.values()))
+        remote_files = spec.remote_files()
 
         if host and host != "local":
+            self.check_remote_no_overwrite(host, remote_files.values())
             self.run_command(
                 "ssh {host} {mkdir}".format(
                     host=shlex.quote(host),
@@ -208,6 +239,7 @@ class TransferDataset(DatasetTask):
             )
             destination = "{}:{}/".format(host, target)
         else:
+            self.check_no_overwrite(remote_files.values(), what="h5")
             os.makedirs(target, exist_ok=True)
             destination = target + "/"
 
@@ -219,7 +251,6 @@ class TransferDataset(DatasetTask):
             )
         )
 
-        remote_files = spec.remote_files()
         self.write_marker(
             self.output(),
             host=host or "local",

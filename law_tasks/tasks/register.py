@@ -93,6 +93,10 @@ class RegisterModel(ModelTask):
         return naming.pick_color(registry.used_colors(modules))
 
     def run(self):
+        self.check_no_overwrite(
+            [target.path for target in self.output().values()], what="configuration"
+        )
+
         prediction = self.input().path
         evaluation_file = self.evaluation_file
 

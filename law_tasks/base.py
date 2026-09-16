@@ -29,9 +29,60 @@ class BaseTask(law.Task):
         "the container when already inside one; default: auto",
     )
 
+    overwrite = luigi.BoolParameter(
+        default=False,
+        significant=False,
+        description="replace files that are already there; without it a task "
+        "that would clobber existing output stops instead; default: False",
+    )
+
     @property
     def cfg(self):
         return settings()
+
+    def __init__(self, *args, **kwargs):
+        super(BaseTask, self).__init__(*args, **kwargs)
+
+        # --overwrite redoes the task that was asked for, even when its
+        # outputs are already there; the flag below keeps it complete once it
+        # has actually run
+        self._overwrite_done = False
+        if self.overwrite:
+            inner_run = self.run
+
+            def run_and_mark(*args, **kwargs):
+                try:
+                    return inner_run(*args, **kwargs)
+                finally:
+                    self._overwrite_done = True
+
+            self.run = run_and_mark
+
+    def complete(self):
+        if self.overwrite and not self._overwrite_done:
+            return False
+        return super(BaseTask, self).complete()
+
+    def clone(self, cls=None, **kwargs):
+        # --overwrite does not propagate to the dependencies: a rerun of one
+        # task must not recompute (and replace) everything below it
+        kwargs.setdefault("overwrite", False)
+        return super(BaseTask, self).clone(cls, **kwargs)
+
+    def check_no_overwrite(self, paths, what="file"):
+        """Stop unless ``--overwrite`` is given and something is in the way."""
+        existing = sorted(path for path in paths if os.path.exists(path))
+        if existing and not self.overwrite:
+            raise RuntimeError(
+                "refusing to overwrite {} {}(s) that {} already there:\n  {}\n"
+                "pass --overwrite to replace them".format(
+                    len(existing),
+                    what,
+                    "is" if len(existing) == 1 else "are",
+                    "\n  ".join(existing),
+                )
+            )
+        return existing
 
     # -- container ---------------------------------------------------------
 
@@ -258,7 +309,7 @@ class ModelTask(BaseTask):
 
     @property
     def prediction_name(self):
-        return naming.prediction_name(self.evaluation_file)
+        return naming.prediction_name(self.evaluation_file, self.eval_key)
 
     def prediction_path(self, version=None):
         return os.path.join(self.version_dir(version), self.prediction_name)

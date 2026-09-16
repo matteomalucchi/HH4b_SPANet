@@ -27,6 +27,13 @@ class TrainingMetrics(ModelTask):
 
     def run(self):
         version_dir = self.version_dir()
+        plot_dir = os.path.join(version_dir, "training_plots")
+        if os.path.isdir(plot_dir) and os.listdir(plot_dir) and not self.overwrite:
+            raise RuntimeError(
+                "{} already exists and is not empty; pass --overwrite to "
+                "replace the plots in it".format(plot_dir)
+            )
+
         command = "python3 {script} -d {dir}".format(
             script=self.cfg.training_metrics_script, dir=version_dir
         )
@@ -34,11 +41,7 @@ class TrainingMetrics(ModelTask):
             command += " " + self.metrics_args
 
         self.run_command(command)
-        self.write_marker(
-            self.output(),
-            version_dir=version_dir,
-            plot_dir=os.path.join(version_dir, "training_plots"),
-        )
+        self.write_marker(self.output(), version_dir=version_dir, plot_dir=plot_dir)
 
 
 class PlotTask(ModelTask):
@@ -63,12 +66,6 @@ class PlotTask(ModelTask):
         default="",
         description="additional arguments forwarded to the plotting script",
     )
-    overwrite = luigi.BoolParameter(
-        default=False,
-        significant=False,
-        description="write into an existing plot directory; default: False",
-    )
-
     def requires(self):
         return self.clone(RegisterModel)
 
@@ -169,11 +166,6 @@ class PlotCollection(ModelTask, law.WrapperTask):
         default="",
         description="parent directory of all plots of this model; default: "
         "derived from the options basename",
-    )
-    overwrite = luigi.BoolParameter(
-        default=False,
-        significant=False,
-        description="write into existing plot directories; default: False",
     )
 
     def requires(self):

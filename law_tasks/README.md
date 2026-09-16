@@ -200,11 +200,17 @@ apart, so a model evaluated on several samples does not overwrite itself:
 
 | | own test file | another test file |
 |---|---|---|
-| prediction | `predict_<own test>.h5` | `predict_<other test>.h5` |
+| prediction | `predict_<test>.h5` | `predict_<evaluation>_<test>.h5` |
 | configurations | `<work_dir>/configs/<model>/` | `<work_dir>/configs/<model>_<evaluation>/` |
 | plots | `plots_<model>/` | `plots_<model>_<evaluation>/` |
 | summary | `law/performance.json` | `law/performance_<evaluation>.json` |
 | legend | the usual label | the label plus ` - <evaluation>` |
+
+The evaluation is part of the prediction name as well, so two samples whose
+files share a basename but sit in different directories cannot produce the
+same prediction.  The training metric plots are *not* redone: they describe
+the training, not the sample, so they are made once, with the model's own test
+file.
 
 `--eval-tag <name>` replaces the derived name when it is too long or not
 telling enough, and `--plot-dir` still overrides the plot directory outright.
@@ -217,6 +223,30 @@ Single steps work the same way, e.g. only the predictions:
 ```bash
 law run hh4b.Predict --options-file <options> --test-file <other test file>
 ```
+
+## Nothing is overwritten
+
+Every task refuses to replace something that is already there and stops with
+the list of files in the way:
+
+| task | what it refuses to touch |
+|---|---|
+| `hh4b.ConvertDataset` | h5 files already next to the coffea file |
+| `hh4b.TransferDataset` | files already in the destination directory (checked over ssh) |
+| `hh4b.RegisterModel` | generated configurations already written |
+| `hh4b.TrainingMetrics`, `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | a plot directory that exists and is not empty |
+| `hh4b.Predict` | the prediction file, which is its own output |
+
+`--overwrite` lifts the refusal **and** reruns the task even when law would
+have called it complete:
+
+```bash
+law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite
+```
+
+It applies to the task that is asked for, not to its dependencies: the command
+above redraws that one plot without recomputing the prediction below it. To
+redo a step further down, ask for that step with `--overwrite`.
 
 ## Derived names
 
