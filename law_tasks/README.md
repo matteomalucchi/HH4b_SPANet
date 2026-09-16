@@ -96,8 +96,8 @@ datasets:
 Fields: `coffea_dir`, `coffea_file`, `output_dir` (default: the coffea
 directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
 `jet_like_global_vars`, `max_jets`, `convert_args` (anything else for the
-converter), `collections` (which jet collection groups to transfer, default:
-all) and `remote_dir`.
+converter, e.g. the weight normalization, see below), `collections` (which jet
+collection groups to transfer, default: all) and `remote_dir`.
 
 Every one of them is also a command line option, so a dataset that is not in
 the file needs no edit:
@@ -106,6 +106,52 @@ the file needs no edit:
 law run hh4b.Dataset --dataset my_study \
     --coffea-dir VBF/out_my_study --output-prefix My_Study_ \
     --regions "my_region my_region" --remote-dir vbf/out_my_study
+```
+
+### Weights, and any other converter flag
+
+`coffea_to_h5_direct.py` writes the coffea `weight` column into
+`WEIGHTS/weight` **as it is**: it normalizes only when asked, so without a
+flag the h5 carries whatever the coffea production put there, which can be
+many orders of magnitude away from one.  The two flags that change this are
+
+| flag | what it does |
+|---|---|
+| `-n` / `--norm-weights` | divides by `sum_genweights` of the dataset |
+| `-bw class` / `-bw sample` | rescales so each class (or each sample) sums to 1 |
+
+They are mutually exclusive.  Everything the converter accepts and the tasks
+do not model themselves goes through `convert_args`, in the dataset entry:
+
+```yaml
+  vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal:
+    ...
+    convert_args: "-n"        # or: "-bw class", "-n -rw", ...
+```
+
+or on the command line, where the value **has to be attached with `=`** (or
+start with a space), otherwise `-n` is read as a law option and not as its
+value:
+
+```bash
+law run hh4b.Dataset --dataset <name> --convert-args="-n"
+law run hh4b.Dataset --dataset <name> --convert-args="-n -m 5 5"   # several of them
+```
+
+Changing the flags does not change the file names, so the h5 files of an
+earlier conversion are in the way: add `--overwrite` to replace them.
+
+```bash
+law run hh4b.ConvertDataset --dataset <name> --convert-args="-n" --overwrite
+```
+
+Check what came out with
+
+```python
+import h5py, numpy as np
+with h5py.File("<prefix><collection>_train.h5") as h:
+    w = h["WEIGHTS/weight"][:]
+    print(w.mean(), w.sum(), np.abs(w).max())
 ```
 
 ### Which files are produced

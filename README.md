@@ -592,6 +592,11 @@ law run hh4b.Dataset --dataset vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal
 # a dataset that is not in the file needs no edit
 law run hh4b.Dataset --dataset my_study --coffea-dir VBF/out_my_study \
     --output-prefix My_Study_ --regions "my_region my_region" --remote-dir vbf/out_my_study
+
+# the weights are written as they come out of coffea; -n divides them by
+# sum_genweights, -bw class balances the classes (note the '=', without it
+# the leading dash is read as a law option)
+law run hh4b.Dataset --dataset <name> --convert-args="-n"
 ```
 
 The summary prints the `training_file` path to put into the options file. From
