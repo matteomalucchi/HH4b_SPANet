@@ -31,3 +31,16 @@ datasets:
     # remove the key to transfer all of them
     collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
+  
+  # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,
+  # VBF regions without kinematic cuts, Higgs jets also as global variables
+  vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal_2024:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    output_prefix: AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCut_JetGoodProvHiggsPaddedGlobal_
+    regions:
+      - vbf_best_candidates_6_jets_nokincut_4b_region
+      - vbf_best_candidates_6_jets_nokincut_4b_region
+    # only this jet collection group is copied to the training machine;
+    # remove the key to transfer all of them
+    collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
