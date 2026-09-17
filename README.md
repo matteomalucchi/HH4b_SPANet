@@ -630,13 +630,12 @@ evaluation are kept apart from the ones of the model's own test file.
 
 A finished result is never redone by accident, and a task that would write
 next to files it does not own stops and names them instead. `--overwrite`
-lifts that and reruns the task it is given, on `hh4b.Dataset` and
-`hh4b.Performance` together with the steps they drive -- the training and the
-prediction excepted, which cost hours and are asked for by name;
-`--overwrite-all` reruns any task together with everything below it. Results of a training that
-has been replaced by a newer one are redone on their own: the configurations
-and the plots record the `version_N` they were made from. Which files each
-flag replaces is spelled out in
+reruns the task it is given and every step below it, the conversion and the
+prediction included; `--overwrite-plots` does the same but keeps the data,
+redoing only the configurations and the plots. Results of a training that has
+been replaced by a newer one are redone on their own: the configurations and
+the plots record the `version_N` they were made from. Which files each flag
+replaces is spelled out in
 [What is overwritten, and when](law_tasks/README.md#what-is-overwritten-and-when).
 
 The performance configurations tracked in git are not modified: a

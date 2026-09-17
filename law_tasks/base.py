@@ -29,31 +29,22 @@ class BaseTask(law.Task):
         "the container when already inside one; default: auto",
     )
 
-    #: tasks that only drive other ones hand --overwrite down to them
-    propagates_overwrite = False
-
-    #: steps that cost hours: a propagated --overwrite leaves them alone
-    overwrite_only_explicitly = False
+    #: steps that produce data: --overwrite-plots leaves them as they are
+    produces_data = False
 
     overwrite = luigi.BoolParameter(
         default=False,
         significant=False,
-        description="redo this task and replace what is already there; on the "
-        "tasks that only drive others (hh4b.Dataset, hh4b.Performance, "
-        "hh4b.EfficiencyPlots, hh4b.RocPlots) it applies to the steps they "
-        "drive as well, the training and the prediction excepted; default: False",
+        description="redo this task and every step below it, replacing what is "
+        "already there; a new training still takes --force-training; "
+        "default: False",
     )
-    overwrite_driven = luigi.BoolParameter(
+    overwrite_plots = luigi.BoolParameter(
         default=False,
         significant=False,
-        description="set by law itself when --overwrite is given to a task "
-        "that drives this one; default: False",
-    )
-    overwrite_all = luigi.BoolParameter(
-        default=False,
-        significant=False,
-        description="redo this task and everything it depends on, the training "
-        "and the prediction included; default: False",
+        description="redo the configurations and the plots and keep the data: "
+        "the conversion, the transfer, the training and the prediction are "
+        "left as they are; default: False",
     )
 
     @property
@@ -62,7 +53,7 @@ class BaseTask(law.Task):
 
     @property
     def force_overwrite(self):
-        return bool(self.overwrite or self.overwrite_driven or self.overwrite_all)
+        return bool(self.overwrite or self.overwrite_plots)
 
     def __init__(self, *args, **kwargs):
         super(BaseTask, self).__init__(*args, **kwargs)
@@ -87,27 +78,15 @@ class BaseTask(law.Task):
         return super(BaseTask, self).complete()
 
     def clone(self, cls=None, **kwargs):
-        # --overwrite alone redoes the task it is given, so that redrawing one
-        # plot does not recompute the prediction below it.  On a task that only
-        # drives others it would mean nothing, so there it keeps reaching the
-        # steps it drives -- the training and the prediction excepted, which
-        # cost hours and are asked for by name.  --overwrite-all redoes
-        # everything below, whatever it is.
-        deep = self.overwrite_all
-        driven = deep or self.overwrite_driven or (
-            self.overwrite and self.propagates_overwrite
-        )
-        if (
-            driven
-            and not deep
-            and cls is not None
-            and getattr(cls, "overwrite_only_explicitly", False)
-        ):
-            driven = False
+        # both flags reach every step below the one they are given to;
+        # --overwrite-plots stops at the steps that produce data, so that
+        # redoing the plots never costs a conversion or a GPU
+        plots = self.overwrite_plots
+        if plots and cls is not None and getattr(cls, "produces_data", False):
+            plots = False
 
-        kwargs.setdefault("overwrite", False)
-        kwargs.setdefault("overwrite_driven", driven)
-        kwargs.setdefault("overwrite_all", deep)
+        kwargs.setdefault("overwrite", self.overwrite)
+        kwargs.setdefault("overwrite_plots", plots)
         return super(BaseTask, self).clone(cls, **kwargs)
 
     def output_paths(self):

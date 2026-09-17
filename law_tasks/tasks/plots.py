@@ -30,8 +30,8 @@ class TrainingMetrics(ModelTask):
         plot_dir = os.path.join(version_dir, "training_plots")
         if os.path.isdir(plot_dir) and os.listdir(plot_dir) and not self.force_overwrite:
             raise RuntimeError(
-                "{} already exists and is not empty; pass --overwrite to "
-                "replace the plots in it".format(plot_dir)
+                "{} already exists and is not empty; pass --overwrite-plots "
+                "to replace the plots in it".format(plot_dir)
             )
 
         command = "python3 {script} -d {dir}".format(
@@ -116,8 +116,9 @@ class PlotTask(ModelTask):
             )
             return
         raise RuntimeError(
-            "{} already exists and is not empty; pass --overwrite to write into "
-            "it anyway, or choose another parent directory with --plot-dir".format(
+            "{} already exists and is not empty; pass --overwrite-plots to write "
+            "into it anyway, or choose another parent directory with "
+            "--plot-dir".format(
                 self.target_dir
             )
         )
@@ -169,7 +170,6 @@ class PlotCollection(ModelTask, law.WrapperTask):
     """All plot configurations of one kind."""
 
     exclude_index = True
-    propagates_overwrite = True
 
     plot_task = None
     plot_dir = luigi.Parameter(

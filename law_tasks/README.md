@@ -281,8 +281,9 @@ from that:
 * a command that stopped halfway carries on where it stopped;
 * a result that is finished is never replaced -- unless you ask for it.
 
-Asking for it is `--overwrite`: "redo this step" and "replace what this step
-wrote" are the same thing, so the question is always *which steps are redone*.
+Asking for it is `--overwrite`, or `--overwrite-plots` when the data is to be
+kept: "redo this step" and "replace what this step wrote" are the same thing,
+so the question is always *which steps are redone*.
 
 ### What each step writes
 
@@ -303,29 +304,29 @@ done; it is rewritten whenever the step runs.
 
 ### Which steps a flag redoes
 
+Two flags, and both reach every step below the one they are given to:
+
 | flag | steps redone |
 |---|---|
 | *(none)* | the ones whose outputs are missing |
-| `--overwrite` on a step that drives nothing (`hh4b.Predict`, `hh4b.RegisterModel`, `hh4b.EfficiencyPlot`, `hh4b.RocPlot`, `hh4b.TrainingMetrics`, ...) | that step, and nothing else |
-| `--overwrite` on `hh4b.Dataset`, `hh4b.Performance`, `hh4b.EfficiencyPlots`, `hh4b.RocPlots` | that step and the steps it drives, **except** `hh4b.Training` and `hh4b.Predict` |
-| `--overwrite-all` on any step | that step and everything below it, the prediction included |
-| `--force-training` on `hh4b.Training` | trains again and adds a `version_N`, instead of adopting the one that is there |
+| `--overwrite-plots` | the step it is given to and every step below it, **except** the conversion, the transfer, the training and the prediction |
+| `--overwrite` | the step it is given to and every step below it, whatever it is |
+| `--force-training` (on `hh4b.Training`) | trains again and adds a `version_N`, instead of adopting the one that is there |
 
-The training and the prediction are the two steps that cost hours of GPU, and
-they are the reason for the difference between the two flags: an `--overwrite`
-that is passed to another step never touches them.  Ask for them by name:
+`--overwrite` replaces the data as well: it computes the prediction again, and
+on the analysis machine it converts the coffea file again.
+`--overwrite-plots` is the one to use to redo what is drawn from a prediction
+that is fine, without paying for a GPU or a conversion.
 
-```bash
-law run hh4b.Predict --options-file <options> --overwrite      # predict again
-law run hh4b.Training --options-file <options> --force-training  # train again
-```
+Starting a training is the one thing neither flag does: `hh4b.Training` adopts
+the `version_N` that is already there, and only `--force-training` trains.
 
 ### Spelled out
 
 With a model that is trained and predicted,
 
 ```bash
-law run hh4b.Performance --options-file <options> --overwrite
+law run hh4b.Performance --options-file <options> --overwrite-plots
 ```
 
 replaces exactly these:
@@ -350,8 +351,16 @@ utils/performance/..., utils/roccurves/...   the configurations tracked in git
 everything that belongs to another --test-file / --eval-tag evaluation
 ```
 
-The same command with `--overwrite-all` adds `version_N/predict_*.h5` to the
-first list.  Neither of them ever starts a training.
+The same command with `--overwrite` adds `<run dir>/version_N/predict_*.h5` to
+the first list: the prediction is computed again, everything else is the same.
+
+On the analysis machine, `--overwrite` is what makes a conversion run again
+with different flags, replacing the h5 next to the coffea file and the copies
+of them on the training machine:
+
+```bash
+law run hh4b.Dataset --dataset <name> --convert-args="-n" --overwrite
+```
 
 ### When law redoes something you did not ask for
 
@@ -370,8 +379,8 @@ stops and names them:
 | `hh4b.TrainingMetrics`, `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | a plot directory that exists and is not empty |
 
 Typically these are plots made by hand, before the pipeline existed.  Either
-`--overwrite` to replace them, or `--plot-dir <other name>` to leave them alone
-and send the new plots elsewhere.
+`--overwrite-plots` to replace them, or `--plot-dir <other name>` to leave them
+alone and send the new plots elsewhere.
 
 What a step declares as its *own* output is not protected against that step:
 law only runs it when one of those outputs is missing, so whatever is still

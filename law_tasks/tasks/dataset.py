@@ -171,6 +171,9 @@ class ConvertDataset(DatasetTask):
     one pair per jet collection group, and they are the outputs of this task.
     """
 
+    #: h5 inputs: --overwrite-plots leaves them alone
+    produces_data = True
+
     def output(self):
         spec = self.spec
         return {
@@ -208,6 +211,9 @@ class ConvertDataset(DatasetTask):
 
 class TransferDataset(DatasetTask):
     """Copy the converted h5 files to the machine the training runs on."""
+
+    #: h5 inputs: --overwrite-plots leaves them alone
+    produces_data = True
 
     def requires(self):
         return self.clone(ConvertDataset)
@@ -271,8 +277,6 @@ class Dataset(DatasetTask):
     It writes a summary with the ``training_file`` paths to put into the
     SPANet options file.
     """
-
-    propagates_overwrite = True
 
     def requires(self):
         return self.clone(TransferDataset)
