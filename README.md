@@ -642,6 +642,12 @@ replaces is spelled out in
 The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
+The jet collections, the index offsets and the resonance set of those entries
+are read from the `event_info_file` of the model, and an efficiency plot whose
+resonance the event file does not define is left out instead of failing.
+
+What a run did is kept under `<work_dir>/journal/<run>`: one JSON line per
+step and per bash command, and the full output of each command next to it.
 
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
 `SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,

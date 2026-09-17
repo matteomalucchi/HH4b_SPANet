@@ -12,6 +12,7 @@ for everybody.
 
 import json
 import os
+import string
 from functools import lru_cache
 
 try:  # law is only needed when running the tasks, not for the unit tests
@@ -178,6 +179,21 @@ class Settings(object):
             "SPANET_LAW_WORK_DIR",
             os.path.join(self.eos_base, "law_work"),
         )
+
+    def expand(self, path):
+        """Expand ``~`` and the variables of a path written in an options file.
+
+        A variable that is not exported falls back to the setting of the same
+        meaning, so that a law.cfg alone is enough.
+        """
+        expanded = os.path.expandvars(os.path.expanduser(str(path)))
+        if "$" in expanded:
+            expanded = string.Template(expanded).safe_substitute(
+                SPANET_MAIN_DIR=self.spanet_main_dir,
+                SPANET_ENV_DIR=self.spanet_env_dir,
+                EOS_SPANET=self.output_base,
+            )
+        return expanded
 
     # -- scripts and base configurations ----------------------------------
 

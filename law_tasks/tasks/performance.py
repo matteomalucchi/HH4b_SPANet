@@ -4,6 +4,7 @@ import json
 
 import luigi
 
+from law_tasks import journal
 from law_tasks.base import ModelTask
 from law_tasks.tasks.plots import EfficiencyPlots, RocPlots, TrainingMetrics
 from law_tasks.tasks.register import RegisterModel
@@ -46,12 +47,14 @@ class Performance(ModelTask):
             with open(self.input()["metrics"].path) as fobj:
                 metrics = json.load(fobj)
 
+        collections = self.requires()
         efficiency = {
-            task.plot_name: task.target_dir for task in self.requires()["efficiency"].requires()
+            task.plot_name: task.target_dir
+            for task in collections["efficiency"].requires()
         }
-        roc = {
-            task.plot_name: task.target_dir for task in self.requires()["roc"].requires()
-        }
+        roc = {task.plot_name: task.target_dir for task in collections["roc"].requires()}
+        skipped = dict(collections["efficiency"].skipped())
+        skipped.update(collections["roc"].skipped())
 
         self.write_marker(
             self.output(),
@@ -66,6 +69,9 @@ class Performance(ModelTask):
             training_plots=metrics.get("plot_dir"),
             efficiency_plots=efficiency,
             roc_plots=roc,
+            skipped_plots=skipped,
+            event_file=self.event_info_path,
+            journal=journal.journal_path(self.cfg.work_dir),
         )
 
         self.publish_message("")
@@ -81,4 +87,11 @@ class Performance(ModelTask):
             self.publish_message("efficiency plots: {}".format(path))
         for name, path in sorted(roc.items()):
             self.publish_message("ROC plots:        {}".format(path))
+        for name in sorted(skipped):
+            self.publish_message(
+                "not made:         {} ({})".format(name, skipped[name])
+            )
         self.publish_message("summary:          {}".format(self.output().path))
+        self.publish_message(
+            "journal:          {}".format(journal.journal_path(self.cfg.work_dir))
+        )

@@ -44,7 +44,7 @@ LIST_FIELDS = [
 ]
 
 
-def _load_yaml(path):
+def load_yaml(path):
     try:
         from omegaconf import OmegaConf
 
@@ -69,7 +69,7 @@ def load_config(path=None):
     if not path or not os.path.exists(path):
         return {}, {}
 
-    content = _load_yaml(path) or {}
+    content = load_yaml(path) or {}
     return content.get("defaults") or {}, content.get("datasets") or {}
 
 

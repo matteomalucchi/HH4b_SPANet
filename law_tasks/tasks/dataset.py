@@ -17,7 +17,7 @@ import subprocess
 import law
 import luigi
 
-from law_tasks import datasets
+from law_tasks import datasets, journal
 from law_tasks.base import BaseTask
 
 
@@ -158,6 +158,8 @@ class DatasetTask(BaseTask):
 
     def write_marker(self, target, **content):
         content.setdefault("dataset", self.dataset)
+        if self._commands:
+            content.setdefault("commands", self._commands)
         target.parent.touch()
         with open(target.path, "w") as fobj:
             json.dump(content, fobj, indent=4)
@@ -301,6 +303,7 @@ class Dataset(DatasetTask):
             remote_dir=spec.remote_path,
             remote_files=remote_files,
             training_files=training_files,
+            journal=journal.journal_path(self.cfg.work_dir),
         )
 
         self.publish_message("")

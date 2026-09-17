@@ -458,6 +458,53 @@ Each of them can be overridden: `--test-file`, `--eval-tag`, `--label`,
 `--color`, `--true-key`, `--plot-dir`, and `--extra-spanet-keys` /
 `--extra-true-keys` (JSON dicts) for entries such as `{"jet_coll": "JetVBF"}`.
 
+## The jets and the resonances, from the event file
+
+The efficiency and the ROC scripts need to know which collection holds which
+jets; the entries carry it, and the event file of the model already says it.
+`hh4b.RegisterModel` reads `event_info_file` from the options file and fills
+the keys in:
+
+| key | where it comes from | in |
+|---|---|---|
+| `jet_coll_higgs` | the sequential input the Higgs daughters are taken from, or the one that carries the targets when there is no Higgs resonance | both entries |
+| `jet_coll_vbf` | the sequential input of the VBF daughters, when it is not the same one | both entries |
+| `n_higgs_jets` | `0` when the VBF jets have a collection of their own, otherwise the four leading jets of the single collection (the default of the script) | both entries |
+| `offset_jet_idx_higgs`, `offset_jet_idx_vbf` | minus the slots of the collections *before* the one of that resonance: SPANet numbers the jets over its sequential inputs concatenated, the file stores them per collection | the model entry |
+| `resonances` | the `RESONANCES_DICT` entry whose daughters are the ones of the event file: `h1: b1 b2`, `h2: b3 b4` is `OLD_RESONANCES`, `h2: b1 b2` is `DEFAULT_RESONANCES` | the model entry |
+
+The number of slots of a collection is read from the file the model is
+evaluated on (`INPUTS/<collection>/MASK`), so two collections of four and five
+jets give what the configurations of this repository say by hand:
+
+```python
+"jet_coll_higgs": "JetHiggs",       # INPUTS: SEQUENTIAL: JetHiggs, JetVBF
+"jet_coll_vbf": "JetVBF",           # EVENT:  h1/h2 on JetHiggs, vbf on JetVBF
+"n_higgs_jets": 0,
+"offset_jet_idx_higgs": 0,          # JetHiggs is the first collection
+"offset_jet_idx_vbf": -4,           # JetHiggs has four slots
+"resonances": "DEFAULT_RESONANCES",
+```
+
+A collection whose name contains `VBF` is taken to hold the VBF jets alone,
+which is what makes `n_higgs_jets` zero; `--extra-true-keys` overrides it, and
+overrides every other key, for a sample that does not follow the convention.
+
+### Plots that cannot be made are not made
+
+`efficiency_studies.py` pairs the Higgs jets unless it is given
+`--ignore-higgs`, and the VBF jets when it is given `--vbf`.  A resonance that
+the event file does not define is not in the prediction either, and the script
+fails looking for it, so `hh4b.EfficiencyPlots` leaves those plots out:
+
+```
+not made:         HiggsEff (hh4b_..._JetVBF_DNNVars_JetHiggsGlobal.yaml defines no Higgs resonance)
+```
+
+They are listed like that at the end of `hh4b.Performance` and kept in its
+summary under `skipped_plots`.  Asking for one by name stops with the same
+explanation instead of running into the failure.
+
 ## The generated configurations
 
 `hh4b.RegisterModel` does **not** edit the configurations tracked in git.  It
@@ -477,6 +524,45 @@ separated list of keys) restricts the comparison.
 To keep the new model permanently in the tracked configuration as well, add
 `--update-base-config`: the entries are appended to the base files if they are
 not there yet.
+
+## What ran: the journal
+
+Every `law run` writes what it did under `<work_dir>/journal`, one directory
+per invocation, with `latest` pointing at the most recent one:
+
+```
+<work_dir>/journal/20260917_101530_31415/run.jsonl        the steps, in order
+<work_dir>/journal/20260917_101530_31415/001_Training.log the output of a command
+<work_dir>/journal/20260917_101530_31415/002_Predict.log
+<work_dir>/journal/latest
+```
+
+`run.jsonl` holds one JSON line per event: a step that started, finished or
+failed, and every bash command with the directory it ran in, its exit code,
+how long it took and the file its output went to.  The output is shown while
+it runs, exactly as before, *and* kept in that file.
+
+```bash
+cd <work_dir>/journal/latest
+
+# what the run did, in order
+python3 -c 'import json
+for line in open("run.jsonl"):
+    e = json.loads(line)
+    print(e["time"], e["task"], e.get("state") or e["command"])'
+
+# the commands alone, ready to be pasted into a shell
+python3 -c 'import json
+for line in open("run.jsonl"):
+    e = json.loads(line)
+    if e["event"] == "command":
+        print(e["command"])'
+```
+
+The marker of every step keeps its own commands as well, so
+`<run dir>/law/<step>.json` answers "what exactly was executed to produce
+this" without looking for the run it belonged to, and `hh4b.Performance`
+prints the path of the journal when it is done.
 
 ## Configuration
 

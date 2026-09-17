@@ -3,15 +3,17 @@
 import glob
 import json
 import os
+import pty
 import re
 import shlex
 import subprocess
+import sys
 import time
 
 import law
 import luigi
 
-from law_tasks import naming
+from law_tasks import eventinfo, journal, naming
 from law_tasks.config import settings
 
 class BaseTask(law.Task):
@@ -58,19 +60,42 @@ class BaseTask(law.Task):
     def __init__(self, *args, **kwargs):
         super(BaseTask, self).__init__(*args, **kwargs)
 
+        #: the commands this task executed, for the marker and the journal
+        self._commands = []
         # an overwrite redoes the task even when its outputs are already
         # there; the flag below keeps it complete once it has actually run
         self._overwrite_done = False
-        if self.force_overwrite:
-            inner_run = self.run
 
-            def run_and_mark(*args, **kwargs):
-                try:
-                    return inner_run(*args, **kwargs)
-                finally:
-                    self._overwrite_done = True
+        inner_run = self.run
 
-            self.run = run_and_mark
+        def run_and_record(*args, **kwargs):
+            self.journal("step", state="started")
+            try:
+                result = inner_run(*args, **kwargs)
+            except BaseException as error:
+                self.journal("step", state="failed", error=str(error))
+                raise
+            else:
+                self.journal("step", state="done")
+                return result
+            finally:
+                self._overwrite_done = True
+
+        self.run = run_and_record
+
+    # -- journal -----------------------------------------------------------
+
+    def journal(self, event, **content):
+        """Append one line to the journal of this ``law run``."""
+        try:
+            return journal.record(
+                self.cfg.work_dir,
+                dict(content, event=event, task=self.__class__.__name__,
+                     task_id=self.task_id),
+            )
+        except OSError:
+            # a journal that cannot be written must not stop the pipeline
+            return None
 
     def complete(self):
         if self.force_overwrite and not self._overwrite_done:
@@ -180,14 +205,103 @@ class BaseTask(law.Task):
     # -- execution ---------------------------------------------------------
 
     def run_command(self, command, gpu=False, cwd=None, wrap=True):
-        """Print and run ``command``, raising when it fails."""
-        full = self.wrap_command(command, gpu=gpu) if wrap else command
+        """Print, run and record ``command``, raising when it fails.
 
+        The output is shown as it comes and kept in the journal of the run, so
+        that what a step did can be read back afterwards.
+        """
+        full = self.wrap_command(command, gpu=gpu) if wrap else command
         self.publish_message("running: {}".format(full))
-        code = subprocess.call(full, shell=True, executable="/bin/bash", cwd=cwd)
+
+        started = time.time()
+        log = self.command_log()
+        code = self._execute(full, cwd=cwd, log=log)
+
+        entry = {
+            "command": full,
+            "cwd": cwd or os.getcwd(),
+            "exit_code": code,
+            "seconds": round(time.time() - started, 1),
+            "log": log,
+        }
+        self._commands.append(entry)
+        self.journal("command", **entry)
+
         if code != 0:
-            raise RuntimeError("command failed with exit code {}:\n{}".format(code, full))
+            raise RuntimeError(
+                "command failed with exit code {}:\n{}\nits output is in {}".format(
+                    code, full, log
+                )
+            )
         return code
+
+    def command_log(self):
+        """Path of the file the output of the next command is written to."""
+        try:
+            return journal.log_path(self.cfg.work_dir, self.__class__.__name__)
+        except OSError:
+            return os.devnull
+
+    def _execute(self, full, cwd, log):
+        """Run ``full``, showing its output and writing it to ``log``."""
+        try:
+            stream = open(log, "w")
+        except OSError:
+            stream = open(os.devnull, "w")
+
+        with stream:
+            stream.write("# {}\n# cwd: {}\n\n".format(full, cwd or os.getcwd()))
+            stream.flush()
+
+            def forward(text):
+                sys.stdout.write(text)
+                sys.stdout.flush()
+                stream.write(text)
+
+            if sys.stdout.isatty():
+                # a pseudo terminal keeps the progress bars of spanet.train and
+                # spanet.predict updating in place instead of one line per step
+                return self._execute_on_tty(full, cwd, forward)
+            return self._execute_on_pipe(full, cwd, forward)
+
+    def _execute_on_pipe(self, full, cwd, forward):
+        process = subprocess.Popen(
+            full,
+            shell=True,
+            executable="/bin/bash",
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        for line in iter(process.stdout.readline, b""):
+            forward(line.decode("utf-8", "replace"))
+        process.stdout.close()
+        return process.wait()
+
+    def _execute_on_tty(self, full, cwd, forward):
+        master, slave = pty.openpty()
+        try:
+            process = subprocess.Popen(
+                full,
+                shell=True,
+                executable="/bin/bash",
+                cwd=cwd,
+                stdout=slave,
+                stderr=slave,
+                close_fds=True,
+            )
+            os.close(slave)
+            while True:
+                try:
+                    data = os.read(master, 4096)
+                except OSError:  # the child closed the terminal
+                    break
+                if not data:
+                    break
+                forward(data.decode("utf-8", "replace"))
+        finally:
+            os.close(master)
+        return process.wait()
 
 
 class ModelTask(BaseTask):
@@ -279,6 +393,8 @@ class ModelTask(BaseTask):
     def write_marker(self, target, **content):
         content.setdefault("task", self.__class__.__name__)
         content.setdefault("timestamp", time.strftime("%Y-%m-%d %H:%M:%S"))
+        if self._commands:
+            content.setdefault("commands", self._commands)
         if "version_dir" not in content:
             # the training this result belongs to, so that a later training
             # does not silently reuse it (see marker_is_stale)
@@ -362,6 +478,27 @@ class ModelTask(BaseTask):
     @property
     def training_file(self):
         return naming.training_file(self.options_path)
+
+    @property
+    def event_info_path(self):
+        """Path of the event file the model is described by."""
+        path = self.cfg.expand(naming.event_info_file(self.options_path))
+        if not os.path.isabs(path):
+            path = os.path.join(self.cfg.repo_dir, path)
+        if not os.path.exists(path):
+            raise ValueError(
+                "event file '{}' of {} does not exist".format(
+                    path, os.path.basename(self.options_path)
+                )
+            )
+        return os.path.abspath(path)
+
+    @property
+    def event_info(self):
+        """What the event file says about the jets and the resonances."""
+        if getattr(self, "_event_info", None) is None:
+            self._event_info = eventinfo.load(self.event_info_path)
+        return self._event_info
 
     @property
     def evaluation_file(self):

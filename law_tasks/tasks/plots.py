@@ -52,6 +52,9 @@ class PlotTask(ModelTask):
     #: 'efficiency' or 'roc'
     kind = None
 
+    #: whether the plot pairs the jets, and therefore needs the resonances
+    needs_resonances = False
+
     plot_name = luigi.Parameter(
         description="name of the plot configuration, i.e. the subdirectory the "
         "plots are written to (see the [efficiency_plots] and [roc_plots] "
@@ -100,6 +103,12 @@ class PlotTask(ModelTask):
     def output(self):
         return self.eval_marker("{}_{}.json".format(self.kind, self.plot_name))
 
+    def unsupported_reason(self):
+        """Why the event file of the model does not allow this plot."""
+        if not self.needs_resonances:
+            return None
+        return self.event_info.unsupported(self.plot_definitions.get(self.plot_name))
+
     def check_target_dir(self):
         """Refuse to silently write into a directory that already holds plots."""
         if self.force_overwrite or not os.path.isdir(self.target_dir):
@@ -131,6 +140,18 @@ class PlotTask(ModelTask):
                 )
             )
 
+        reason = self.unsupported_reason()
+        if reason:
+            raise RuntimeError(
+                "the {} plot '{}' cannot be made for this model: {}; it is "
+                "left out of hh4b.{}Plots".format(
+                    self.kind,
+                    self.plot_name,
+                    reason,
+                    "Efficiency" if self.kind == "efficiency" else "Roc",
+                )
+            )
+
         self.check_target_dir()
         os.makedirs(os.path.join(self.plot_base, self.main_dir), exist_ok=True)
 
@@ -158,6 +179,7 @@ class EfficiencyPlot(PlotTask):
     """One efficiency configuration, e.g. ``VBFEff_vbf_no_kin_cuts``."""
 
     kind = "efficiency"
+    needs_resonances = True
 
 
 class RocPlot(PlotTask):
@@ -178,14 +200,29 @@ class PlotCollection(ModelTask, law.WrapperTask):
         "derived from the options basename",
     )
 
-    def requires(self):
-        definitions = (
+    @property
+    def definitions(self):
+        return (
             self.cfg.efficiency_plots
             if self.plot_task is EfficiencyPlot
             else self.cfg.roc_plots
         )
+
+    def skipped(self):
+        """``{plot: reason}`` of the plots the event file does not allow."""
+        skipped = {}
+        for name in sorted(self.definitions):
+            reason = self.clone(self.plot_task, plot_name=name).unsupported_reason()
+            if reason:
+                skipped[name] = reason
+        return skipped
+
+    def requires(self):
+        skipped = self.skipped()
         return [
-            self.clone(self.plot_task, plot_name=name) for name in sorted(definitions)
+            self.clone(self.plot_task, plot_name=name)
+            for name in sorted(self.definitions)
+            if name not in skipped
         ]
 
 

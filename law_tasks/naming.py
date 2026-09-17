@@ -32,6 +32,15 @@ def training_file(options_file):
     return os.path.expandvars(path)
 
 
+def event_info_file(options_file):
+    """The ``event_info_file`` entry of the options file, with variables expanded."""
+    options = load_options(options_file)
+    path = options.get("event_info_file")
+    if not path:
+        raise ValueError("no 'event_info_file' entry in {}".format(options_file))
+    return os.path.expandvars(os.path.expanduser(path))
+
+
 def derive_test_file(train_file):
     """Map a training file onto the file the model has to be evaluated on.
 
