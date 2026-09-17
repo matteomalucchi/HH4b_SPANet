@@ -646,8 +646,10 @@ The jet collections, the index offsets and the resonance set of those entries
 are read from the `event_info_file` of the model, and an efficiency plot whose
 resonance the event file does not define is left out instead of failing.
 
-What a run did is kept under `<work_dir>/journal/<run>`: one JSON line per
-step and per bash command, and the full output of each command next to it.
+What a run did is kept in a `journal/<run>` directory next to what it
+produced -- for a model, next to its generated configurations in
+`<work_dir>/configs/<model>/journal/` -- with one JSON line per step and per
+bash command and the full output of each command next to it.
 
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
 `SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,

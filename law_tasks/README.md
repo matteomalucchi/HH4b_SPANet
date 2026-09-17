@@ -527,15 +527,34 @@ not there yet.
 
 ## What ran: the journal
 
-Every `law run` writes what it did under `<work_dir>/journal`, one directory
-per invocation, with `latest` pointing at the most recent one:
+Every `law run` writes what it did in a `journal` directory next to what it
+produced -- for a model, the directory its generated configurations are in:
 
 ```
-<work_dir>/journal/20260917_101530_31415/run.jsonl        the steps, in order
-<work_dir>/journal/20260917_101530_31415/001_Training.log the output of a command
-<work_dir>/journal/20260917_101530_31415/002_Predict.log
-<work_dir>/journal/latest
+<work_dir>/configs/<model>/
+    efficiency_configuration_<model>.py
+    roc_configuration_<model>.py
+    registration.json
+    journal/
+        20260917_101530_31415/
+            run.jsonl            the steps of that run, in order
+            001_Training.log     the output of the first command
+            002_Predict.log
+            003_TrainingMetrics.log
+        latest -> 20260917_101530_31415
 ```
+
+so for the model of the example above the logs are in
+
+```
+/eos/user/m/mmalucch/spanet_infos/law_work/configs/hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetHiggsGlobal_DNNVars_VBFNoKinCut_ClassLoss7_2024/journal/latest/
+```
+
+An evaluation on another test file keeps its own, under
+`<model>_<evaluation>/journal/`, and the steps that convert a dataset write
+theirs next to the h5 files they produce, in `<coffea dir>/journal/`.
+`hh4b.Performance` and `hh4b.Dataset` print the path when they are done and
+keep it in their summary.
 
 `run.jsonl` holds one JSON line per event: a step that started, finished or
 failed, and every bash command with the directory it ran in, its exit code,
@@ -543,7 +562,7 @@ how long it took and the file its output went to.  The output is shown while
 it runs, exactly as before, *and* kept in that file.
 
 ```bash
-cd <work_dir>/journal/latest
+cd <work_dir>/configs/<model>/journal/latest
 
 # what the run did, in order
 python3 -c 'import json
@@ -561,8 +580,7 @@ for line in open("run.jsonl"):
 
 The marker of every step keeps its own commands as well, so
 `<run dir>/law/<step>.json` answers "what exactly was executed to produce
-this" without looking for the run it belonged to, and `hh4b.Performance`
-prints the path of the journal when it is done.
+this" without looking for the run it belonged to.
 
 ## Configuration
 

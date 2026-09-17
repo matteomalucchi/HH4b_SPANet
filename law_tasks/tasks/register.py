@@ -60,12 +60,6 @@ class RegisterModel(ModelTask):
     def requires(self):
         return self.clone(Predict)
 
-    @property
-    def config_dir(self):
-        return os.path.join(
-            self.cfg.work_dir, "configs", self.model_key + self.eval_suffix
-        )
-
     def config_path(self, kind):
         return os.path.join(
             self.config_dir, "{}_configuration_{}.py".format(kind, self.model_key)

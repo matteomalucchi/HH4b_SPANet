@@ -123,6 +123,10 @@ class DatasetTask(BaseTask):
             shlex.quote(os.path.join(env_dir, "bin", "activate"))
         )
 
+    @property
+    def journal_base(self):
+        return self.spec.local_dir
+
     def check_remote_no_overwrite(self, host, paths):
         """Stop when the destination already holds one of the files."""
         paths = sorted(paths)
@@ -303,7 +307,7 @@ class Dataset(DatasetTask):
             remote_dir=spec.remote_path,
             remote_files=remote_files,
             training_files=training_files,
-            journal=journal.journal_path(self.cfg.work_dir),
+            journal=journal.journal_path(self.journal_base),
         )
 
         self.publish_message("")
@@ -316,3 +320,6 @@ class Dataset(DatasetTask):
         for name in sorted(training_files):
             self.publish_message('  "{}": "{}"'.format(name, training_files[name]))
         self.publish_message("summary:     {}".format(self.output().path))
+        self.publish_message(
+            "journal:     {}".format(journal.journal_path(self.journal_base))
+        )

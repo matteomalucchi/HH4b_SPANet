@@ -1,14 +1,15 @@
 """Record of what the pipeline did: the steps, the commands and their output.
 
-Every ``law run`` invocation gets a directory of its own under
-``<work_dir>/journal``:
+Every ``law run`` invocation gets a directory of its own, next to what the
+steps produced: the generated configurations of a model, the h5 files of a
+dataset.
 
-    <work_dir>/journal/<run id>/run.jsonl              one line per step and command
-    <work_dir>/journal/<run id>/001_ConvertDataset.log the output of that command
+    <base>/journal/<run id>/run.jsonl              one line per step and command
+    <base>/journal/<run id>/001_ConvertDataset.log the output of that command
 
 so that a run can be read back exactly as it happened, including the bash
-command each step executed.  ``<work_dir>/journal/latest`` points at the
-directory of the most recent run.
+command each step executed.  ``<base>/journal/latest`` points at the directory
+of the most recent run.
 """
 
 import itertools

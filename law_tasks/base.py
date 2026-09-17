@@ -85,11 +85,16 @@ class BaseTask(law.Task):
 
     # -- journal -----------------------------------------------------------
 
+    @property
+    def journal_base(self):
+        """Directory the journal of this task is written under."""
+        return self.cfg.work_dir
+
     def journal(self, event, **content):
         """Append one line to the journal of this ``law run``."""
         try:
             return journal.record(
-                self.cfg.work_dir,
+                self.journal_base,
                 dict(content, event=event, task=self.__class__.__name__,
                      task_id=self.task_id),
             )
@@ -238,7 +243,7 @@ class BaseTask(law.Task):
     def command_log(self):
         """Path of the file the output of the next command is written to."""
         try:
-            return journal.log_path(self.cfg.work_dir, self.__class__.__name__)
+            return journal.log_path(self.journal_base, self.__class__.__name__)
         except OSError:
             return os.devnull
 
@@ -381,6 +386,17 @@ class ModelTask(BaseTask):
     @property
     def marker_dir(self):
         return os.path.join(self.run_dir, "law")
+
+    @property
+    def config_dir(self):
+        """Where the generated configurations and the journal of a model live."""
+        return os.path.join(
+            self.cfg.work_dir, "configs", self.model_key + self.eval_suffix
+        )
+
+    @property
+    def journal_base(self):
+        return self.config_dir
 
     def marker(self, name):
         return law.LocalFileTarget(os.path.join(self.marker_dir, name))

@@ -71,7 +71,7 @@ class Performance(ModelTask):
             roc_plots=roc,
             skipped_plots=skipped,
             event_file=self.event_info_path,
-            journal=journal.journal_path(self.cfg.work_dir),
+            journal=journal.journal_path(self.journal_base),
         )
 
         self.publish_message("")
@@ -93,5 +93,5 @@ class Performance(ModelTask):
             )
         self.publish_message("summary:          {}".format(self.output().path))
         self.publish_message(
-            "journal:          {}".format(journal.journal_path(self.cfg.work_dir))
+            "journal:          {}".format(journal.journal_path(self.journal_base))
         )
