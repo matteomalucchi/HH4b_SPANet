@@ -154,7 +154,7 @@ class Training(ModelTask):
             seed=self.seed,
             checkpoint=self.checkpoint or None,
             extra_args=self.train_args,
-            output_dir=self.base_dir,
+            output_dir=self.submit_base,
             basedir=self.cfg.repo_dir,
         )
 

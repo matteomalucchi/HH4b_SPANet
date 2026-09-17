@@ -338,6 +338,14 @@ class ModelTask(BaseTask):
         description="directory in which 'out_spanet_outputs' lives; default: "
         "from law.cfg / $EOS_SPANET",
     )
+    output_dir = luigi.Parameter(
+        default="",
+        description="directory of this training, the one holding the "
+        "'version_N' subdirectories; replaces the whole path derived from the "
+        "options file name and the seed, for a model that does not follow the "
+        "convention; default: <output base>/out_spanet_outputs/out_<model>/"
+        "out_seed_trainings_<seed>",
+    )
     test_file = luigi.Parameter(
         default="",
         description="file the model is evaluated on; default: derived from the "
@@ -370,18 +378,39 @@ class ModelTask(BaseTask):
         return self.output_base or self.cfg.output_base
 
     @property
+    def run_dir(self):
+        """Where the trainings of this model live, one ``version_N`` each.
+
+        ``.../out_spanet_outputs/out_<model_key>/out_seed_trainings_<seed>``,
+        or ``--output-dir`` when the directory does not follow that
+        convention.  Everything else keeps following the options file: the
+        predictions and the markers are written here, the configurations and
+        the plots are still named after the model.
+        """
+        if self.output_dir:
+            return os.path.abspath(self.cfg.expand(self.output_dir))
+        return os.path.join(self.base_dir, self.log_dir_rel)
+
+    @property
+    def submit_base(self):
+        """Directory a condor training writes ``log_dir_rel`` into."""
+        if not self.output_dir:
+            return self.base_dir
+        run_dir, base = self.run_dir, self.base_dir
+        if run_dir.startswith(os.path.join(base, "")):
+            return base
+        return os.path.dirname(run_dir)
+
+    @property
     def log_dir_rel(self):
         """Training directory relative to the output base, as condor sees it."""
+        if self.output_dir:
+            return os.path.relpath(self.run_dir, self.submit_base)
         return os.path.join(
             "out_spanet_outputs",
             "out_{}".format(self.model_key),
             "out_seed_trainings_{}".format(self.seed),
         )
-
-    @property
-    def run_dir(self):
-        """``.../out_spanet_outputs/out_<model_key>/out_seed_trainings_<seed>``."""
-        return os.path.join(self.base_dir, self.log_dir_rel)
 
     @property
     def marker_dir(self):

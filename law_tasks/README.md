@@ -262,9 +262,43 @@ file.
 
 `--eval-tag <name>` replaces the derived name when it is too long or not
 telling enough, and `--plot-dir` still overrides the plot directory outright.
-A model trained by somebody else is evaluated by adding `--output-base
-<their out_spanet_outputs parent>`; `--model-version N` pins a version other
-than the latest.
+`--model-version N` pins a version other than the latest.
+
+### A training in a directory of its own
+
+The training directory is derived from the options file name and the seed,
+
+```
+<output base>/out_spanet_outputs/out_<options basename>/out_seed_trainings_<seed>/version_N
+```
+
+which a directory that was renamed, or one made before the pipeline existed,
+does not follow.  `--output-dir` replaces that whole path with the directory
+that holds the `version_N` subdirectories:
+
+```bash
+law run hh4b.Performance \
+    --options-file options_files/HH4b/vbf_ggf/<model>.json \
+    --output-dir /eos/user/x/xyz/some/place/a_training_of_mine \
+    --test-file /eos/user/x/xyz/.../<other>_test.h5
+```
+
+The training there is adopted, the prediction of the new test file is written
+next to its `version_N`, and so are the markers -- the directory has to be
+writable.  Everything that is *named* keeps following the options file: the
+generated configurations, the plot directories, the truth key and the legend.
+
+`--output-base <their out_spanet_outputs parent>` stays the shorter way when
+the directory does follow the convention but lives somewhere else, e.g. under
+the EOS of a colleague.
+
+Two trainings of the same options file in two directories would share those
+names; `--suffix _<something>` gives the second one an identity of its own:
+
+```bash
+law run hh4b.Performance --options-file <options> \
+    --output-dir /eos/user/x/xyz/some/place/a_training_of_mine --suffix _mine
+```
 
 Single steps work the same way, e.g. only the predictions:
 
@@ -455,8 +489,9 @@ procedure:
 | plot directory | `plots_` + options basename without the `hh4b_pairing_vbf_ggf_all_Klambda_` prefix | `plots_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7` |
 
 Each of them can be overridden: `--test-file`, `--eval-tag`, `--label`,
-`--color`, `--true-key`, `--plot-dir`, and `--extra-spanet-keys` /
-`--extra-true-keys` (JSON dicts) for entries such as `{"jet_coll": "JetVBF"}`.
+`--color`, `--true-key`, `--plot-dir`, `--output-dir` (the training directory
+itself, see above), and `--extra-spanet-keys` / `--extra-true-keys` (JSON
+dicts) for entries such as `{"jet_coll": "JetVBF"}`.
 
 ## The jets and the resonances, from the event file
 
@@ -620,7 +655,8 @@ The same variable is used by `jobs/submit_to_condor.py` for the training jobs.
 
 * An existing trained `version_N` is reused.  `--overwrite` starts a new
   training anyway, in a new `version_N`; `--model-version N` pins a specific
-  version.
+  version, and `--output-dir` points at a training directory that does not
+  follow the naming convention.
 * A job of this training that is still in the queue is picked up instead of
   submitting a second one.
 * `--job-config jobs/config/training_1gpu_3d.yaml` selects the condor

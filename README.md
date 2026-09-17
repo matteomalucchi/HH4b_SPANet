@@ -623,7 +623,8 @@ law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
 The test file, the prediction name, the `true_dict` key, the label, the color
 and the plot directories are derived from the options file with the
 conventions used so far, and each of them can be overridden on the command
-line. Adding `--test-file <other file>` evaluates a model that is already
+line. `--output-dir` points the whole chain at a training directory that does
+not follow the naming convention at all. Adding `--test-file <other file>` evaluates a model that is already
 trained on another sample: the training is reused, the training metric plots
 are not redone, and the predictions, the configurations and the plots of that
 evaluation are kept apart from the ones of the model's own test file.
