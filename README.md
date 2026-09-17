@@ -631,8 +631,9 @@ evaluation are kept apart from the ones of the model's own test file.
 A finished result is never redone by accident, and a task that would write
 next to files it does not own stops and names them instead. `--overwrite`
 lifts that and reruns the task it is given, on `hh4b.Dataset` and
-`hh4b.Performance` together with the steps they drive; `--overwrite-all`
-reruns any task together with everything below it. Results of a training that
+`hh4b.Performance` together with the steps they drive -- the training and the
+prediction excepted, which cost hours and are asked for by name;
+`--overwrite-all` reruns any task together with everything below it. Results of a training that
 has been replaced by a newer one are redone on their own: the configurations
 and the plots record the `version_N` they were made from.
 

@@ -37,6 +37,9 @@ class Training(ModelTask):
     submission that is still in the queue is picked up and waited for.
     """
 
+    #: only a --overwrite given to this task touches a training
+    overwrite_only_explicitly = True
+
     job_config = luigi.Parameter(
         default="jobs/config/training_1gpu_1d.yaml",
         description="condor job configuration; default: jobs/config/training_1gpu_1d.yaml",

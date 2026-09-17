@@ -13,6 +13,9 @@ from law_tasks.tasks.training import Training
 class Predict(ModelTask):
     """Run ``spanet.predict`` on the test file belonging to the training file."""
 
+    #: hours of GPU: only a --overwrite given to this task redoes it
+    overwrite_only_explicitly = True
+
     gpu = luigi.BoolParameter(
         default=True,
         significant=False,

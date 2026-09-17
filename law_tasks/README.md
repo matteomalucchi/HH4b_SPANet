@@ -302,7 +302,7 @@ have called it complete.
 
 On the tasks that only drive other ones -- `hh4b.Dataset`,
 `hh4b.Performance`, `hh4b.EfficiencyPlots`, `hh4b.RocPlots` -- it applies to
-the whole chain they drive, which is what makes a rerun with different
+the steps they drive as well, which is what makes a rerun with different
 arguments do something:
 
 ```bash
@@ -310,15 +310,24 @@ law run hh4b.Dataset --dataset <name> --convert-args="-n" --overwrite
 law run hh4b.Performance --options-file <options> --overwrite
 ```
 
-On any other task it applies to that task alone, so redrawing one plot does
-not recompute the prediction below it:
+The second one redoes the configurations, every plot and the summary, and
+keeps the training and the prediction: those two cost hours of GPU and are
+never redone by an `--overwrite` given to another task.  Ask for them by name:
+
+```bash
+law run hh4b.Predict --options-file <options> --overwrite
+law run hh4b.Training --options-file <options> --force-training
+```
+
+On any task that drives nothing, `--overwrite` applies to that task alone, so
+redrawing one plot does not recompute the prediction below it:
 
 ```bash
 law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite
 ```
 
-`--overwrite-all` redoes a task *and* everything it depends on, whatever the
-task:
+`--overwrite-all` redoes a task *and* everything it depends on, the prediction
+included:
 
 ```bash
 law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite-all
