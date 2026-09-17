@@ -106,6 +106,15 @@ class PlotTask(ModelTask):
             return
         if not os.listdir(self.target_dir):
             return
+        if self.marker_is_stale(self.output()):
+            # the plots in there are the ones this very task made for an
+            # earlier training, and they are what makes it rerun now
+            self.publish_message(
+                "replacing the plots of an earlier training in {}".format(
+                    self.target_dir
+                )
+            )
+            return
         raise RuntimeError(
             "{} already exists and is not empty; pass --overwrite to write into "
             "it anyway, or choose another parent directory with --plot-dir".format(

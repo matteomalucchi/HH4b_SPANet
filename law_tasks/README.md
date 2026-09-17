@@ -274,16 +274,28 @@ law run hh4b.Predict --options-file <options> --test-file <other test file>
 
 ## Nothing is overwritten
 
-Every task refuses to replace something that is already there and stops with
-the list of files in the way:
+A task whose outputs are all there is never run again, so a finished result is
+never redone by accident.  On top of that, a task that would write next to
+files it does not own stops with the list of files in the way:
 
 | task | what it refuses to touch |
 |---|---|
-| `hh4b.ConvertDataset` | h5 files already next to the coffea file |
-| `hh4b.TransferDataset` | files already in the destination directory (checked over ssh) |
-| `hh4b.RegisterModel` | generated configurations already written |
+| `hh4b.TransferDataset` | files already in the destination directory on the training machine (checked over ssh) |
 | `hh4b.TrainingMetrics`, `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | a plot directory that exists and is not empty |
-| `hh4b.Predict` | the prediction file, which is its own output |
+
+What a task declares as its *own* output is not protected against that task:
+law only runs it when one of those outputs is missing, so whatever is still
+there is the leftover of an attempt that did not finish -- refusing it would
+leave the task unable to ever complete.  A half written registration, for
+instance, is simply rewritten:
+
+```
+<work_dir>/configs/<model>/registration.json   # there
+<work_dir>/configs/<model>/*_configuration_*.py  # gone
+```
+
+The same applies to a plot directory that holds the plots this very task made
+for a training that has since been replaced, see below.
 
 `--overwrite` lifts the refusal **and** reruns the task even when law would
 have called it complete.
@@ -311,6 +323,30 @@ task:
 ```bash
 law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite-all
 ```
+
+## A new training replaces what was derived from the old one
+
+Only the prediction file carries the `version_N` directory in its name; the
+generated configurations, the plots and the markers are named after the model.
+Every result therefore records the training it belongs to, and law redoes it
+when that training is no longer the current one:
+
+```bash
+law run hh4b.Training --options-file <options> --force-training   # version_1
+law run hh4b.Performance --options-file <options>
+```
+
+The second command predicts with `version_1`, rewrites the configurations
+against the new prediction and redraws the plots, without `--overwrite`: the
+plots that are in the way are the ones law itself made for `version_0`.  Plots
+that law did not make are still protected.
+
+Without this, the second command would have reported the whole chain complete
+and the efficiency and ROC plots would have kept showing `version_0`.
+
+`--model-version N` follows that version instead of the latest one.  The plot
+directory is shared by every version of a model, so going back to an earlier
+one redraws it; `--plot-dir` keeps the two apart.
 
 ## Derived names
 

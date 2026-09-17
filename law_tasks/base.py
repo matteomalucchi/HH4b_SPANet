@@ -87,9 +87,30 @@ class BaseTask(law.Task):
         kwargs.setdefault("overwrite_all", spread)
         return super(BaseTask, self).clone(cls, **kwargs)
 
+    def output_paths(self):
+        """Absolute paths of the files this task declares as its outputs."""
+        paths = set()
+        for target in law.util.flatten(self.output()):
+            path = getattr(target, "path", None)
+            if path:
+                paths.add(os.path.abspath(path))
+        return paths
+
     def check_no_overwrite(self, paths, what="file"):
-        """Stop unless ``--overwrite`` is given and something is in the way."""
-        existing = sorted(path for path in paths if os.path.exists(path))
+        """Stop unless ``--overwrite`` is given and something is in the way.
+
+        What the task declares as its own output is never in the way: law only
+        runs a task whose outputs are missing, so one that is nevertheless
+        there is the leftover of an attempt that did not finish, or a result
+        that no longer matches the inputs.  Refusing to replace it would leave
+        the task unable to ever complete.  Everything else is protected.
+        """
+        owned = self.output_paths()
+        existing = sorted(
+            path
+            for path in paths
+            if os.path.exists(path) and os.path.abspath(path) not in owned
+        )
         if existing and not self.force_overwrite:
             raise RuntimeError(
                 "refusing to overwrite {} {}(s) that {} already there:\n  {}\n"
@@ -256,10 +277,52 @@ class ModelTask(BaseTask):
     def write_marker(self, target, **content):
         content.setdefault("task", self.__class__.__name__)
         content.setdefault("timestamp", time.strftime("%Y-%m-%d %H:%M:%S"))
+        if "version_dir" not in content:
+            # the training this result belongs to, so that a later training
+            # does not silently reuse it (see marker_is_stale)
+            try:
+                content["version_dir"] = self.version_dir()
+            except RuntimeError:
+                pass
         target.parent.touch()
         with open(target.path, "w") as fobj:
             json.dump(content, fobj, indent=4)
             fobj.write("\n")
+
+    # -- staleness ---------------------------------------------------------
+
+    def marker_is_stale(self, target):
+        """True when ``target`` was written for another training version.
+
+        Everything below the training is named after the model, not after the
+        ``version_N`` directory, so a new training would otherwise inherit the
+        configurations and the plots of the previous one and law would report
+        a performance that is not the one of the model it just trained.
+        """
+        path = getattr(target, "path", "")
+        if not path.endswith(".json") or not os.path.exists(path):
+            return False
+
+        try:
+            with open(path) as fobj:
+                recorded = json.load(fobj).get("version_dir")
+        except (ValueError, OSError):
+            return False
+        if not recorded:
+            return False
+
+        try:
+            current = self.version_dir()
+        except RuntimeError:
+            return False
+        return os.path.normpath(recorded) != os.path.normpath(current)
+
+    def complete(self):
+        if not super(ModelTask, self).complete():
+            return False
+        return not any(
+            self.marker_is_stale(target) for target in law.util.flatten(self.output())
+        )
 
     # -- versions ----------------------------------------------------------
 

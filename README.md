@@ -628,10 +628,15 @@ trained on another sample: the training is reused, the training metric plots
 are not redone, and the predictions, the configurations and the plots of that
 evaluation are kept apart from the ones of the model's own test file.
 
-No task replaces a file that is already there; it stops and names it instead.
-`--overwrite` lifts that and reruns the task it is given, on `hh4b.Dataset`
-and `hh4b.Performance` together with the steps they drive; `--overwrite-all`
-reruns any task together with everything below it. The performance configurations tracked in git are not modified: a
+A finished result is never redone by accident, and a task that would write
+next to files it does not own stops and names them instead. `--overwrite`
+lifts that and reruns the task it is given, on `hh4b.Dataset` and
+`hh4b.Performance` together with the steps they drive; `--overwrite-all`
+reruns any task together with everything below it. Results of a training that
+has been replaced by a newer one are redone on their own: the configurations
+and the plots record the `version_N` they were made from.
+
+The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
 
