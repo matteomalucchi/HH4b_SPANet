@@ -630,9 +630,10 @@ evaluation are kept apart from the ones of the model's own test file.
 
 A finished result is never redone by accident, and a task that would write
 next to files it does not own stops and names them instead. `--overwrite`
-reruns the task it is given and every step below it, the conversion and the
-prediction included; `--overwrite-plots` does the same but keeps the data,
-redoing only the configurations and the plots. Results of a training that has
+reruns the task it is given and every step below it -- the conversion, a new
+training in a new `version_N` and its prediction included; `--overwrite-plots`
+does the same but keeps the data, redoing only the configurations and the
+plots. Results of a training that has
 been replaced by a newer one are redone on their own: the configurations and
 the plots record the `version_N` they were made from. Which files each flag
 replaces is spelled out in

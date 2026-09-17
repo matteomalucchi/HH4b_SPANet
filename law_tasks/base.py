@@ -36,8 +36,8 @@ class BaseTask(law.Task):
         default=False,
         significant=False,
         description="redo this task and every step below it, replacing what is "
-        "already there; a new training still takes --force-training; "
-        "default: False",
+        "already there; on hh4b.Training and above it trains the model again, "
+        "into a new version_N; default: False",
     )
     overwrite_plots = luigi.BoolParameter(
         default=False,

@@ -291,7 +291,7 @@ so the question is always *which steps are redone*.
 |---|---|
 | `hh4b.ConvertDataset` | `<prefix><collection>_{train,test}.h5` next to the coffea file |
 | `hh4b.TransferDataset` | the same h5 files in the destination directory on the training machine |
-| `hh4b.Training` | a new `version_N/` -- **only** with `--force-training`, otherwise it adopts the one that is there |
+| `hh4b.Training` | a new `version_N/` -- **only** with `--overwrite`, otherwise it adopts the one that is there |
 | `hh4b.Predict` | `version_N/predict_<test file>.h5` |
 | `hh4b.RegisterModel` | `<work_dir>/configs/<model>/{efficiency,roc}_configuration_<model>.py` and `registration.json` |
 | `hh4b.TrainingMetrics` | `version_N/training_plots/` |
@@ -311,15 +311,20 @@ Two flags, and both reach every step below the one they are given to:
 | *(none)* | the ones whose outputs are missing |
 | `--overwrite-plots` | the step it is given to and every step below it, **except** the conversion, the transfer, the training and the prediction |
 | `--overwrite` | the step it is given to and every step below it, whatever it is |
-| `--force-training` (on `hh4b.Training`) | trains again and adds a `version_N`, instead of adopting the one that is there |
 
-`--overwrite` replaces the data as well: it computes the prediction again, and
-on the analysis machine it converts the coffea file again.
-`--overwrite-plots` is the one to use to redo what is drawn from a prediction
-that is fine, without paying for a GPU or a conversion.
+`--overwrite` redoes the data as well: it trains the model again, predicts
+again, and on the analysis machine converts the coffea file again.  On
+`hh4b.Performance` it is therefore the full chain, condor job included, which
+takes as long as the first time.
 
-Starting a training is the one thing neither flag does: `hh4b.Training` adopts
-the `version_N` that is already there, and only `--force-training` trains.
+`--overwrite-plots` is the one for everything that is drawn from a prediction
+that is fine: it never costs a GPU or a conversion.
+
+The training is the one step that is not replaced but *added to*: a new
+`version_N` appears next to the one that is there, and everything below is
+made from it.  The previous training, its checkpoints and its prediction stay
+on disk.  `--model-version N` therefore still reaches them, and asking for
+both at once (`--overwrite --model-version N`) is refused rather than guessed.
 
 ### Spelled out
 
@@ -351,8 +356,17 @@ utils/performance/..., utils/roccurves/...   the configurations tracked in git
 everything that belongs to another --test-file / --eval-tag evaluation
 ```
 
-The same command with `--overwrite` adds `<run dir>/version_N/predict_*.h5` to
-the first list: the prediction is computed again, everything else is the same.
+The same command with `--overwrite` trains again.  It creates
+
+```
+<run dir>/version_N+1/checkpoints/*       the new training
+<run dir>/version_N+1/predict_*.h5        its prediction
+<run dir>/version_N+1/training_plots/*    its metric plots
+```
+
+replaces the same configurations, plots and markers as above -- they are named
+after the model, so they now describe `version_N+1` -- and still leaves
+`version_N` exactly as it was.
 
 On the analysis machine, `--overwrite` is what makes a conversion run again
 with different flags, replacing the h5 next to the coffea file and the copies
@@ -401,14 +415,23 @@ Every result therefore records the training it belongs to, and law redoes it
 when that training is no longer the current one:
 
 ```bash
-law run hh4b.Training --options-file <options> --force-training   # version_1
-law run hh4b.Performance --options-file <options>
+law run hh4b.Performance --options-file <options> --overwrite   # version_1
 ```
 
-The second command predicts with `version_1`, rewrites the configurations
-against the new prediction and redraws the plots, without `--overwrite`: the
-plots that are in the way are the ones law itself made for `version_0`.  Plots
-that law did not make are still protected.
+That is one command: it trains into `version_1`, predicts there, rewrites the
+configurations against the new prediction and redraws the plots.  The same
+happens when the training is made separately, or by somebody else -- a
+`version_N` that appears is enough:
+
+```bash
+law run hh4b.Training --options-file <options> --overwrite   # version_1
+law run hh4b.Performance --options-file <options>            # no flag needed
+```
+
+The second command finds the configurations and the plots of `version_0` and
+redoes them, without `--overwrite`: the plots that are in the way are the ones
+law itself made for `version_0`.  Plots that law did not make are still
+protected.
 
 Without this, the second command would have reported the whole chain complete
 and the efficiency and ROC plots would have kept showing `version_0`.
@@ -491,8 +514,9 @@ The same variable is used by `jobs/submit_to_condor.py` for the training jobs.
 
 ## Trainings
 
-* An existing trained `version_N` is reused.  `--force-training` starts a new
-  training anyway, `--model-version N` pins a specific version.
+* An existing trained `version_N` is reused.  `--overwrite` starts a new
+  training anyway, in a new `version_N`; `--model-version N` pins a specific
+  version.
 * A job of this training that is still in the queue is picked up instead of
   submitting a second one.
 * `--job-config jobs/config/training_1gpu_3d.yaml` selects the condor

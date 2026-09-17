@@ -33,8 +33,9 @@ class Training(ModelTask):
     """Train the model described by the options file.
 
     An already trained ``version_N`` directory is adopted instead of starting a
-    new training, unless ``--force-training`` is given.  A job of a previous
-    submission that is still in the queue is picked up and waited for.
+    new training, unless ``--overwrite`` is given: then the model is trained
+    again, into a new ``version_N``.  A job of a previous submission that is
+    still in the queue is picked up and waited for.
     """
 
     #: a training is data: --overwrite-plots leaves it alone
@@ -58,11 +59,6 @@ class Training(ModelTask):
         description="run the training in the current session instead of "
         "submitting it to HTCondor; default: False",
     )
-    force_training = luigi.BoolParameter(
-        default=False,
-        significant=False,
-        description="train even if a trained version already exists; default: False",
-    )
     no_wait = luigi.BoolParameter(
         default=False,
         significant=False,
@@ -83,11 +79,6 @@ class Training(ModelTask):
 
     def output(self):
         return self.marker("training.json")
-
-    def complete(self):
-        if self.force_training and not getattr(self, "_trained_here", False):
-            return False
-        return super(Training, self).complete()
 
     # -- condor helpers ----------------------------------------------------
 
@@ -192,6 +183,14 @@ class Training(ModelTask):
     # -- run ---------------------------------------------------------------
 
     def run(self):
+        if self.overwrite and self.model_version >= 0:
+            raise RuntimeError(
+                "--overwrite trains the model again, into a new version_N, "
+                "which contradicts --model-version {}; drop one of the two, or "
+                "use --overwrite-plots to redo what is drawn from that "
+                "version".format(self.model_version)
+            )
+
         existing = self.existing_versions()
         reusable = (
             self.model_version in existing
@@ -199,7 +198,9 @@ class Training(ModelTask):
             else bool(existing)
         )
 
-        if reusable and not self.force_training:
+        # --overwrite-plots never reaches a training; --overwrite does, and
+        # then a new version_N is what it asks for
+        if reusable and not self.overwrite:
             version = self.resolve_version()
             self.publish_message(
                 "reusing the trained model in {}".format(self.version_dir(version))
@@ -211,7 +212,7 @@ class Training(ModelTask):
         if self.local_training:
             self._run_locally()
         else:
-            queued = [] if self.force_training else self._queued_jobs()
+            queued = [] if self.overwrite else self._queued_jobs()
             if queued:
                 cluster_id = queued[-1]
                 self.publish_message(
@@ -236,7 +237,6 @@ class Training(ModelTask):
                 "condor log files there".format(self.run_dir)
             )
 
-        self._trained_here = True
         self._write(new[-1], cluster_id=cluster_id, reused=False)
 
     def _write(self, version, cluster_id, reused):
