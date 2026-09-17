@@ -635,7 +635,9 @@ lifts that and reruns the task it is given, on `hh4b.Dataset` and
 prediction excepted, which cost hours and are asked for by name;
 `--overwrite-all` reruns any task together with everything below it. Results of a training that
 has been replaced by a newer one are redone on their own: the configurations
-and the plots record the `version_N` they were made from.
+and the plots record the `version_N` they were made from. Which files each
+flag replaces is spelled out in
+[What is overwritten, and when](law_tasks/README.md#what-is-overwritten-and-when).
 
 The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model

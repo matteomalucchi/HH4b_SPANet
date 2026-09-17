@@ -272,65 +272,116 @@ Single steps work the same way, e.g. only the predictions:
 law run hh4b.Predict --options-file <options> --test-file <other test file>
 ```
 
-## Nothing is overwritten
+## What is overwritten, and when
 
-A task whose outputs are all there is never run again, so a finished result is
-never redone by accident.  On top of that, a task that would write next to
-files it does not own stops with the list of files in the way:
+law runs a step only when one of its outputs is missing.  Everything follows
+from that:
 
-| task | what it refuses to touch |
+* repeating a command that already went through does nothing at all;
+* a command that stopped halfway carries on where it stopped;
+* a result that is finished is never replaced -- unless you ask for it.
+
+Asking for it is `--overwrite`: "redo this step" and "replace what this step
+wrote" are the same thing, so the question is always *which steps are redone*.
+
+### What each step writes
+
+| step | what it (re)writes when it runs |
+|---|---|
+| `hh4b.ConvertDataset` | `<prefix><collection>_{train,test}.h5` next to the coffea file |
+| `hh4b.TransferDataset` | the same h5 files in the destination directory on the training machine |
+| `hh4b.Training` | a new `version_N/` -- **only** with `--force-training`, otherwise it adopts the one that is there |
+| `hh4b.Predict` | `version_N/predict_<test file>.h5` |
+| `hh4b.RegisterModel` | `<work_dir>/configs/<model>/{efficiency,roc}_configuration_<model>.py` and `registration.json` |
+| `hh4b.TrainingMetrics` | `version_N/training_plots/` |
+| `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | everything the plotting script writes into `<plot base>/<plot dir>/<plot name>/` |
+| `hh4b.Performance`, `hh4b.Dataset` | only their summary |
+
+Every step also writes a small marker under `<run dir>/law/` (a dataset step:
+under `<coffea dir>/law/`).  That is the bookkeeping law reads to know what is
+done; it is rewritten whenever the step runs.
+
+### Which steps a flag redoes
+
+| flag | steps redone |
+|---|---|
+| *(none)* | the ones whose outputs are missing |
+| `--overwrite` on a step that drives nothing (`hh4b.Predict`, `hh4b.RegisterModel`, `hh4b.EfficiencyPlot`, `hh4b.RocPlot`, `hh4b.TrainingMetrics`, ...) | that step, and nothing else |
+| `--overwrite` on `hh4b.Dataset`, `hh4b.Performance`, `hh4b.EfficiencyPlots`, `hh4b.RocPlots` | that step and the steps it drives, **except** `hh4b.Training` and `hh4b.Predict` |
+| `--overwrite-all` on any step | that step and everything below it, the prediction included |
+| `--force-training` on `hh4b.Training` | trains again and adds a `version_N`, instead of adopting the one that is there |
+
+The training and the prediction are the two steps that cost hours of GPU, and
+they are the reason for the difference between the two flags: an `--overwrite`
+that is passed to another step never touches them.  Ask for them by name:
+
+```bash
+law run hh4b.Predict --options-file <options> --overwrite      # predict again
+law run hh4b.Training --options-file <options> --force-training  # train again
+```
+
+### Spelled out
+
+With a model that is trained and predicted,
+
+```bash
+law run hh4b.Performance --options-file <options> --overwrite
+```
+
+replaces exactly these:
+
+```
+<work_dir>/configs/<model>/efficiency_configuration_<model>.py
+<work_dir>/configs/<model>/roc_configuration_<model>.py
+<work_dir>/configs/<model>/registration.json
+<eff plot base>/<plot dir>/<every efficiency plot>/*
+<roc plot base>/<plot dir>/<every ROC plot>/*
+<run dir>/version_N/training_plots/*
+<run dir>/law/*.json                     (the markers of the steps above)
+```
+
+and leaves these untouched:
+
+```
+<run dir>/version_N/checkpoints/*        the training
+<run dir>/version_N/predict_*.h5         the prediction
+the h5 input files
+utils/performance/..., utils/roccurves/...   the configurations tracked in git
+everything that belongs to another --test-file / --eval-tag evaluation
+```
+
+The same command with `--overwrite-all` adds `version_N/predict_*.h5` to the
+first list.  Neither of them ever starts a training.
+
+### When law redoes something you did not ask for
+
+Only one case: a step whose outputs were made for a **training that has since
+been replaced** counts as unfinished, and is redone without `--overwrite`.
+See the next section.
+
+### When law refuses instead
+
+A step that would write into a directory holding files law did not put there
+stops and names them:
+
+| step | what it refuses to touch |
 |---|---|
 | `hh4b.TransferDataset` | files already in the destination directory on the training machine (checked over ssh) |
 | `hh4b.TrainingMetrics`, `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | a plot directory that exists and is not empty |
 
-What a task declares as its *own* output is not protected against that task:
+Typically these are plots made by hand, before the pipeline existed.  Either
+`--overwrite` to replace them, or `--plot-dir <other name>` to leave them alone
+and send the new plots elsewhere.
+
+What a step declares as its *own* output is not protected against that step:
 law only runs it when one of those outputs is missing, so whatever is still
 there is the leftover of an attempt that did not finish -- refusing it would
-leave the task unable to ever complete.  A half written registration, for
+leave the step unable to ever complete.  A half written registration, for
 instance, is simply rewritten:
 
 ```
-<work_dir>/configs/<model>/registration.json   # there
+<work_dir>/configs/<model>/registration.json     # there
 <work_dir>/configs/<model>/*_configuration_*.py  # gone
-```
-
-The same applies to a plot directory that holds the plots this very task made
-for a training that has since been replaced, see below.
-
-`--overwrite` lifts the refusal **and** reruns the task even when law would
-have called it complete.
-
-On the tasks that only drive other ones -- `hh4b.Dataset`,
-`hh4b.Performance`, `hh4b.EfficiencyPlots`, `hh4b.RocPlots` -- it applies to
-the steps they drive as well, which is what makes a rerun with different
-arguments do something:
-
-```bash
-law run hh4b.Dataset --dataset <name> --convert-args="-n" --overwrite
-law run hh4b.Performance --options-file <options> --overwrite
-```
-
-The second one redoes the configurations, every plot and the summary, and
-keeps the training and the prediction: those two cost hours of GPU and are
-never redone by an `--overwrite` given to another task.  Ask for them by name:
-
-```bash
-law run hh4b.Predict --options-file <options> --overwrite
-law run hh4b.Training --options-file <options> --force-training
-```
-
-On any task that drives nothing, `--overwrite` applies to that task alone, so
-redrawing one plot does not recompute the prediction below it:
-
-```bash
-law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite
-```
-
-`--overwrite-all` redoes a task *and* everything it depends on, the prediction
-included:
-
-```bash
-law run hh4b.EfficiencyPlot --options-file <options> --plot-name HiggsEff --overwrite-all
 ```
 
 ## A new training replaces what was derived from the old one
