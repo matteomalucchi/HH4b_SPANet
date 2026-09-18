@@ -28,6 +28,7 @@ FIELDS = {
     "global_vars": [],
     "jet_like_global_vars": [],
     "max_jets": [],
+    "resonances": "",
     "convert_args": "",
     "collections": [],
     "remote_dir": "",
@@ -259,6 +260,9 @@ class Dataset(object):
         ):
             if values:
                 parts += [flag] + list(values)
+
+        if self.resonances:
+            parts += ["-rs", self.resonances]
 
         command = " ".join(shlex.quote(str(part)) for part in parts)
         if self.convert_args:

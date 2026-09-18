@@ -97,9 +97,10 @@ datasets:
 
 Fields: `coffea_dir`, `coffea_file`, `output_dir` (default: the coffea
 directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
-`jet_like_global_vars`, `max_jets`, `convert_args` (anything else for the
-converter, e.g. the weight normalization, see below), `collections` (which jet
-collection groups to transfer, default: all) and `remote_dir`.
+`jet_like_global_vars`, `max_jets`, `resonances`, `convert_args` (anything
+else for the converter, e.g. the weight normalization, see below),
+`collections` (which jet collection groups to transfer, default: all) and
+`remote_dir`.
 
 ### The collection groups
 
@@ -139,6 +140,49 @@ group needs its own entry in global_collections_dict
 A name that is in none of those dictionaries is a typo, and is reported with
 the groups the module does hold, instead of being passed on as a literal
 collection name and producing files nobody asked for.
+
+### The resonances
+
+`resonances` picks the set the `TARGETS` are written with, i.e. how the
+daughters of each resonance are named in the h5 -- the `-rs` argument of the
+converter:
+
+| set | `h1` | `h2` | `vbf` |
+|---|---|---|---|
+| `DEFAULT_RESONANCES` (default) | `b1`, `b2` | `b1`, `b2` | `q1`, `q2` |
+| `OLD_RESONANCES` | `b1`, `b2` | `b3`, `b4` | `q1`, `q2` |
+
+```yaml
+datasets:
+  my_study:
+    resonances: OLD_RESONANCES
+```
+
+It has to be the set of the `EVENT` section of the event file the model is
+trained with, since those are the names SPANet looks for:
+
+```yaml
+EVENT:
+  h1:
+    - b1: JetHiggs
+    - b2: JetHiggs
+  h2:
+    - b3: JetHiggs    # b1 with DEFAULT_RESONANCES, b3 with OLD_RESONANCES
+    - b4: JetHiggs    # b2                          b4
+```
+
+The same names come back at the other end of the pipeline: the efficiency
+script pairs the jets with one of the two, and `hh4b.RegisterModel` reads
+which one from that `EVENT` section (see [The jets and the
+resonances](#the-jets-and-the-resonances-from-the-event-file)).  `--resonances
+OLD_RESONANCES` forces it for a file whose event file does not say it, on
+`hh4b.RegisterModel` or, in a whole run, as
+`--hh4b.RegisterModel-resonances OLD_RESONANCES`.
+
+New sets are added to `RESONANCES_DICT` in
+`utils/dataset/coffea_to_h5_direct.py` (the conversion) and to the one of
+`utils/performance/efficiency_functions.py` (the efficiencies); the converter
+lists the ones it knows in `--help` and rejects anything else.
 
 Every one of them is also a command line option, so a dataset that is not in
 the file needs no edit:
@@ -547,7 +591,7 @@ the keys in:
 | `jet_coll_vbf` | the sequential input of the VBF daughters, when it is not the same one | both entries |
 | `n_higgs_jets` | `0` when the VBF jets have a collection of their own, otherwise the four leading jets of the single collection (the default of the script) | both entries |
 | `offset_jet_idx_higgs`, `offset_jet_idx_vbf` | minus the slots of the collections *before* the one of that resonance: SPANet numbers the jets over its sequential inputs concatenated, the file stores them per collection | the model entry |
-| `resonances` | the `RESONANCES_DICT` entry whose daughters are the ones of the event file: `h1: b1 b2`, `h2: b3 b4` is `OLD_RESONANCES`, `h2: b1 b2` is `DEFAULT_RESONANCES` | the model entry |
+| `resonances` | the `RESONANCES_DICT` entry whose daughters are the ones of the event file: `h1: b1 b2`, `h2: b3 b4` is `OLD_RESONANCES`, `h2: b1 b2` is `DEFAULT_RESONANCES`; `--resonances <set>` forces it | the model entry |
 
 The number of slots of a collection is read from the file the model is
 evaluated on (`INPUTS/<collection>/MASK`), so two collections of four and five

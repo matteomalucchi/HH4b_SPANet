@@ -37,6 +37,13 @@ class RegisterModel(ModelTask):
         default=True,
         description="mark the entry as a VBF model; default: True",
     )
+    resonances = luigi.Parameter(
+        default="",
+        description="set of resonances the efficiency script pairs with, i.e. "
+        "a key of RESONANCES_DICT in utils/performance/efficiency_functions.py "
+        "('DEFAULT_RESONANCES', 'OLD_RESONANCES'); default: the one matching "
+        "the EVENT section of the event file",
+    )
     baseline_models = luigi.Parameter(
         default="all",
         description="models of the base configuration to keep for comparison: "
@@ -99,6 +106,8 @@ class RegisterModel(ModelTask):
 
         model_keys = info.model_keys(slots)
         true_keys = info.collection_keys()
+        if self.resonances:
+            model_keys["resonances"] = self.resonances
         self.publish_message(
             "event file: {}".format(os.path.basename(info.path))
         )

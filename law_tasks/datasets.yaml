@@ -39,6 +39,13 @@ defaults:
   # global_vars: GLOBAL_COLLECTIONS_VBF   # without it the converter saves
                                           # every non-jet variable ('all')
 
+  # resonances: OLD_RESONANCES        # how the daughters of the TARGETS are
+                                      # named: 'h2: b1, b2' with the default
+                                      # (DEFAULT_RESONANCES), 'h2: b3, b4'
+                                      # with OLD_RESONANCES; it has to match
+                                      # the EVENT section of the event file
+                                      # the model is trained with
+
   # -- anything else for coffea_to_h5_direct.py --------------------------
   # convert_args: "-n"                # the weights are NOT normalized unless
                                       # this is used: `-n` divides them by

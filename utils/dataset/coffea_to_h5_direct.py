@@ -40,12 +40,19 @@ DEFAULT_RESONANCES = {
     "h2": (2, ("b1", "b2")),
     "vbf": (3, ("q1", "q2")),
 }
-RESONANCES = {
-    "h1": (1, ("b1", "b2")),
-    "h2": (2, ("b1", "b2")),
-    "vbf": (3, ("q1", "q2")),
+# the daughters of h2 are the names of the TARGETS written into the h5, so the
+# set chosen here has to be the one of the EVENT section of the event file the
+# model is trained with: 'h2: b3, b4' is OLD_RESONANCES, 'h2: b1, b2' is
+# DEFAULT_RESONANCES
+RESONANCES_DICT = {
+    "DEFAULT_RESONANCES": DEFAULT_RESONANCES,
+    "OLD_RESONANCES": OLD_RESONANCES,
+}
+# added to whichever set is chosen
+EXTRA_RESONANCES = {
     "add": (-1, ("a1", ))
 }
+RESONANCES = dict(DEFAULT_RESONANCES, **EXTRA_RESONANCES)
 MIN_NUM_JETS = 4
 
 # -----------------------------------------------------------------------------
@@ -85,6 +92,16 @@ p.add_argument(
     nargs="+",
     default=["h1","h2","vbf","add"],
     help="Resonances to be produced either for dummies or from provenance",
+)
+p.add_argument(
+    "-rs",
+    "--resonances",
+    choices=sorted(RESONANCES_DICT),
+    default="DEFAULT_RESONANCES",
+    help="Set of resonances the TARGETS are written with, i.e. the names of "
+    "the daughters of each resonance: 'h2: b1, b2' for DEFAULT_RESONANCES, "
+    "'h2: b3, b4' for OLD_RESONANCES. It has to match the EVENT section of "
+    "the event file the model is trained with.",
 )
 p.add_argument(
     "-j",
@@ -197,6 +214,8 @@ args = p.parse_args()
 
 if args.norm_weights and args.balance_weights != "none":
     p.error("--norm-weights and --balance-weights are mutually exclusive.")
+
+RESONANCES = dict(RESONANCES_DICT[args.resonances], **EXTRA_RESONANCES)
 
 # -----------------------------------------------------------------------------
 # Utilities
@@ -565,7 +584,7 @@ def coffea_to_h5(
                 jet_coll_group: {
                     "saved_name": "Jet",
                     "max_num_jets": max_jets[j],
-                    "resonances": list(DEFAULT_RESONANCES.keys()),
+                    "resonances": list(RESONANCES_DICT[args.resonances].keys()),
                     "prov_key": "provenance",
                 }
             }

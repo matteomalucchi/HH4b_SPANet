@@ -76,6 +76,12 @@ class DatasetTask(BaseTask):
         default="",
         description="maximum number of jets per collection, separated by spaces",
     )
+    resonances = luigi.Parameter(
+        default="",
+        description="set of resonances the TARGETS are written with, i.e. how "
+        "the daughters are named: 'DEFAULT_RESONANCES' (h2: b1, b2) or "
+        "'OLD_RESONANCES' (h2: b3, b4); default: the one of the converter",
+    )
     convert_args = luigi.Parameter(
         default="",
         description="additional arguments forwarded to coffea_to_h5_direct.py",
