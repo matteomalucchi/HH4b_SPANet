@@ -201,6 +201,12 @@ def main():
             )
             else False
         )
+        
+        if not do_higgs_pairing and not do_vbf_pairing:
+            logger.warning(
+                f"Model {model_name} has no pairing to evaluate. Skipping."
+            )
+            continue
 
         true_entry = true_dict[file_dict["true"]]
         n_higgs_jets = true_entry.get("n_higgs_jets", 4)
