@@ -329,6 +329,27 @@ class Settings(object):
         )
 
     @property
+    def extra_binds(self):
+        """Bind mounts added to the ones that are there anyway.
+
+        The shared EOS areas of the group belong here: they are the same for
+        everybody, so they are tracked in law.cfg, and the containers of the
+        tasks *and* of the training jobs are given them.
+        """
+        sources = [
+            cfg_get("extra_binds", default=""),
+            os.environ.get("SPANET_APPTAINER_EXTRA_BINDS", ""),
+        ]
+        # both are *additions*, so the environment adds to the file instead of
+        # replacing it
+        return [
+            os.path.expandvars(os.path.expanduser(bind.strip()))
+            for raw in sources
+            for bind in raw.replace("\n", ",").split(",")
+            if bind.strip()
+        ]
+
+    @property
     def apptainer_binds(self):
         """Bind mounts of the apptainer container, as a list of paths."""
         raw = cfg_get("apptainer_binds", "SPANET_APPTAINER_BINDS", None)
@@ -336,6 +357,7 @@ class Settings(object):
             binds = [b.strip() for b in raw.replace("\n", ",").split(",")]
         else:
             binds = list(self.default_binds())
+        binds += self.extra_binds
 
         # keep the order, drop duplicates, paths inside another bind and
         # paths that do not exist (apptainer refuses to bind those)

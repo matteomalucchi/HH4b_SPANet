@@ -655,6 +655,9 @@ produced -- for a model, next to its generated configurations in
 `<work_dir>/configs/<model>/journal/` -- with one JSON line per step and per
 bash command and the full output of each command next to it.
 
+The EOS areas shared inside the group are `extra_binds` in `law.cfg`, bound
+both in the container of the tasks and in the one of the training jobs.
+
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
 `SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
 `SPANET_REMOTE_INPUT_DIR`, ...) or, as a last resort, from generic `$USER`

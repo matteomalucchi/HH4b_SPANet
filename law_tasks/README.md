@@ -824,6 +824,30 @@ The dataset tasks are the exception: they run on the analysis machine in its
 own environment, so they never enter the container unless `--apptainer yes` is
 given, and they only activate `conversion_env` if it is configured.
 
+### The bind mounts
+
+/afs, /cvmfs, the EOS home of `$USER` and every directory configured in
+`law.cfg` are bound anyway.  The areas that are shared inside the group are
+`extra_binds` in `law.cfg`, so they are tracked with the repository and
+nobody has to export anything:
+
+```ini
+[hh4b_spanet]
+extra_binds: /eos/user/t/tharte, /eos/user/n/nkontaxa
+```
+
+They are added to the container of the tasks **and** to the one of the
+training jobs, which is where the samples of somebody else have to be
+readable: `jobs/submit_to_condor.py` reads the same setting (with the standard
+library, it does not need law) and puts them into the `SINGULARITY_BIND_EXPR`
+of the submission, next to /afs, the EOS home and the credential directories.
+
+`$SPANET_APPTAINER_EXTRA_BINDS` adds paths to that list, on both sides,
+without editing the file; `apptainer_binds` / `$SPANET_APPTAINER_BINDS`
+replaces the ones bound by default for the tasks.  A path that does not exist
+is left out of the `apptainer exec` of a task, since apptainer refuses to bind
+it, and kept for the jobs, whose worker node is not this machine.
+
 Flags that are on by default are switched off by passing the value explicitly,
 e.g. `--gpu False` to predict on the CPU or `--vbf False` for a model that is
 not a VBF one.

@@ -6,6 +6,7 @@ in order to follow it.
 """
 
 import argparse
+import configparser
 import os
 
 import htcondor
@@ -19,13 +20,47 @@ SINGULARITY_IMAGE = (
 )
 
 
-def default_bindings():
+def law_config(basedir=None):
+    """``law.cfg`` of the repository, or ``$LAW_CONFIG_FILE`` when it is set."""
+    path = os.environ.get("LAW_CONFIG_FILE") or os.path.join(
+        basedir or BASE_DIR, "law.cfg"
+    )
+    parser = configparser.ConfigParser(
+        allow_no_value=True, strict=False, interpolation=None
+    )
+    try:
+        parser.read(path)
+    except configparser.Error:
+        return configparser.ConfigParser()
+    return parser
+
+
+def config_bindings(basedir=None):
+    """The ``extra_binds`` of law.cfg, as a list of paths.
+
+    The shared EOS areas of the group are the same for everybody, so they are
+    tracked in the configuration of the repository instead of being exported
+    by each of us.
+    """
+    sources = [
+        law_config(basedir).get("hh4b_spanet", "extra_binds", fallback=""),
+        os.environ.get("SPANET_APPTAINER_EXTRA_BINDS", ""),
+    ]
+    return [
+        bind.strip()
+        for raw in sources
+        for bind in raw.replace("\n", ",").split(",")
+        if bind.strip()
+    ]
+
+
+def default_bindings(basedir=None):
     """Bind mounts of the job container.
 
     Generic by default (AFS, the EOS home of ``$USER`` and the credential
-    directories); additional paths -- for instance the EOS area of a colleague
-    holding shared samples -- can be added through the environment variable
-    ``SPANET_APPTAINER_BINDS`` as a comma separated list.
+    directories), plus the ``extra_binds`` of law.cfg -- the EOS areas holding
+    the shared samples.  ``SPANET_APPTAINER_BINDS`` adds more, as a comma
+    separated list, without editing anything.
     """
     bindings = ["/afs"]
 
@@ -36,6 +71,8 @@ def default_bindings():
     for path in (os.environ.get("EOS_SPANET"), os.environ.get("SPANET_ENV_DIR")):
         if path:
             bindings.append(path)
+
+    bindings += config_bindings(basedir)
 
     extra = os.environ.get("SPANET_APPTAINER_BINDS", "")
     bindings += [b.strip() for b in extra.split(",") if b.strip()]
@@ -110,7 +147,7 @@ def build_submission(
     sub["+JobFlavour"] = '"{}"'.format(cfg["job_flavour"])
     sub["environment"] = (
         'SINGULARITY_BIND_EXPR="{}", KRB5CCNAME="FILE:${{XDG_RUNTIME_DIR}}/krb5cc"'.format(
-            ", ".join(default_bindings())
+            ", ".join(default_bindings(basedir))
         )
     )
     sub["MY.SingularityUseGPU"] = True
