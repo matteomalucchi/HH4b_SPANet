@@ -49,13 +49,15 @@ RESONANCE_SETS = {
 class EventInfo(object):
     """The parts of a SPANet event file the performance plots depend on."""
 
-    def __init__(self, path, sequential, event):
+    def __init__(self, path, sequential, event, classifications=None):
         #: path of the event file
         self.path = path
         #: names of the sequential inputs, in the order SPANet concatenates them
         self.sequential = list(sequential)
         #: ``{resonance: [(daughter, collection or None), ...]}``
         self.event = dict(event)
+        #: ``{group: [name, ...]}`` of the CLASSIFICATIONS section
+        self.classifications = dict(classifications or {})
 
     def __repr__(self):
         return "EventInfo({})".format(os.path.basename(self.path))
@@ -85,6 +87,23 @@ class EventInfo(object):
             if all(known.get(name) == daughters for name, daughters in mine.items()):
                 return key
         return None
+
+    # -- classification ----------------------------------------------------
+
+    @property
+    def has_classification(self):
+        """Whether the model classifies anything, e.g. ``EVENT: - class``."""
+        return any(self.classifications.values())
+
+    def classification_missing(self):
+        """Why a ROC curve cannot be made, or ``None``.
+
+        ``ROC_plots.py`` reads the classification of the prediction, which a
+        model that only pairs the jets does not have.
+        """
+        if self.has_classification:
+            return None
+        return "{} has no CLASSIFICATIONS entry".format(os.path.basename(self.path))
 
     # -- collections -------------------------------------------------------
 
@@ -249,7 +268,11 @@ def load(path):
                 parsed.append((str(daughter), None))
         event[resonance] = parsed
 
-    return EventInfo(path, sequential, event)
+    classifications = {}
+    for group, names in (content.get("CLASSIFICATIONS") or {}).items():
+        classifications[group] = [str(name) for name in names or []]
+
+    return EventInfo(path, sequential, event, classifications)
 
 
 def input_slots(h5_path, names):

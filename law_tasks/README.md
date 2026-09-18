@@ -641,7 +641,8 @@ dicts) for entries such as `{"jet_coll": "JetVBF"}`.
 The efficiency and the ROC scripts need to know which collection holds which
 jets; the entries carry it, and the event file of the model already says it.
 `hh4b.RegisterModel` reads `event_info_file` from the options file and fills
-the keys in:
+the keys in -- and the same file decides which plots are made at all, see
+below:
 
 | key | where it comes from | in |
 |---|---|---|
@@ -717,6 +718,29 @@ explanation instead of running into the failure.
 The same two facts are in the entry of the generated configuration, as
 `"higgs"` and `"vbf"`, which is what the script reads before computing an
 efficiency at all.
+
+### And which ROC curves
+
+A ROC curve is drawn from the classification of the prediction, which a model
+that only pairs the jets does not have.  `hh4b.RocPlots` therefore makes no
+plot at all when the `CLASSIFICATIONS` section of the event file is empty:
+
+```yaml
+CLASSIFICATIONS:          # nothing to draw a ROC curve from
+```
+
+```yaml
+CLASSIFICATIONS:          # the ROC plots are made
+  EVENT:
+    - class
+```
+
+```
+not made:         vbf_presel (hh4b_vbf_ggf_pairing.yaml has no CLASSIFICATIONS entry)
+```
+
+The efficiency plots of such a model are made as usual: pairing and
+classification are independent.
 
 ## The generated configurations
 

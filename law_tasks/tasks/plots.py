@@ -56,6 +56,9 @@ class PlotTask(ModelTask):
     #: whether the plot pairs the jets, and therefore needs the resonances
     needs_resonances = False
 
+    #: whether the plot needs the model to classify something
+    needs_classification = False
+
     plot_name = luigi.Parameter(
         description="name of the plot configuration, i.e. the subdirectory the "
         "plots are written to (see the [efficiency_plots] and [roc_plots] "
@@ -158,7 +161,11 @@ class PlotTask(ModelTask):
         return self.eval_marker("{}_{}.json".format(self.kind, self.plot_name))
 
     def unsupported_reason(self):
-        """Why the event file of the model leaves no efficiency to compute."""
+        """Why the event file of the model does not allow this plot."""
+        if self.needs_classification:
+            missing = self.event_info.classification_missing()
+            if missing:
+                return missing
         if not self.needs_resonances:
             return None
         return self.event_info.unsupported(self.configured_arguments)
@@ -247,6 +254,7 @@ class RocPlot(PlotTask):
     """One ROC configuration, e.g. ``vbf_no_kin_cuts``."""
 
     kind = "roc"
+    needs_classification = True
 
 
 class PlotCollection(ModelTask, law.WrapperTask):
