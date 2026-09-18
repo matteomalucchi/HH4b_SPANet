@@ -75,7 +75,9 @@ rsync <prefix>*<collection>_*.h5 <user>@lxplus.cern.ch:<eos input dir>/
 | `hh4b.TransferDataset` | creates the destination directory and `rsync`s the h5 files to the training machine |
 | `hh4b.Dataset` | wrapper, writes a summary with the `training_file` path to put into the options file |
 
-The datasets live in `law_tasks/datasets.yaml` (`dataset_config` in `law.cfg`):
+The datasets live in `law_tasks/datasets.yaml` (`dataset_config` in
+`law.cfg`), whose `defaults` block lists every field there is, the ones no
+dataset shares commented out with what happens without them:
 
 ```yaml
 defaults:                       # applied to every dataset
