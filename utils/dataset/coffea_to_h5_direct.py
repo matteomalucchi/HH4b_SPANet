@@ -30,6 +30,11 @@ SEED = 9999
 _permutations = {}
 _pt_flatten_mixing_warned = False
 
+OLD_RESONANCES = {
+    "h1": (1, ("b1", "b2")),
+    "h2": (2, ("b3", "b4")),
+    "vbf": (3, ("q1", "q2")),
+}
 DEFAULT_RESONANCES = {
     "h1": (1, ("b1", "b2")),
     "h2": (2, ("b1", "b2")),

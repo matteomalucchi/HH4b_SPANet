@@ -79,11 +79,12 @@ datasets:
   
   vbf_ggf_all_klambda_JetGood_2024:
     coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
-    output_prefix: NormWeights_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCut_JetGoodProvHiggsPaddedGlobal_
+    output_prefix: NormWeights_AllKlambda_VBFggF_HIggsPairing_
     regions:
       - 4b_region
       - 4b_region
-    collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
+    collections: [JetGoodProvHiggsPtFlattenPadded]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
     jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
-    jet_like_global_vars: null
+    jet_like_global_vars: []
+    global_vars: []
