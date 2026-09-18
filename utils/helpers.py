@@ -55,7 +55,12 @@ def get_region_mask(region, column_file, do_vbf_pairing, jet_coll_higgs="Jet", j
         )
         return mask
 
-    jet_btag = column_file["INPUTS"][jet_coll_higgs]["btagPNetB"]
+    try:
+        jet_btag = column_file["INPUTS"][jet_coll_higgs]["btagPNetB"]
+    except KeyError:
+        logger.error(f"Key 'btagPNetB' not found in column_file['INPUTS'][{jet_coll_higgs}]. Trying 'btagB' instead.")
+        jet_btag = column_file["INPUTS"][jet_coll_higgs]["btagB"]
+
     if region == "4b" or region == "4M":
         mask = (
             (jet_btag[:, 0] > 0.2605)

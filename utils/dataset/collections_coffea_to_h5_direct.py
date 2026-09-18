@@ -1,6 +1,17 @@
 KEEP_TOGETHER_COLLECTIONS = ["add_jet1pt"]
 
 jet_collections_dict = {
+    "JET_GOOD_COLLECTIONS_HIGGS_PAIRING": [
+        {
+            "JetGoodProvHiggsPtFlattenPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 5,
+                "resonances": ["h1", "h2"],
+                "prov_key": "provenance",
+                "min_num_jets": 4,
+            },
+        },
+    ],
     "JET_COLLECTIONS_SEPARATE_HIGGS_VBF": [
         {
             "JetGoodProvHiggsPtFlattenPadded": {
@@ -114,15 +125,15 @@ jet_collections_dict = {
         },
     ],
     "JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL": [
-        {
-            "JetGoodVBFMergedProvVBFPadded": {
-                "saved_name": "Jet",
-                "max_num_jets": 5,
-                "resonances": ["vbf"],
-                "min_num_jets": 0,
-                "prov_key": "provenance_vbf",
-            },
-        },
+        # {
+        #     "JetGoodVBFMergedProvVBFPadded": {
+        #         "saved_name": "Jet",
+        #         "max_num_jets": 5,
+        #         "resonances": ["vbf"],
+        #         "min_num_jets": 0,
+        #         "prov_key": "provenance_vbf",
+        #     },
+        # },
         {
             "JetGoodVBFMergedProvVBFPadded": {
                 "saved_name": "JetVBF",
@@ -139,15 +150,15 @@ jet_collections_dict = {
                 "prov_key": "provenance_higgs",
             },
         },
-        {
-            "JetTotalSPANetPadded": {
-                "saved_name": "Jet",
-                "max_num_jets": 9,
-                "resonances": ["vbf"],
-                "min_num_jets": 4,
-                "prov_key": "provenance_vbf",
-            },
-        },
+        # {
+        #     "JetTotalSPANetPadded": {
+        #         "saved_name": "Jet",
+        #         "max_num_jets": 9,
+        #         "resonances": ["vbf"],
+        #         "min_num_jets": 4,
+        #         "prov_key": "provenance_vbf",
+        #     },
+        # },
     ],
     "JET_COLLECTION_VBF_BOOSTED": [
         {

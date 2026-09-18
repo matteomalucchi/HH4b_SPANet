@@ -358,22 +358,46 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
 
         if no_weights:
             cut = np.quantile(sig_scores, 1 - args.sig_efficiency)
-            sig_eff = np.mean(sig_scores > cut)  # Mean just gives me the ones passing divided by all
-            bkg_rej = np.mean(bkg_scores <= cut)
+            mask_signal_cut = sig_scores > cut
+            mask_bkg_cut = bkg_scores <= cut
+            sig_eff = np.mean(mask_signal_cut)  # Mean just gives me the ones passing divided by all
+            bkg_rej = np.mean(mask_bkg_cut)
+            n_sig_pass = mask_signal_cut.sum()
+            n_bkg_pass = mask_bkg_cut.sum()
+            n_sig_pass_err = np.sqrt(n_sig_pass)
+            n_bkg_pass_err = np.sqrt(n_bkg_pass)
         else:
             cut = float(weighted_quantile(sig_scores, 1 - args.sig_efficiency, weights=weights_sig))
 
             mask_signal_cut = sig_scores > cut
             sig_eff = weights_sig[mask_signal_cut].sum() / weights_sig.sum()
+            n_sig_pass = weights_sig[mask_signal_cut].sum()
+            n_sig_pass_err = np.sqrt((weights_sig[mask_signal_cut] ** 2).sum())
 
             mask_bkg_cut = bkg_scores <= cut
             bkg_rej = weights_bkg[mask_bkg_cut].sum() / weights_bkg.sum()
+            n_bkg_pass = weights_bkg[mask_bkg_cut].sum()
+            n_bkg_pass_err = np.sqrt((weights_bkg[mask_bkg_cut] ** 2).sum())
+
+        # S/sqrt(B) significance metric with propagated statistical uncertainty
+        if n_bkg_pass > 0:
+            s_sqrtb = n_sig_pass / np.sqrt(n_bkg_pass)
+            s_sqrtb_err = np.sqrt(
+                (n_sig_pass_err / np.sqrt(n_bkg_pass)) ** 2
+                + (n_sig_pass * n_bkg_pass_err / (2 * n_bkg_pass**1.5)) ** 2
+            )
+        else:
+            s_sqrtb = float("nan")
+            s_sqrtb_err = float("nan")
 
         logger.info("=============")
         logger.info(f"For model {model_name} with kl={kl_string}:")
         logger.info(f"Found score cut at: {cut:.4f} for target signal efficiency of {args.sig_efficiency*100:.4g}%")
         logger.info(f"Signal efficiency at this point is: {sig_eff * 100:.2f}% ")
         logger.info(f"Background rejection at this point is: {bkg_rej * 100:.2f}% ")
+        logger.info(f"Number of signal events passing the cut (sum of weights): {n_sig_pass:.2f} +- {n_sig_pass_err:.2f}")
+        logger.info(f"Number of background events passing the cut (sum of weights): {n_bkg_pass:.2f} +- {n_bkg_pass_err:.2f}")
+        logger.info(f"S/sqrt(B) at this point is: {s_sqrtb:.2f} +- {s_sqrtb_err:.2f}")
         logger.info("=============")
 
         hist_bkg = Hist.new.Regular(
@@ -432,7 +456,7 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
                         legend_loc="upper left",
                         grid=True,
                         ylim_bottom_value=1e-4 if log else 0.0,
-                        ylim_top_value=5 if log else 0.3,
+                        ylim_top_value=10 if log else 0.3,
                         # ylim_top_factor=2,
                     )
                     .set_plot_config(
@@ -448,7 +472,10 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
                     label=(
                         f"Sig efficiency = {sig_eff :.2f}\n"
                         f"Bkg rejection = {bkg_rej:.2f}\n"
-                        f"SPANet score cut = {cut:.2f}"
+                        f"SPANet score cut = {cut:.2f}\n"
+                        f"N sig events = {n_sig_pass:.2f} $\\pm$ {n_sig_pass_err:.2f}\n"
+                        f"N bkg events = {n_bkg_pass:.2f} $\\pm$ {n_bkg_pass_err:.2f}\n"
+                        f"S/$\\sqrt{{B}}$ = {s_sqrtb:.2f} $\\pm$ {s_sqrtb_err:.2f}"
                     ),
                 )  # 0 and 1 should not have a particular effect. its just to have two points on the line
                 histplot.add_annotation(0.6, 0.95, f"Region: {args.region}", ha="left", va="center", fontsize=20)

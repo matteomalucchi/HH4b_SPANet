@@ -193,6 +193,20 @@ def main():
             if (args.vbf and "vbf" in file_dict.keys() and file_dict["vbf"])
             else False
         )
+        do_higgs_pairing = (
+            True
+            if (
+                not args.ignore_higgs
+                and ("higgs" in file_dict.keys() and file_dict["higgs"])
+            )
+            else False
+        )
+        
+        if not do_higgs_pairing and not do_vbf_pairing:
+            logger.warning(
+                f"Model {model_name} has no pairing to evaluate. Skipping."
+            )
+            continue
 
         true_entry = true_dict[file_dict["true"]]
         n_higgs_jets = true_entry.get("n_higgs_jets", 4)
@@ -262,14 +276,14 @@ def main():
         idx_true = load_jets_and_pairing(
             truefile,
             "true",
-            higgs=not args.ignore_higgs,
+            higgs=do_higgs_pairing,
             vbf=do_vbf_pairing,
             resonances=resonances,
         )[mask_true]
         idx_spanet_pred = load_jets_and_pairing(
             spanetfile,
             "spanet",
-            higgs=not args.ignore_higgs,
+            higgs=do_higgs_pairing,
             vbf=do_vbf_pairing,
             resonances=resonances,
         )[mask_spanet]
@@ -346,7 +360,7 @@ def main():
                 kl_values,
                 all_name_list,
                 "fully matched",
-                higgs=not args.ignore_higgs,
+                higgs=do_higgs_pairing,
                 vbf=do_vbf_pairing,
                 offset_jet_idx_higgs=offset_jet_idx_higgs,
                 offset_jet_idx_vbf=offset_jet_idx_vbf,
@@ -376,12 +390,12 @@ def main():
         jet_fully_matched = [j[m] for j, m in zip(alljet, mask_fully_matched)]
         # Reconstruction of the Higgs boson candidates with the predicted/true pairings
         spanet_higgs_fully_matched = [
-            best_reco_higgs(j, spanet_idx, higgs=not args.ignore_higgs)
+            best_reco_higgs(j, spanet_idx, higgs=do_higgs_pairing)
             for j, spanet_idx in zip(jet_fully_matched, allspanet_idx_fully_matched)
         ]
         if not args.data:
             true_higgs_fully_matched = [
-                best_reco_higgs(j, idx, higgs=not args.ignore_higgs)
+                best_reco_higgs(j, idx, higgs=do_higgs_pairing)
                 for j, idx in zip(jet_fully_matched, alltrue_idx_fully_matched)
             ]
             true_hh_fully_matched = [
@@ -401,7 +415,7 @@ def main():
                 "total_diff_eff_spanet": [],
                 "total_unc_diff_eff_spanet": [],
             }
-            if not args.ignore_higgs:
+            if do_higgs_pairing:
                 for true_hh, matched_spanet, mask_matched in zip(
                     true_hh_fully_matched, matching_eval_spanet, mask_fully_matched
                 ):
@@ -478,6 +492,17 @@ def main():
         )
         else False
     )
+    do_higgs_pairing = (
+        False
+        if (
+            args.ignore_higgs
+            and not (
+                "higgs" in true_dict[run2_dataset].keys()
+                and true_dict[run2_dataset]["higgs"]
+            )
+        )
+        else True
+    )
 
     run2_true_entry = true_dict[run2_dataset]
     n_higgs_jets = run2_true_entry.get("n_higgs_jets", 4)
@@ -530,7 +555,7 @@ def main():
         "true_run2",
         allowed_idx_higgs=[0, 1, 2, 3],
         allowed_idx_vbf=allowed_idx_vbf_run2,
-        higgs=not args.ignore_higgs,
+        higgs=do_higgs_pairing,
         vbf=do_vbf_pairing,
         resonances=run2_true_entry.get("resonances"),
     )[mask_true]
@@ -581,7 +606,7 @@ def main():
     allrun2_idx_fully_matched = run2_algorithm(
         alljet,
         mask_fully_matched,
-        higgs=not args.ignore_higgs,
+        higgs=do_higgs_pairing,
         vbf=do_vbf_pairing,
         n_higgs_jets=n_higgs_jets,
     )
@@ -603,7 +628,7 @@ def main():
             kl_values,
             all_name_list,
             "run2",
-            higgs=not args.ignore_higgs,
+            higgs=do_higgs_pairing,
             vbf=do_vbf_pairing,
         )
 
@@ -612,12 +637,12 @@ def main():
     # and the run2 pairings
     jet_fully_matched = [j[m] for j, m in zip(alljet, mask_fully_matched)]
     run2_higgs_fully_matched = [
-        best_reco_higgs(j, idx, higgs=not args.ignore_higgs)
+        best_reco_higgs(j, idx, higgs=do_higgs_pairing)
         for j, idx in zip(jet_fully_matched, allrun2_idx_fully_matched)
     ]
     if not args.data:
         true_higgs_fully_matched = [
-            best_reco_higgs(j, idx, higgs=not args.ignore_higgs)
+            best_reco_higgs(j, idx, higgs=do_higgs_pairing)
             for j, idx in zip(jet_fully_matched, alltrue_idx_fully_matched)
         ]
         true_hh_fully_matched = [
@@ -637,7 +662,7 @@ def main():
             "total_diff_eff_run2": [],
             "total_unc_diff_eff_run2": [],
         }
-        if not args.ignore_higgs:
+        if do_higgs_pairing:
             for true_hh, matched_run2, mask_matched in zip(
                 true_hh_fully_matched, matching_eval_run2, mask_fully_matched
             ):
