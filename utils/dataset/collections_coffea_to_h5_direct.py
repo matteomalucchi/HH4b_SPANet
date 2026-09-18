@@ -1,6 +1,17 @@
 KEEP_TOGETHER_COLLECTIONS = ["add_jet1pt"]
 
 jet_collections_dict = {
+    "JET_GOOD_COLLECTIONS_HIGGS_PAIRING": [
+        {
+            "JetGoodProvHiggsPtFlattenPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 5,
+                "resonances": ["h1", "h2"],
+                "prov_key": "provenance",
+                "min_num_jets": 4,
+            },
+        },
+    ],
     "JET_COLLECTIONS_SEPARATE_HIGGS_VBF": [
         {
             "JetGoodProvHiggsPtFlattenPadded": {
