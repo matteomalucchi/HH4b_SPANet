@@ -22,46 +22,44 @@
 # shares, or where the default is the right thing; the comment says what
 # happens without them.
 defaults:
-
   # -- where the coffea file is ------------------------------------------
-  coffea_file: output_all.coffea      # name of the file in `coffea_dir`
+  coffea_file: output_all.coffea # name of the file in `coffea_dir`
   # coffea_dir: VBF/out_my_study      # relative to `coffea_base`; per dataset
 
   # -- what is converted -------------------------------------------------
-  class_labels: [GluGlu, VBF]         # converter default: [DATA, GluGlu]
+  class_labels: [GluGlu, VBF] # converter default: [DATA, GluGlu]
   # regions: [region_of_GluGlu, region_of_VBF]   # one per class; per dataset
   # max_jets: [5, 5]                  # one per jet collection; this is the
-                                      # converter default as well
+  # converter default as well
 
   # -- which collections and variables are saved -------------------------
   jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
   jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
   # global_vars: GLOBAL_COLLECTIONS_VBF   # without it the converter saves
-                                          # every non-jet variable ('all')
+  # every non-jet variable ('all')
 
   # resonances: OLD_RESONANCES        # how the daughters of the TARGETS are
-                                      # named: 'h2: b1, b2' with the default
-                                      # (DEFAULT_RESONANCES), 'h2: b3, b4'
-                                      # with OLD_RESONANCES; it has to match
-                                      # the EVENT section of the event file
-                                      # the model is trained with
+  # named: 'h2: b1, b2' with the default
+  # (DEFAULT_RESONANCES), 'h2: b3, b4'
+  # with OLD_RESONANCES; it has to match
+  # the EVENT section of the event file
+  # the model is trained with
 
   # -- anything else for coffea_to_h5_direct.py --------------------------
   # convert_args: "-n"                # the weights are NOT normalized unless
-                                      # this is used: `-n` divides them by
-                                      # sum_genweights, `-bw class` rescales
-                                      # each class to sum(|w|) = 1
+  # this is used: `-n` divides them by
+  # sum_genweights, `-bw class` rescales
+  # each class to sum(|w|) = 1
 
   # -- where the h5 files go ---------------------------------------------
   # output_dir: /work/me/h5           # default: next to the coffea file
   # output_prefix: My_Study_          # the -o argument; per dataset
   # collections: [JetTotalSPANetPadded]   # jet collection groups to send to
-                                          # the training machine; default: all
+  # the training machine; default: all
   # remote_dir: vbf/out_my_study      # relative to `remote_input_base`; the
-                                      # destination on the training machine
+  # destination on the training machine
 
 datasets:
-
   # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,
   # VBF regions without kinematic cuts, Higgs jets also as global variables
   vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal:
@@ -72,7 +70,7 @@ datasets:
       - hh4b_vbf_best_candidates_6_jets_nokincut_region
     collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
-  
+
   # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,
   # VBF regions without kinematic cuts, Higgs jets also as global variables
   vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal_2024:
@@ -83,7 +81,7 @@ datasets:
       - vbf_best_candidates_6_jets_nokincut_4b_region
     collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
-  
+
   vbf_ggf_all_klambda_JetGood_2024:
     coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
     output_prefix: NormWeights_AllKlambda_VBFggF_HIggsPairing_
@@ -95,3 +93,4 @@ datasets:
     jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
     jet_like_global_vars: []
     global_vars: []
+    resonances: OLD_RESONANCES
