@@ -623,7 +623,10 @@ law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
 The test file, the prediction name, the `true_dict` key, the label, the color
 and the plot directories are derived from the options file with the
 conventions used so far, and each of them can be overridden on the command
-line. `--output-dir` points the whole chain at a training directory that does
+line. The efficiency and ROC plots are the entries of the `[efficiency_plots]`
+and `[roc_plots]` sections of `law.cfg`, each with its own region; `--region
+<name>` (e.g. `inclusive` for no selection) replaces it for a run and keeps
+those plots apart from the configured ones. `--output-dir` points the whole chain at a training directory that does
 not follow the naming convention at all. Adding `--test-file <other file>` evaluates a model that is already
 trained on another sample: the training is reused, the training metric plots
 are not redone, and the predictions, the configurations and the plots of that

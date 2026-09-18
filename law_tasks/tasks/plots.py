@@ -1,6 +1,7 @@
 """Training metric, efficiency and ROC plots of a model."""
 
 import os
+import shlex
 
 import law
 import luigi
@@ -69,6 +70,15 @@ class PlotTask(ModelTask):
         default="",
         description="additional arguments forwarded to the plotting script",
     )
+    region = luigi.Parameter(
+        default="",
+        description="region the plot is made in, replacing the one of the "
+        "configured arguments, e.g. 'vbf_no_kin_cuts', 'vbf_presel', '4b' or "
+        "'inclusive' for no selection at all; the plots of a region of their "
+        "own are kept apart from the configured ones; default: the region of "
+        "the [efficiency_plots] / [roc_plots] entry",
+    )
+
     def requires(self):
         return self.clone(RegisterModel)
 
@@ -97,8 +107,37 @@ class PlotTask(ModelTask):
         return naming.derive_plot_dir(self.model_key) + self.eval_suffix
 
     @property
+    def region_suffix(self):
+        return "_{}".format(self.region) if self.region else ""
+
+    @property
+    def plot_arguments(self):
+        """The configured arguments, with ``--region`` replacing the region.
+
+        ``-r`` is what ``efficiency_studies.py`` and ``ROC_plots.py`` call the
+        region, and it is part of the arguments of every plot; giving one on
+        the command line drops the configured one instead of passing both.
+        """
+        configured = self.plot_definitions.get(self.plot_name) or ""
+        if not self.region:
+            return configured
+
+        tokens, keep, skip = shlex.split(configured), [], False
+        for token in tokens:
+            if skip:
+                skip = False
+            elif token in ("-r", "--region"):
+                skip = True
+            else:
+                keep.append(token)
+        keep += ["-r", self.region]
+        return " ".join(shlex.quote(token) for token in keep)
+
+    @property
     def target_dir(self):
-        return os.path.join(self.plot_base, self.main_dir, self.plot_name)
+        return os.path.join(
+            self.plot_base, self.main_dir, self.plot_name + self.region_suffix
+        )
 
     def output(self):
         return self.eval_marker("{}_{}.json".format(self.kind, self.plot_name))
@@ -107,7 +146,7 @@ class PlotTask(ModelTask):
         """Why the event file of the model does not allow this plot."""
         if not self.needs_resonances:
             return None
-        return self.event_info.unsupported(self.plot_definitions.get(self.plot_name))
+        return self.event_info.unsupported(self.plot_arguments)
 
     def check_target_dir(self):
         """Refuse to silently write into a directory that already holds plots."""
@@ -156,12 +195,13 @@ class PlotTask(ModelTask):
         os.makedirs(os.path.join(self.plot_base, self.main_dir), exist_ok=True)
 
         configuration = self.input()[self.kind].path
+        arguments = self.plot_arguments
         command = "cd {base} && python3 {script} -pd {pd} -conf {conf} {args}".format(
             base=self.plot_base,
             script=self.script,
-            pd=os.path.join(self.main_dir, self.plot_name),
+            pd=os.path.join(self.main_dir, self.plot_name + self.region_suffix),
             conf=configuration,
-            args=self.plot_definitions[self.plot_name],
+            args=arguments,
         )
         if self.plot_args:
             command += " " + self.plot_args
@@ -171,7 +211,7 @@ class PlotTask(ModelTask):
             self.output(),
             plot_dir=self.target_dir,
             configuration=configuration,
-            arguments=self.plot_definitions[self.plot_name],
+            arguments=arguments,
         )
 
 
@@ -198,6 +238,12 @@ class PlotCollection(ModelTask, law.WrapperTask):
         default="",
         description="parent directory of all plots of this model; default: "
         "derived from the options basename",
+    )
+    region = luigi.Parameter(
+        default="",
+        description="region every plot is made in, replacing the configured "
+        "ones, e.g. 'inclusive' for no selection at all; default: the region "
+        "of each entry",
     )
 
     @property

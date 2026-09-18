@@ -23,6 +23,16 @@ class Performance(ModelTask):
         description="parent directory of all plots of this model; default: "
         "derived from the options basename",
     )
+    region = luigi.Parameter(
+        default="",
+        description="region every efficiency and ROC plot is made in, "
+        "replacing the configured ones, e.g. 'inclusive' for no selection at "
+        "all; default: the region of each entry",
+    )
+
+    @property
+    def region_suffix(self):
+        return "_{}".format(self.region) if self.region else ""
     def requires(self):
         reqs = {
             "efficiency": self.clone(EfficiencyPlots),
@@ -70,6 +80,7 @@ class Performance(ModelTask):
             efficiency_plots=efficiency,
             roc_plots=roc,
             skipped_plots=skipped,
+            region=self.region or None,
             event_file=self.event_info_path,
             journal=journal.journal_path(self.journal_base),
         )

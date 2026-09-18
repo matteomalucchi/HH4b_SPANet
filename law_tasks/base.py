@@ -430,10 +430,16 @@ class ModelTask(BaseTask):
     def marker(self, name):
         return law.LocalFileTarget(os.path.join(self.marker_dir, name))
 
+    #: set by the tasks that take a --region, so that two regions do not
+    #: write the same marker
+    region_suffix = ""
+
     def eval_marker(self, name):
         """Marker of a task that depends on the file the model is evaluated on."""
         stem, ext = os.path.splitext(name)
-        return self.marker("{}{}{}".format(stem, self.eval_suffix, ext))
+        return self.marker(
+            "{}{}{}{}".format(stem, self.region_suffix, self.eval_suffix, ext)
+        )
 
     def write_marker(self, target, **content):
         content.setdefault("task", self.__class__.__name__)

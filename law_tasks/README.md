@@ -310,6 +310,64 @@ law run hh4b.EfficiencyPlots --options-file <options> --seed 100
 law run hh4b.RocPlot --options-file <options> --plot-name vbf_presel
 ```
 
+## The regions of the plots
+
+Every efficiency and ROC plot is made in a region, and the region is part of
+the arguments of its entry in `law.cfg` -- `-r <region>`, what
+`efficiency_studies.py` and `ROC_plots.py` call it:
+
+```ini
+[efficiency_plots]                                    # -> subdirectory
+VBFEff_vbf_no_kin_cuts: --vbf -c 1 -ih -r vbf_no_kin_cuts -k
+VBFEff_vbf_presel:      --vbf -c 1 -ih -r vbf_presel -k
+HiggsEff:               -c 0 -k                       # no -r: inclusive
+
+[roc_plots]
+vbf_no_kin_cuts: -r vbf_no_kin_cuts -klb 1 all -s 0.8
+vbf_presel:      -r vbf_presel -klb 1 all -s 0.8
+```
+
+So `hh4b.Performance` makes every plot listed there, each in its own region
+and its own subdirectory, and a new combination is an entry more.
+
+To change the region without touching `law.cfg`, `--region` replaces the one
+of every entry for that run:
+
+```bash
+# no selection at all
+law run hh4b.Performance --options-file <options> --region inclusive
+
+# the VBF preselection, for plots configured with another region
+law run hh4b.Performance --options-file <options> --region vbf_presel
+
+# one plot, one region
+law run hh4b.EfficiencyPlot --options-file <options> \
+    --plot-name VBFEff_vbf_presel --region 4b
+```
+
+The regions are the ones `utils/helpers.py` knows: `inclusive`,
+`vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`.
+
+The plots of a region given this way are kept apart from the configured ones,
+so nothing is overwritten and the two can be compared:
+
+| | configured | `--region inclusive` |
+|---|---|---|
+| plots | `plots_<model>/VBFEff_vbf_presel/` | `plots_<model>/VBFEff_vbf_presel_inclusive/` |
+| marker | `law/efficiency_VBFEff_vbf_presel.json` | `law/efficiency_VBFEff_vbf_presel_inclusive.json` |
+| summary | `law/performance.json` | `law/performance_inclusive.json` |
+
+The configured `-r` is replaced, not repeated, and the arguments a plot really
+ran with are in its marker:
+
+```json
+"arguments": "--vbf -c 1 -ih -k -r inclusive"
+```
+
+`--plot-args` still appends anything else to a single plot, and `--region`
+combines with `--test-file`: the suffixes stack, e.g.
+`law/performance_4b_<evaluation>.json`.
+
 ## Evaluate an existing model on another test file
 
 Nothing has to be trained again: `hh4b.Training` adopts the trained
