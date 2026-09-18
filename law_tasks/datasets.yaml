@@ -13,6 +13,15 @@
 # `convert_args` passes anything else to coffea_to_h5_direct.py. The weights
 # are NOT normalized unless it is used: `-n` divides them by sum_genweights,
 # `-bw class` rescales each class to sum(|w|) = 1.
+#
+# `jets`, `global_vars` and `jet_like_global_vars` take either the variables
+# themselves or the name of a group defined in
+# utils/dataset/collections_coffea_to_h5_direct.py -- `jet_collections_dict`,
+# `global_collections_dict` and `jet_like_global_collections_dict`
+# respectively. `global_vars` is left out here, which keeps the default of the
+# converter ('all', every non-jet variable); a `GLOBAL_COLLECTIONS_*` group
+# saves the listed ones instead, under the names it gives them, and needs one
+# entry per jet collection group of `jets`.
 
 # applied to every dataset below
 defaults:
@@ -37,6 +46,8 @@ datasets:
     # weights as they come out of coffea; use "-n" to divide them by
     # sum_genweights, or "-bw class" to balance the classes
     # convert_args: "-n"
+    # a group of global_collections_dict instead of every non-jet variable:
+    # global_vars: GLOBAL_COLLECTIONS_VBF
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
   
   # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,

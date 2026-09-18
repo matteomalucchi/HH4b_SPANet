@@ -195,6 +195,10 @@ class ConvertDataset(DatasetTask):
                 "coffea file '{}' does not exist".format(spec.coffea_path)
             )
 
+        # a group that does not line up with the jet collections fails in the
+        # middle of the conversion, which costs minutes of loading
+        spec.check_collections()
+
         self.check_no_overwrite(spec.all_files().values(), what="h5")
 
         os.makedirs(spec.local_dir, exist_ok=True)

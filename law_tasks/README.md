@@ -99,6 +99,45 @@ directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
 converter, e.g. the weight normalization, see below), `collections` (which jet
 collection groups to transfer, default: all) and `remote_dir`.
 
+### The collection groups
+
+`jets`, `global_vars` and `jet_like_global_vars` are the `-j`, `-g` and `-jg`
+arguments of the converter: either the collections and variables themselves,
+or the name of a group defined in
+`utils/dataset/collections_coffea_to_h5_direct.py`.
+
+| field | dictionary of the module | example |
+|---|---|---|
+| `jets` | `jet_collections_dict` | `JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL` |
+| `global_vars` | `global_collections_dict` | `GLOBAL_COLLECTIONS_VBF` |
+| `jet_like_global_vars` | `jet_like_global_collections_dict` | `JET_LIKE_GLOBAL_HIGGS_ORDERED` |
+
+```yaml
+datasets:
+  my_study:
+    jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF      # three jet collection groups
+    global_vars: GLOBAL_COLLECTIONS_SEPARATE_HIGGS_VBF   # three entries as well
+    jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
+```
+
+Without `global_vars` the converter keeps its default, `all`, which saves
+every non-jet variable as a global one.  A `GLOBAL_COLLECTIONS_*` group saves
+the variables it lists instead, under the names it gives them -- and it holds
+one entry **per jet collection group**, because the converter takes the global
+variables of the *n*-th jet collection group from its *n*-th entry.  A group
+with fewer entries than `jets` has would fail in the middle of the conversion,
+so `hh4b.ConvertDataset` stops before loading the coffea file:
+
+```
+the global variable group 'GLOBAL_COLLECTIONS_VBF' describes 2 jet collection
+group(s) while 'JET_COLLECTIONS_SEPARATE_HIGGS_VBF' has 3; every jet collection
+group needs its own entry in global_collections_dict
+```
+
+A name that is in none of those dictionaries is a typo, and is reported with
+the groups the module does hold, instead of being passed on as a literal
+collection name and producing files nobody asked for.
+
 Every one of them is also a command line option, so a dataset that is not in
 the file needs no edit:
 

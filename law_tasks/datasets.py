@@ -12,6 +12,7 @@ outputs without running the conversion first.
 import importlib.util
 import os
 import shlex
+from functools import lru_cache
 
 from law_tasks.config import settings
 
@@ -42,6 +43,19 @@ LIST_FIELDS = [
     "max_jets",
     "collections",
 ]
+
+
+@lru_cache(maxsize=None)
+def _collections_module(path):
+    spec = importlib.util.spec_from_file_location("law_collections", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def collections_module():
+    """``collections_coffea_to_h5_direct.py``, with the named groups."""
+    return _collections_module(settings().collections_module)
 
 
 def load_yaml(path):
@@ -129,22 +143,66 @@ class Dataset(object):
 
     # -- outputs -----------------------------------------------------------
 
-    def jet_collections(self):
-        """The jet collections, with a named group replaced by its content.
+    def expand_group(self, values, dict_name, field):
+        """Replace a named group by its content, as the converter does.
 
-        This reproduces the expansion done by ``coffea_to_h5_direct.py``.
+        ``coffea_to_h5_direct.py`` replaces a single upper case name by the
+        entry of the corresponding dictionary of
+        ``collections_coffea_to_h5_direct.py``; a name that is not in there is
+        a typo, and silently converting the wrong thing is worse than stopping.
         """
-        jets = list(self.jets)
-        if len(jets) != 1 or not jets[0].isupper():
-            return jets
+        values = list(values)
+        if len(values) != 1 or not values[0].isupper():
+            return values
 
-        path = settings().collections_module
-        spec = importlib.util.spec_from_file_location("law_collections", path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        groups = getattr(collections_module(), dict_name, {})
+        if values[0] not in groups:
+            raise ValueError(
+                "unknown {} group '{}' in dataset '{}'; {} of {} holds: "
+                "{}".format(
+                    field,
+                    values[0],
+                    self.name,
+                    dict_name,
+                    settings().collections_module,
+                    ", ".join(sorted(groups)) or "nothing",
+                )
+            )
+        return groups[values[0]]
 
-        groups = getattr(module, "jet_collections_dict", {})
-        return groups.get(jets[0], jets)
+    def jet_collections(self):
+        """The jet collections, with a named group replaced by its content."""
+        return self.expand_group(self.jets, "jet_collections_dict", "jet collection")
+
+    def global_collections(self):
+        """The global variables, with a named group replaced by its content."""
+        return self.expand_group(
+            self.global_vars, "global_collections_dict", "global variable"
+        )
+
+    def check_collections(self):
+        """Stop when the global groups do not cover the jet collection groups.
+
+        ``coffea_to_h5_direct.py`` takes the global variables of the *n*-th jet
+        collection group from the *n*-th entry of the global group, so a
+        shorter one fails in the middle of the conversion.
+        """
+        jets = self.jet_collections()
+        if len(self.global_vars) != 1 or not self.global_vars[0].isupper():
+            return
+
+        groups = self.global_collections()
+        if len(groups) < len(jets):
+            raise ValueError(
+                "the global variable group '{}' describes {} jet collection "
+                "group(s) while '{}' has {}; every jet collection group needs "
+                "its own entry in global_collections_dict".format(
+                    self.global_vars[0],
+                    len(groups),
+                    self.jets[0] if self.jets else "the jet collections",
+                    len(jets),
+                )
+            )
 
     def collection_names(self):
         """Name of each produced jet collection group, e.g. ``JetTotalSPANetPadded``."""
