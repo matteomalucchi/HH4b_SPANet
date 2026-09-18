@@ -682,20 +682,41 @@ A collection whose name contains `VBF` is taken to hold the VBF jets alone,
 which is what makes `n_higgs_jets` zero; `--extra-true-keys` overrides it, and
 overrides every other key, for a sample that does not follow the convention.
 
-### Plots that cannot be made are not made
+### Which efficiencies are computed
 
 `efficiency_studies.py` pairs the Higgs jets unless it is given
-`--ignore-higgs`, and the VBF jets when it is given `--vbf`.  A resonance that
-the event file does not define is not in the prediction either, and the script
-fails looking for it, so `hh4b.EfficiencyPlots` leaves those plots out:
+`--ignore-higgs`, and the VBF jets when it is given `--vbf`.  A resonance the
+event file does not define is not in the prediction either, so those two flags
+follow the event file rather than the entry alone:
+
+| entry asks for | event file has `h1`, `h2`, `vbf` | only `vbf` | only `h1`, `h2` |
+|---|---|---|---|
+| Higgs and VBF (`--vbf`) | both, as configured | VBF, `-ih` added | Higgs, `--vbf` dropped |
+| VBF alone (`--vbf -ih`) | as configured | as configured | *not made* |
+| Higgs alone | as configured | *not made* | as configured |
+
+So an entry asking for both efficiencies still produces the one the model has,
+instead of failing, and the arguments are left untouched when they already
+match the resonances.  The plot says so when it adapts them, and its marker
+keeps what it really ran with:
+
+```
+the resonances of hh4b_..._JetHiggsGlobal.yaml give: -c 1 -r vbf_presel -k --vbf -ih
+```
+
+A plot with nothing left to compute is not made at all:
 
 ```
 not made:         HiggsEff (hh4b_..._JetVBF_DNNVars_JetHiggsGlobal.yaml defines no Higgs resonance)
 ```
 
-They are listed like that at the end of `hh4b.Performance` and kept in its
-summary under `skipped_plots`.  Asking for one by name stops with the same
+Those are listed at the end of `hh4b.Performance` and kept in its summary
+under `skipped_plots`.  Asking for one by name stops with the same
 explanation instead of running into the failure.
+
+The same two facts are in the entry of the generated configuration, as
+`"higgs"` and `"vbf"`, which is what the script reads before computing an
+efficiency at all.
 
 ## The generated configurations
 

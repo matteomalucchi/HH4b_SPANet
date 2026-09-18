@@ -111,7 +111,7 @@ class PlotTask(ModelTask):
         return "_{}".format(self.region) if self.region else ""
 
     @property
-    def plot_arguments(self):
+    def configured_arguments(self):
         """The configured arguments, with ``--region`` replacing the region.
 
         ``-r`` is what ``efficiency_studies.py`` and ``ROC_plots.py`` call the
@@ -134,6 +134,21 @@ class PlotTask(ModelTask):
         return " ".join(shlex.quote(token) for token in keep)
 
     @property
+    def plot_arguments(self):
+        """What the plot really runs with: the resonances decide the pairings.
+
+        An efficiency the event file has no resonance for cannot be computed,
+        so it is switched off -- ``--ignore-higgs`` is added, ``--vbf``
+        dropped -- and the plot is made with the other one.
+        """
+        arguments = self.configured_arguments
+        if not self.needs_resonances:
+            return arguments
+
+        adapted, _ = self.event_info.efficiency_arguments(arguments)
+        return arguments if adapted is None else adapted
+
+    @property
     def target_dir(self):
         return os.path.join(
             self.plot_base, self.main_dir, self.plot_name + self.region_suffix
@@ -143,10 +158,10 @@ class PlotTask(ModelTask):
         return self.eval_marker("{}_{}.json".format(self.kind, self.plot_name))
 
     def unsupported_reason(self):
-        """Why the event file of the model does not allow this plot."""
+        """Why the event file of the model leaves no efficiency to compute."""
         if not self.needs_resonances:
             return None
-        return self.event_info.unsupported(self.plot_arguments)
+        return self.event_info.unsupported(self.configured_arguments)
 
     def check_target_dir(self):
         """Refuse to silently write into a directory that already holds plots."""
@@ -196,6 +211,12 @@ class PlotTask(ModelTask):
 
         configuration = self.input()[self.kind].path
         arguments = self.plot_arguments
+        if arguments != self.configured_arguments:
+            self.publish_message(
+                "the resonances of {} give: {}".format(
+                    os.path.basename(self.event_info.path), arguments
+                )
+            )
         command = "cd {base} && python3 {script} -pd {pd} -conf {conf} {args}".format(
             base=self.plot_base,
             script=self.script,

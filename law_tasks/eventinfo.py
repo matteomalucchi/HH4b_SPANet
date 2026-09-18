@@ -179,20 +179,52 @@ class EventInfo(object):
 
     # -- which plots can be made -------------------------------------------
 
-    def unsupported(self, plot_args):
-        """Why a plot run with ``plot_args`` cannot be made, or ``None``.
+    def efficiency_arguments(self, plot_args):
+        """``(arguments, reason)`` of an efficiency plot, for the resonances.
 
         ``efficiency_studies.py`` computes the Higgs pairing efficiency unless
         it is given ``--ignore-higgs``, and the VBF one when it is given
-        ``--vbf``; a resonance that the event file does not define is not in
-        the prediction either, and the plot fails looking for it.
+        ``--vbf``.  A resonance the event file does not define is not in the
+        prediction either, so those two flags follow it: the efficiency that
+        cannot be computed is switched off and the other one is still made.
+        ``reason`` says why nothing is left, and then the plot is not made at
+        all.
         """
         tokens = shlex.split(plot_args or "")
-        if not ({"-ih", "--ignore-higgs"} & set(tokens)) and not self.has_higgs:
-            return "{} defines no Higgs resonance".format(os.path.basename(self.path))
-        if ({"-v", "--vbf"} & set(tokens)) and not self.has_vbf:
-            return "{} defines no VBF resonance".format(os.path.basename(self.path))
-        return None
+        wants_higgs = not ({"-ih", "--ignore-higgs"} & set(tokens))
+        wants_vbf = bool({"-v", "--vbf"} & set(tokens))
+
+        higgs = wants_higgs and self.has_higgs
+        vbf = wants_vbf and self.has_vbf
+
+        if not higgs and not vbf:
+            missing = [
+                name
+                for name, wanted in (("Higgs", wants_higgs), ("VBF", wants_vbf))
+                if wanted
+            ]
+            return None, "{} defines no {} resonance".format(
+                os.path.basename(self.path), " or ".join(missing) or "resonance"
+            )
+
+        if (higgs, vbf) == (wants_higgs, wants_vbf):
+            # the resonances are the ones the plot asks for: nothing to adapt
+            return plot_args, None
+
+        kept = [
+            token
+            for token in tokens
+            if token not in ("-ih", "--ignore-higgs", "-v", "--vbf")
+        ]
+        if vbf:
+            kept.append("--vbf")
+        if not higgs:
+            kept.append("-ih")
+        return " ".join(shlex.quote(token) for token in kept), None
+
+    def unsupported(self, plot_args):
+        """Why a plot run with ``plot_args`` cannot be made, or ``None``."""
+        return self.efficiency_arguments(plot_args)[1]
 
 
 @lru_cache(maxsize=None)
