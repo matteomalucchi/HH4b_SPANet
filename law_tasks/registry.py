@@ -109,12 +109,19 @@ def build_entries(
     color,
     label=None,
     true_key=None,
+    higgs=True,
     vbf=True,
     klambda=None,
     extra_spanet=None,
     extra_true=None,
 ):
-    """Build the ``spanet_dict`` and ``true_dict`` entries of one model."""
+    """Build the ``spanet_dict`` and ``true_dict`` entries of one model.
+
+    ``higgs`` and ``vbf`` say which pairings the prediction holds, which is
+    what ``efficiency_studies.py`` asks the entry for before computing an
+    efficiency; both are written, so the entry says what the file does not
+    have as well.
+    """
     token_spanet, token_true = naming.extra_entries(key)
 
     spanet_entry = {
@@ -122,9 +129,9 @@ def build_entries(
         "true": true_key or naming.derive_true_key(key),
         "label": label or naming.derive_label(key),
         "color": color,
+        "higgs": bool(higgs),
+        "vbf": bool(vbf),
     }
-    if vbf:
-        spanet_entry["vbf"] = True
     spanet_entry.update(token_spanet)
     spanet_entry.update(extra_spanet or {})
 

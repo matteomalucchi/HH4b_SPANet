@@ -33,9 +33,19 @@ class RegisterModel(ModelTask):
         description="key of the truth entry; default: the existing entry pointing "
         "at the test file, else derived from the options basename",
     )
-    vbf = luigi.BoolParameter(
-        default=True,
-        description="mark the entry as a VBF model; default: True",
+    higgs = luigi.ChoiceParameter(
+        default="auto",
+        choices=["auto", "yes", "no"],
+        description="whether the prediction holds the Higgs pairing, i.e. the "
+        "'higgs' key of the entry; 'auto' takes it from the resonances of the "
+        "event file; default: auto",
+    )
+    vbf = luigi.ChoiceParameter(
+        default="auto",
+        choices=["auto", "yes", "no"],
+        description="whether the prediction holds the VBF pairing, i.e. the "
+        "'vbf' key of the entry; 'auto' takes it from the resonances of the "
+        "event file; default: auto",
     )
     resonances = luigi.Parameter(
         default="",
@@ -93,6 +103,11 @@ class RegisterModel(ModelTask):
 
         return naming.pick_color(registry.used_colors(modules))
 
+    @staticmethod
+    def _flag(choice, derived):
+        """``auto`` keeps what the event file says, ``yes``/``no`` force it."""
+        return derived if choice == "auto" else choice == "yes"
+
     def derived_keys(self):
         """The jet and resonance keys of the entries, from the event file.
 
@@ -108,6 +123,9 @@ class RegisterModel(ModelTask):
         true_keys = info.collection_keys()
         if self.resonances:
             model_keys["resonances"] = self.resonances
+
+        model_keys["higgs"] = self._flag(self.higgs, info.has_higgs)
+        model_keys["vbf"] = self._flag(self.vbf, info.has_vbf)
         self.publish_message(
             "event file: {}".format(os.path.basename(info.path))
         )
@@ -160,7 +178,8 @@ class RegisterModel(ModelTask):
             color=color,
             label=label or None,
             true_key=true_key,
-            vbf=self.vbf,
+            higgs=model_keys.pop("higgs"),
+            vbf=model_keys.pop("vbf"),
             extra_spanet=model_keys,
             extra_true=true_keys,
         )

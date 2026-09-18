@@ -650,6 +650,20 @@ the keys in:
 | `n_higgs_jets` | `0` when the VBF jets have a collection of their own, otherwise the four leading jets of the single collection (the default of the script) | both entries |
 | `offset_jet_idx_higgs`, `offset_jet_idx_vbf` | minus the slots of the collections *before* the one of that resonance: SPANet numbers the jets over its sequential inputs concatenated, the file stores them per collection | the model entry |
 | `resonances` | the `RESONANCES_DICT` entry whose daughters are the ones of the event file: `h1: b1 b2`, `h2: b3 b4` is `OLD_RESONANCES`, `h2: b1 b2` is `DEFAULT_RESONANCES`; `--resonances <set>` forces it | the model entry |
+| `higgs`, `vbf` | whether the event file defines the Higgs resonances and the VBF one, i.e. which pairings the prediction holds; `--higgs yes|no` / `--vbf yes|no` force them | the model entry |
+
+`efficiency_studies.py` asks the entry which pairings the file holds before
+computing an efficiency, so a model whose event file has only the VBF
+resonance is registered as
+
+```python
+"higgs": False,
+"vbf": True,
+```
+
+and the Higgs efficiency is neither computed nor plotted for it.  Both keys
+are always written, so the entry says what the prediction does *not* hold as
+well.
 
 The number of slots of a collection is read from the file the model is
 evaluated on (`INPUTS/<collection>/MASK`), so two collections of four and five
@@ -849,5 +863,6 @@ is left out of the `apptainer exec` of a task, since apptainer refuses to bind
 it, and kept for the jobs, whose worker node is not this machine.
 
 Flags that are on by default are switched off by passing the value explicitly,
-e.g. `--gpu False` to predict on the CPU or `--vbf False` for a model that is
-not a VBF one.
+e.g. `--gpu False` to predict on the CPU.  The three that follow the event
+file -- `--higgs`, `--vbf` and `--apptainer` -- take `auto`, `yes` or `no`
+instead, `auto` being what is derived.
