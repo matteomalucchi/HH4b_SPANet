@@ -9,11 +9,17 @@
 #
 # This file keeps working for the datasets that are already in it.
 #
-# Paths are generic: `coffea_dir` is relative to the coffea base directory
-# (law.cfg `coffea_base` / $SPANET_COFFEA_BASE, default: the current directory)
-# and `remote_dir` is relative to the input directory on the training machine
-# (law.cfg `remote_input_base` / $SPANET_REMOTE_INPUT_DIR, default:
+# The paths here stay RELATIVE, because this file is shared through the
+# repository and everybody has their coffea files somewhere else: `coffea_dir`
+# is resolved against the coffea base directory (law.cfg `coffea_base` /
+# $SPANET_COFFEA_BASE, default: the current directory) and `remote_dir`
+# against the input directory on the training machine (law.cfg
+# `remote_input_base` / $SPANET_REMOTE_INPUT_DIR, default:
 # /eos/user/${USER:0:1}/$USER/spanet_infos/spanet_inputs).
+#
+# A file written next to its coffea file is yours alone and holds the paths in
+# full, the way you would type them to go and look at the files.  An absolute
+# path is taken as it is in either file.
 #
 # Every field can also be given on the command line, e.g.
 #   law run hh4b.Dataset --dataset my_study --coffea-dir ... --output-prefix ...

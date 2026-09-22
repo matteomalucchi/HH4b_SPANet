@@ -144,9 +144,25 @@ datasets:
     remote_dir: vbf/out_ggf_vbf_spanet_input_..._vbfregions   # relative to remote_input_base
 ```
 
-The two are told apart by the `datasets:` mapping: a file that has one
-describes several datasets and needs `--dataset`, a file without it describes
-the one it sits next to.  `--dataset-config` reads either.
+Its paths stay **relative**, because that file is shared through the
+repository and `/work/<me>/out_hh4b` is not where the coffea files of the next
+person are: `coffea_dir` is resolved against `coffea_base` and `remote_dir`
+against `remote_input_base`, so the same entry works for everybody.  A file
+written next to its coffea one lives in your own area and says the paths in
+full instead.
+
+| | next to the coffea file | `law_tasks/datasets.yaml` |
+|---|---|---|
+| selected by | `--dataset-config <path>` | `--dataset <name>` |
+| shape | the fields at the top level | `defaults:` and a `datasets:` mapping |
+| `coffea_dir` | the directory of the file, or a full path | relative to `coffea_base` |
+| `remote_dir` | a full path | relative to `remote_input_base` |
+| lives | with the samples it describes | in the repository, shared |
+
+Both read the same fields and `--dataset-config` reads either shape -- they
+are told apart by the `datasets:` mapping -- and an absolute path is taken as
+it is in both, so a central entry *can* hold one; it is only of no use to
+anybody else.
 
 ### The collection groups
 
