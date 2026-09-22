@@ -9,6 +9,7 @@ prefix and the jet collections, which is what lets the law tasks know their
 outputs without running the conversion first.
 """
 
+import glob
 import importlib.util
 import os
 import shlex
@@ -30,8 +31,13 @@ FIELDS = {
     "max_jets": [],
     "resonances": "",
     "convert_args": "",
-    "collections": [],
     "remote_dir": "",
+}
+
+#: fields that used to exist; a configuration still holding one is not an
+#: error, the value is ignored
+IGNORED_FIELDS = {
+    "collections": "every file starting with the output prefix is copied",
 }
 
 #: fields holding a list of values
@@ -42,7 +48,6 @@ LIST_FIELDS = [
     "global_vars",
     "jet_like_global_vars",
     "max_jets",
-    "collections",
 ]
 
 
@@ -127,6 +132,8 @@ class Dataset(object):
 
     def __init__(self, name, **fields):
         self.name = name
+        #: fields of the configuration that are no longer used
+        self.ignored = []
         for field, default in FIELDS.items():
             value = fields.get(field, default)
             setattr(self, field, _as_list(value) if field in LIST_FIELDS else value)
@@ -238,29 +245,46 @@ class Dataset(object):
             names.append("_".join(group) if isinstance(group, dict) else str(group))
         return names
 
-    def files(self, collections=None):
-        """``{<group>_<train|test>: <path>}`` of all h5 files of this dataset."""
+    @property
+    def prefix_path(self):
+        """The ``-o`` argument of the converter, without its extension."""
         # the converter strips an extension from the prefix before appending
-        base = os.path.join(self.local_dir, os.path.splitext(self.output_prefix)[0])
+        return os.path.join(self.local_dir, os.path.splitext(self.output_prefix)[0])
 
-        wanted = collections if collections is not None else self.collections
+    def all_files(self):
+        """``{<group>_<train|test>: <path>}`` of the h5 files of the conversion.
+
+        These are the names the converter builds from the prefix and the jet
+        collection groups, which is what lets the conversion have outputs
+        before it runs.
+        """
         files = {}
         for name in self.collection_names():
-            if wanted and name not in wanted:
-                continue
             for split in ("train", "test"):
                 files["{}_{}".format(name, split)] = "{}{}_{}.h5".format(
-                    base, name, split
+                    self.prefix_path, name, split
                 )
         return files
 
-    def all_files(self):
-        """Every h5 file written by the conversion, ignoring ``collections``."""
-        return self.files(collections=[])
+    def files(self):
+        """Backwards compatible alias of :py:meth:`all_files`."""
+        return self.all_files()
 
     def transfer_files(self):
-        """The h5 files that are copied to the remote host."""
-        return self.files()
+        """The files copied to the training machine.
+
+        Everything in the output directory whose name starts with the output
+        prefix, as it is on disk after the conversion -- not only the h5 files
+        the names of which are known in advance.
+        """
+        files = {}
+        for path in sorted(glob.glob(self.prefix_path + "*")):
+            if not os.path.isfile(path):
+                continue
+            stem = os.path.splitext(os.path.basename(path))[0]
+            key = stem[len(os.path.basename(self.prefix_path)):] or stem
+            files[key] = path
+        return files
 
     def remote_files(self):
         """``{<group>_<train|test>: <remote path>}`` after the transfer."""
@@ -340,10 +364,16 @@ def resolve(name="", config_path=None, **overrides):
         if value not in (None, "", [], ()):
             fields[field] = value
 
+    ignored = sorted(set(fields) & set(IGNORED_FIELDS))
+    for field in ignored:
+        fields.pop(field)
+
     unknown = set(fields) - set(FIELDS)
     if unknown:
         raise ValueError(
             "dataset '{}' has unknown fields: {}".format(name, ", ".join(sorted(unknown)))
         )
 
-    return Dataset(name, **fields)
+    dataset = Dataset(name, **fields)
+    dataset.ignored = ignored
+    return dataset

@@ -88,11 +88,6 @@ class DatasetTask(BaseTask):
         default="",
         description="additional arguments forwarded to coffea_to_h5_direct.py",
     )
-    collections = luigi.Parameter(
-        default="",
-        description="jet collection groups to transfer, separated by spaces; "
-        "default: all of them",
-    )
     remote_dir = luigi.Parameter(
         default="",
         description="destination directory, absolute or relative to the "
@@ -247,11 +242,18 @@ class TransferDataset(DatasetTask):
 
     def run(self):
         spec = self.spec
+        for field in spec.ignored:
+            self.publish_message(
+                "ignoring '{}': {}".format(field, datasets.IGNORED_FIELDS[field])
+            )
+
         files = spec.transfer_files()
         if not files:
             raise RuntimeError(
-                "no file to transfer for dataset '{}'; check the 'collections' "
-                "setting".format(self.spec.name)
+                "no file starting with '{}' in {}, nothing to transfer for "
+                "dataset '{}'".format(
+                    spec.output_prefix, spec.local_dir, spec.name
+                )
             )
 
         host = self.cfg.remote_host

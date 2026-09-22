@@ -95,7 +95,6 @@ regions: [hh4b_vbf_..._nokincut_region, hh4b_vbf_..._nokincut_region]
 class_labels: [GluGlu, VBF]
 jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
 jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
-collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
 remote_dir: vbf/out_ggf_vbf_spanet_input_..._vbfregions   # relative to remote_input_base
 ```
 
@@ -112,8 +111,7 @@ happens without it.
 Fields: `coffea_dir`, `coffea_file`, `output_dir` (default: the coffea
 directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
 `jet_like_global_vars`, `max_jets`, `resonances`, `convert_args` (anything
-else for the converter, e.g. the weight normalization, see below),
-`collections` (which jet collection groups to transfer, default: all) and
+else for the converter, e.g. the weight normalization, see below) and
 `remote_dir`.
 
 ### The central configuration
@@ -137,7 +135,6 @@ datasets:
     coffea_dir: VBF/out_ggf_vbf_spanet_input_..._vbfregions   # relative to coffea_base
     output_prefix: FixMASK_AllKlambda_..._JetGoodProvHiggsPaddedGlobal_
     regions: [hh4b_vbf_..._nokincut_region, hh4b_vbf_..._nokincut_region]
-    collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
     remote_dir: vbf/out_ggf_vbf_spanet_input_..._vbfregions   # relative to remote_input_base
 ```
 
@@ -290,7 +287,13 @@ with h5py.File("<prefix><collection>_train.h5") as h:
 and `_test.h5` pair per jet collection group, and a named group such as
 `JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL` expands to several
 groups. The tasks expand the group the same way, which is how they know their
-outputs up front. `collections` selects the groups that are worth copying.
+outputs up front.
+
+Everything in the output directory whose name starts with `output_prefix` is
+then copied to the training machine -- the files of every group, and anything
+else the conversion wrote under that prefix, whether or not its name was known
+in advance. Two datasets sharing a directory therefore need prefixes that are
+not a prefix of one another.
 
 Once the transfer is done, the summary prints the `training_file` to put into
 the options file, e.g.

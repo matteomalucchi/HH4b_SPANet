@@ -61,10 +61,10 @@ defaults:
   # each class to sum(|w|) = 1
 
   # -- where the h5 files go ---------------------------------------------
+  # every file of the output directory whose name starts with `output_prefix`
+  # is copied to the training machine
   # output_dir: /work/me/h5           # default: next to the coffea file
   # output_prefix: My_Study_          # the -o argument; per dataset
-  # collections: [JetTotalSPANetPadded]   # jet collection groups to send to
-  # the training machine; default: all
   # remote_dir: vbf/out_my_study      # relative to `remote_input_base`; the
   # destination on the training machine
 
@@ -77,7 +77,6 @@ datasets:
     regions:
       - hh4b_vbf_best_candidates_6_jets_nokincut_region
       - hh4b_vbf_best_candidates_6_jets_nokincut_region
-    collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
 
   # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,
@@ -88,7 +87,6 @@ datasets:
     regions:
       - vbf_best_candidates_6_jets_nokincut_4b_region
       - vbf_best_candidates_6_jets_nokincut_4b_region
-    collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
 
   vbf_ggf_all_klambda_JetGood_2024:
@@ -97,7 +95,6 @@ datasets:
     regions:
       - 4b_region
       - 4b_region
-    collections: [JetGoodProvHiggs]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
     jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
     jet_like_global_vars: []
@@ -110,7 +107,6 @@ datasets:
     regions:
       - 4b_region
       - 4b_region
-    collections: [JetGoodProvHiggs]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
     jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
     jet_like_global_vars: []
@@ -124,7 +120,6 @@ datasets:
     regions:
       - 4b_region
       - 4b_region
-    collections: null
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
     jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
     jet_like_global_vars: []
@@ -136,7 +131,6 @@ datasets:
     regions:
       - 4b_region
       - 4b_region
-    collections: null
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
     jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
     jet_like_global_vars: []
@@ -149,7 +143,6 @@ datasets:
     regions:
       - 4b_region
       - 4b_region
-    collections: null
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
     jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
     jet_like_global_vars: []
