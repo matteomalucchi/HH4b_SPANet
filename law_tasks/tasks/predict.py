@@ -16,11 +16,6 @@ class Predict(ModelTask):
     #: hours of GPU: --overwrite-plots leaves the prediction alone
     produces_data = True
 
-    gpu = luigi.BoolParameter(
-        default=True,
-        significant=False,
-        description="evaluate the network on the GPU; default: True",
-    )
     predict_args = luigi.Parameter(
         default="",
         description="additional arguments forwarded to spanet.predict; default: empty",

@@ -8,6 +8,7 @@ from law_tasks.tasks.dataset import (  # noqa: F401
 from law_tasks.tasks.training import Training  # noqa: F401
 from law_tasks.tasks.predict import Predict  # noqa: F401
 from law_tasks.tasks.register import RegisterModel  # noqa: F401
+from law_tasks.tasks.export import ExportModel, TransferModel  # noqa: F401
 from law_tasks.tasks.plots import (  # noqa: F401
     TrainingMetrics,
     EfficiencyPlot,

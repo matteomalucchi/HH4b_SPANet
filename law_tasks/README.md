@@ -4,15 +4,19 @@
 SPANet model: **convert** the coffea outputs into h5 inputs and **transfer**
 them to the training machine, submit (or reuse) the **training**, compute the
 **predictions**, plot the **training metrics**, register the model in the
-performance configurations and produce the **efficiency** and **ROC** plots.
+performance configurations, produce the **efficiency** and **ROC** plots, and
+**export** the trained model to ONNX and copy it back to the machine the
+analysis runs on.
 
 The chain spans two machines, as it does by hand: the conversion runs where
-the coffea files are, everything else runs on lxplus.
+the coffea files are, everything else runs on lxplus.  The ONNX model travels
+the way the inputs came, backwards.
 
 ```
 analysis machine                     lxplus
 ----------------                     ------
 hh4b.Dataset  --- rsync to EOS --->  hh4b.Performance
+              <-- the ONNX model ---
 ```
 
 Every task knows its outputs, so nothing is computed twice: rerunning the
@@ -345,6 +349,9 @@ python scripts/plot_training_metrics.py -d <version dir>
 # ... edit the two performance configurations by hand, then:
 python3 utils/performance/efficiency_studies.py ...   # three times
 python3 utils/roccurves/ROC_plots.py ...              # twice
+# and, for the model the analysis reads:
+python -m spanet.export ./ <onnx dir>/<model>.onnx --gpu
+rsync <onnx dir>/<model>.onnx <analysis machine>:/work/<me>/spanet_vbf_models/
 ```
 
 and does, in order:
@@ -357,6 +364,8 @@ and does, in order:
 | `hh4b.RegisterModel` | writes the efficiency/ROC configurations containing this model |
 | `hh4b.EfficiencyPlots` | one `efficiency_studies.py` run per entry of `[efficiency_plots]` the event file of the model allows |
 | `hh4b.RocPlots` | one `ROC_plots.py` run per entry of `[roc_plots]`, when the model classifies |
+| `hh4b.ExportModel` | `spanet.export` on the training, writing `<onnx dir>/<model>.onnx` |
+| `hh4b.TransferModel` | copies that file to the machine the analysis runs on, when one is configured |
 | `hh4b.Performance` | wrapper, writes a summary with every produced path |
 
 Useful law flags: `--print-status -1` (what is done and what is missing),
@@ -377,6 +386,92 @@ already predicted:
 law run hh4b.EfficiencyPlots --options-file <options> --seed 100
 law run hh4b.RocPlot --options-file <options> --plot-name vbf_presel
 ```
+
+## The ONNX model, and the way back
+
+What the analysis reads is not the checkpoint but an ONNX file exported from
+it, on the machine the coffea files live on.  `hh4b.Performance` does that
+last step too:
+
+| task | by hand |
+|---|---|
+| `hh4b.ExportModel` | `cd <run dir>/version_N && python -m spanet.export ./ <onnx dir>/<model>.onnx --gpu` |
+| `hh4b.TransferModel` | `rsync <onnx dir>/<model>.onnx <host>:<directory>/` |
+
+The ONNX file is named after the options file and all models are written into
+one directory, so the analysis finds them in one place:
+
+```
+<eos_base>/spanet_model/hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7.onnx
+```
+
+`--onnx-dir` and `--onnx-file` change either half, e.g. to keep the shorter
+names used so far:
+
+```bash
+law run hh4b.Performance --options-file <options> \
+    --onnx-file vbf_ggf_all_Klambda_HiggsPairing.onnx
+```
+
+### Where it is copied to
+
+Nowhere, unless a destination is configured -- not everybody reads the models
+from another machine.  The destination is the way back of the h5 inputs, so it
+is configured the same way, in `law.cfg` on **lxplus**:
+
+```ini
+[hh4b_spanet]
+onnx_base: /eos/user/x/xyz/spanet_infos/spanet_model   # where the export writes
+onnx_host: xyz@t3ui03.psi.ch                           # where the analysis runs
+onnx_remote_dir: /work/xyz/spanet_vbf_models           # where it reads the models
+```
+
+`$SPANET_ONNX_DIR`, `$SPANET_ONNX_HOST` and `$SPANET_ONNX_REMOTE_DIR` do the
+same without editing the file, and `--onnx-host` / `--onnx-remote-dir` for a
+single run.  An empty (or `local`) host copies into `onnx_remote_dir` without
+ssh, which is what a directory on the same machine, or an already mounted one,
+needs.
+
+With `onnx_remote_dir` set, `hh4b.Performance` exports the model and copies
+it; without it, the model is exported and the run prints the `rsync` to paste
+on the other machine when the push is not possible from lxplus:
+
+```
+onnx model:       /eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx
+to copy it to the machine the coffea files live on, run there:
+  rsync xyz@lxplus.cern.ch:/eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx <destination directory>/
+```
+
+`--export` decides how far the chain goes:
+
+| | exported | copied |
+|---|---|---|
+| `--export auto` *(default)* | yes | only when a destination is configured |
+| `--export yes` | yes | yes, and the run fails when there is no destination |
+| `--export no` | no | no |
+
+The two steps also run on their own, which is the way to redo only the copy,
+or to export a model that was trained long ago:
+
+```bash
+law run hh4b.ExportModel --options-file <options>
+law run hh4b.TransferModel --options-file <options> --overwrite-plots
+```
+
+`--export-args` forwards anything else to `spanet.export`
+(`--input-log-transform`, `--output-log-transform`, `--opset 15`, ...), and
+`--gpu False` traces the network on the CPU -- the same flag the prediction
+uses, since both run on lxplus.
+
+The export belongs to the training, not to the sample the model is evaluated
+on: an evaluation on another test file (`--test-file`, `--eval-tag`) does not
+export anything again, exactly as the training metric plots are made once.
+
+A model that is trained again replaces its own ONNX file, because the name
+follows the model and not the `version_N`: `--overwrite` exports the new
+training over it, and so does a `version_N` that somebody else added (the
+export records the training it was made from, like every other step).
+`--onnx-file <name>.onnx` keeps the two apart when both are needed.
 
 ## The regions of the plots
 
@@ -541,6 +636,8 @@ so the question is always *which steps are redone*.
 | `hh4b.RegisterModel` | `<work_dir>/configs/<model>/{efficiency,roc}_configuration_<model>.py` and `registration.json` |
 | `hh4b.TrainingMetrics` | `version_N/training_plots/` |
 | `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | everything the plotting script writes into `<plot base>/<plot dir>/<plot name>/` |
+| `hh4b.ExportModel` | `<onnx dir>/<model>.onnx` |
+| `hh4b.TransferModel` | the same file in `onnx_remote_dir` on the analysis machine |
 | `hh4b.Performance`, `hh4b.Dataset` | only their summary |
 
 Every step also writes a small marker under `<run dir>/law/` (a dataset step:
@@ -554,7 +651,7 @@ Two flags, and both reach every step below the one they are given to:
 | flag | steps redone |
 |---|---|
 | *(none)* | the ones whose outputs are missing |
-| `--overwrite-plots` | the step it is given to and every step below it, **except** the conversion, the transfer, the training and the prediction |
+| `--overwrite-plots` | the step it is given to and every step below it, **except** the conversion, the transfer, the training, the prediction and the ONNX export |
 | `--overwrite` | the step it is given to and every step below it, whatever it is |
 
 `--overwrite` redoes the data as well: it trains the model again, predicts
@@ -563,7 +660,9 @@ again, and on the analysis machine converts the coffea file again.  On
 takes as long as the first time.
 
 `--overwrite-plots` is the one for everything that is drawn from a prediction
-that is fine: it never costs a GPU or a conversion.
+that is fine: it never costs a GPU or a conversion.  Given to a step directly
+it still redoes *that* step, which is how a copy is repeated without exporting
+the model again (`law run hh4b.TransferModel --overwrite-plots`).
 
 The training is the one step that is not replaced but *added to*: a new
 `version_N` appears next to the one that is there, and everything below is
@@ -596,6 +695,7 @@ and leaves these untouched:
 ```
 <run dir>/version_N/checkpoints/*        the training
 <run dir>/version_N/predict_*.h5         the prediction
+<onnx dir>/<model>.onnx                  the exported model
 the h5 input files
 utils/performance/..., utils/roccurves/...   the configurations tracked in git
 everything that belongs to another --test-file / --eval-tag evaluation
@@ -608,6 +708,9 @@ The same command with `--overwrite` trains again.  It creates
 <run dir>/version_N+1/predict_*.h5        its prediction
 <run dir>/version_N+1/training_plots/*    its metric plots
 ```
+
+and replaces `<onnx dir>/<model>.onnx` with the export of the new training,
+since that file is named after the model.
 
 replaces the same configurations, plots and markers as above -- they are named
 after the model, so they now describe `version_N+1` -- and still leaves
@@ -635,6 +738,7 @@ stops and names them:
 | step | what it refuses to touch |
 |---|---|
 | `hh4b.TransferDataset` | files already in the destination directory on the training machine (checked over ssh) |
+| `hh4b.TransferModel` | an ONNX file of that name already in `onnx_remote_dir` on the analysis machine (checked over ssh) |
 | `hh4b.TrainingMetrics`, `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | a plot directory that exists and is not empty |
 
 Typically these are plots made by hand, before the pipeline existed.  Either
@@ -664,7 +768,8 @@ law run hh4b.Performance --options-file <options> --overwrite   # version_1
 ```
 
 That is one command: it trains into `version_1`, predicts there, rewrites the
-configurations against the new prediction and redraws the plots.  The same
+configurations against the new prediction, redraws the plots and exports the
+new training to ONNX.  The same
 happens when the training is made separately, or by somebody else -- a
 `version_N` that appears is enough:
 
@@ -913,6 +1018,8 @@ derived from `$USER`:
 | efficiency plots | `eff_plot_base` | `$SPANET_EFF_PLOT_DIR` | `<eos_base>/spanet_eff_plots/vbf` |
 | ROC plots | `roc_plot_base` | `$SPANET_ROC_PLOT_DIR` | `<eos_base>/spanet_roc_curves` |
 | generated configs | `work_dir` | `$SPANET_LAW_WORK_DIR` | `<eos_base>/law_work` |
+| exported models | `onnx_base` | `$SPANET_ONNX_DIR` | `<eos_base>/spanet_model` |
+| where they are copied | `onnx_host`, `onnx_remote_dir` | `$SPANET_ONNX_HOST`, `$SPANET_ONNX_REMOTE_DIR` | nowhere: the model is exported and not copied |
 | container | `apptainer_image`, `apptainer_binds` | `$SPANET_APPTAINER_IMAGE`, `$SPANET_APPTAINER_BINDS` | cmsml image; `/afs`, `/cvmfs`, the EOS home of `$USER` and all directories above |
 | shared areas | `extra_binds` | `$SPANET_APPTAINER_EXTRA_BINDS` | bound on top of those, in the tasks and in the training jobs |
 | conversion | `conversion_python` | `$SPANET_CONVERSION_PYTHON` | `python3` |
@@ -950,8 +1057,10 @@ training jobs; see [The bind mounts](#the-bind-mounts).
   (use `lxplus-gpu`).
 
 The steps after it take their own arguments the same way: `--predict-args` and
-`--prediction-checkpoint` for `spanet.predict`, `--metrics-args` for the
-training metric plots, `--plot-args` for a single efficiency or ROC plot.
+`--prediction-checkpoint` for `spanet.predict`, `--export-args` for
+`spanet.export`, `--metrics-args` for the training metric plots, `--plot-args`
+for a single efficiency or ROC plot.  `--gpu False` moves the payloads that
+can use a GPU -- the prediction and the export -- onto the CPU.
 
 ## Containers
 
@@ -989,6 +1098,6 @@ is left out of the `apptainer exec` of a task, since apptainer refuses to bind
 it, and kept for the jobs, whose worker node is not this machine.
 
 Flags that are on by default are switched off by passing the value explicitly,
-e.g. `--gpu False` to predict on the CPU.  The three that follow the event
+e.g. `--gpu False` to predict and export on the CPU.  The three that follow the event
 file -- `--higgs`, `--vbf` and `--apptainer` -- take `auto`, `yes` or `no`
 instead, `auto` being what is derived.

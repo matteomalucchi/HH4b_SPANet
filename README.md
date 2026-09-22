@@ -461,6 +461,16 @@ source spanet_env/bin/activate
 python -m spanet.export <path_to_training>/out_seed_trainings_100/version_0/ <output_file_name>.onnx --gpu
 ```
 
+Then copy the file to the machine the analysis runs on:
+
+```bash
+rsync <user>@lxplus.cern.ch:<output_file_name>.onnx /work/<user>/spanet_vbf_models/
+```
+
+Both steps are part of the law pipeline (`hh4b.ExportModel`,
+`hh4b.TransferModel`), see
+[Automated pipeline with law](#automated-pipeline-with-law).
+
 ## Performance
 
 This repo contains also a script to determine the pairing efficiency and the ROC of the models. It runs on the files gained from `spanet.predict`.
@@ -572,8 +582,9 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 All the steps above -- converting the coffea files into SPANet inputs and
 copying them to EOS, submitting the training, computing the predictions,
 plotting the training metrics, registering the model in the performance
-configurations and producing the efficiency and ROC plots -- are chained
-together with [law](https://github.com/riga/law). Every step declares its
+configurations, producing the efficiency and ROC plots and exporting the
+trained model to ONNX -- are chained together with
+[law](https://github.com/riga/law). Every step declares its
 outputs, so only what is missing is executed: running the pipeline on a model
 that is already trained starts directly with the predictions.
 
@@ -623,7 +634,15 @@ law run hh4b.Performance --options-file <options_file> --print-status -1
 law run hh4b.Predict --options-file <options_file>
 law run hh4b.EfficiencyPlots --options-file <options_file>
 law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
+law run hh4b.ExportModel --options-file <options_file>
 ```
+
+The trained model is exported to ONNX as well, into
+`<eos_base>/spanet_model/<model>.onnx`, and copied back to the machine the
+coffea files came from when `onnx_host`/`onnx_remote_dir` are configured in
+`law.cfg` (otherwise the run prints the `rsync` to paste there).
+`--onnx-file` names the file, `--export no` skips the step; see
+[The ONNX model, and the way back](law_tasks/README.md#the-onnx-model-and-the-way-back).
 
 The test file, the prediction name, the `true_dict` key, the label, the color
 and the plot directories are derived from the options file with the
@@ -678,7 +697,7 @@ both in the container of the tasks and in the one of the training jobs.
 
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
 `SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
-`SPANET_REMOTE_INPUT_DIR`, ...) or, as a last resort, from generic `$USER`
+`SPANET_REMOTE_INPUT_DIR`, `SPANET_ONNX_DIR`, ...) or, as a last resort, from generic `$USER`
 based defaults, so no path has to be edited to use the pipeline.
 
 The full documentation is in [`law_tasks/README.md`](law_tasks/README.md).

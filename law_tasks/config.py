@@ -281,6 +281,31 @@ class Settings(object):
     def rsync_options(self):
         return cfg_get("rsync_options", "SPANET_RSYNC_OPTIONS", "-avh --partial")
 
+    # -- onnx export -------------------------------------------------------
+
+    @property
+    def onnx_base(self):
+        """Directory ``spanet.export`` writes the ONNX models into."""
+        return cfg_get(
+            "onnx_base",
+            "SPANET_ONNX_DIR",
+            os.path.join(self.eos_base, "spanet_model"),
+        )
+
+    @property
+    def onnx_host(self):
+        """``user@host`` the ONNX model is copied to; empty or 'local': no ssh."""
+        return cfg_get("onnx_host", "SPANET_ONNX_HOST", "")
+
+    @property
+    def onnx_remote_dir(self):
+        """Directory on :py:attr:`onnx_host` the ONNX model is copied into.
+
+        Empty means the model is exported and not copied anywhere: not
+        everybody reads the models from another machine.
+        """
+        return cfg_get("onnx_remote_dir", "SPANET_ONNX_REMOTE_DIR", "")
+
     @property
     def converter_script(self):
         return cfg_get(
@@ -382,6 +407,7 @@ class Settings(object):
         for path in (
             self.eos_base,
             self.output_base,
+            self.onnx_base,
             self.eff_plot_base,
             self.roc_plot_base,
             self.work_dir,

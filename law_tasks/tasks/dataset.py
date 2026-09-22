@@ -12,7 +12,6 @@ with the ``training_file`` of the options file pointing at the transferred h5.
 import json
 import os
 import shlex
-import subprocess
 
 import law
 import luigi
@@ -135,32 +134,6 @@ class DatasetTask(BaseTask):
     @property
     def journal_base(self):
         return self.spec.local_dir
-
-    def check_remote_no_overwrite(self, host, paths):
-        """Stop when the destination already holds one of the files."""
-        paths = sorted(paths)
-        listing = " ".join(shlex.quote(path) for path in paths)
-        command = "ssh {} {}".format(
-            shlex.quote(host), shlex.quote("ls -d -- {} 2>/dev/null".format(listing))
-        )
-        full = self.wrap_command(command)
-        self.publish_message("checking the destination: {}".format(full))
-
-        process = subprocess.run(
-            full, shell=True, executable="/bin/bash", stdout=subprocess.PIPE
-        )
-        existing = [
-            line.strip()
-            for line in process.stdout.decode("utf-8", "replace").splitlines()
-            if line.strip()
-        ]
-        if existing and not self.force_overwrite:
-            raise RuntimeError(
-                "refusing to overwrite {} file(s) already on {}:\n  {}\n"
-                "pass --overwrite to replace them".format(
-                    len(existing), host, "\n  ".join(existing)
-                )
-            )
 
     # -- markers -----------------------------------------------------------
 

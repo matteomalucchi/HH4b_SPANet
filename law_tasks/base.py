@@ -168,6 +168,32 @@ class BaseTask(law.Task):
             )
         return existing
 
+    def check_remote_no_overwrite(self, host, paths):
+        """Stop when the destination already holds one of the files."""
+        paths = sorted(paths)
+        listing = " ".join(shlex.quote(path) for path in paths)
+        command = "ssh {} {}".format(
+            shlex.quote(host), shlex.quote("ls -d -- {} 2>/dev/null".format(listing))
+        )
+        full = self.wrap_command(command)
+        self.publish_message("checking the destination: {}".format(full))
+
+        process = subprocess.run(
+            full, shell=True, executable="/bin/bash", stdout=subprocess.PIPE
+        )
+        existing = [
+            line.strip()
+            for line in process.stdout.decode("utf-8", "replace").splitlines()
+            if line.strip()
+        ]
+        if existing and not self.force_overwrite:
+            raise RuntimeError(
+                "refusing to overwrite {} file(s) already on {}:\n  {}\n"
+                "pass --overwrite to replace them".format(
+                    len(existing), host, "\n  ".join(existing)
+                )
+            )
+
     # -- container ---------------------------------------------------------
 
     def inside_container(self):
@@ -331,6 +357,12 @@ class ModelTask(BaseTask):
     options_file = luigi.Parameter(
         description="path to the SPANet options JSON file (absolute, or "
         "relative to the repository)",
+    )
+    gpu = luigi.BoolParameter(
+        default=True,
+        significant=False,
+        description="run the payloads that can use a GPU (spanet.predict, "
+        "spanet.export) on it; default: True",
     )
     seed = luigi.IntParameter(
         default=100,
