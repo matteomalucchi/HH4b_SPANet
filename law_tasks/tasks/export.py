@@ -8,23 +8,22 @@ backwards::
     ------                                ----------------
     hh4b.ExportModel  --- rsync --->      /work/<me>/spanet_vbf_models/
 
-which by hand is
+Both steps run on lxplus, where the training is: the copy is a push made from
+here, not a pull made on the other side.  By hand that is
 
     cd <run dir>/version_N
     python -m spanet.export ./ <onnx dir>/<model>.onnx --gpu
-    rsync <onnx dir>/<model>.onnx <host>:<directory>/
+    rsync <onnx dir>/<model>.onnx <user>@<analysis machine>:<directory>/
 """
 
 import json
 import os
 import shlex
-import socket
 
 import law
 import luigi
 
 from law_tasks.base import ModelTask
-from law_tasks.config import settings
 from law_tasks.tasks.training import Training
 
 
@@ -77,6 +76,20 @@ class ExportParameters(object):
         return (
             self.onnx_host or self.cfg.onnx_host,
             self.onnx_remote_dir or self.cfg.onnx_remote_dir,
+        )
+
+    def push_command(self, path):
+        """The rsync ``hh4b.TransferModel`` makes, run from this machine."""
+        host, directory = self.onnx_destination
+        if not directory:
+            # nothing is configured: show the shape of the command instead
+            destination = "<user>@<analysis machine>:<directory>"
+        elif host and host != "local":
+            destination = "{}:{}".format(host, directory)
+        else:
+            destination = directory
+        return "rsync {opts} {path} {dest}/".format(
+            opts=self.cfg.rsync_options, path=path, dest=destination
         )
 
     def export_marker(self, kind):
@@ -147,9 +160,10 @@ class ExportModel(ExportParameters, ModelTask):
         host, directory = self.onnx_destination
         if not directory:
             self.publish_message(
-                "to copy it to the machine the coffea files live on, run there:"
+                "not copied anywhere: set 'onnx_host' and 'onnx_remote_dir' in "
+                "law.cfg to copy it from here to the analysis machine, or run"
             )
-            self.publish_message("  {}".format(pull_command(onnx)))
+            self.publish_message("  {}".format(self.push_command(onnx)))
 
 
 class TransferModel(ExportParameters, ModelTask):
@@ -217,21 +231,4 @@ class TransferModel(ExportParameters, ModelTask):
         )
 
 
-def pull_command(path):
-    """The rsync that fetches ``path`` from here, to be run on the other side."""
-    host = _this_host()
-    return "rsync {}{} <destination directory>/".format(
-        "{}:".format(host) if host else "", path
-    )
 
-
-def _this_host():
-    """``user@host`` this machine is reached under, as far as it is known."""
-    cfg = settings()
-    # on the analysis machine remote_host is how lxplus is reached; on lxplus
-    # itself it is the same name, which is exactly what has to be pasted
-    if cfg.remote_host and cfg.remote_host != "local":
-        return cfg.remote_host
-    user = os.environ.get("USER", "")
-    host = socket.getfqdn()
-    return "{}@{}".format(user, host) if user and host else host

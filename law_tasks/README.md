@@ -351,7 +351,7 @@ python3 utils/performance/efficiency_studies.py ...   # three times
 python3 utils/roccurves/ROC_plots.py ...              # twice
 # and, for the model the analysis reads:
 python -m spanet.export ./ <onnx dir>/<model>.onnx --gpu
-rsync <onnx dir>/<model>.onnx <analysis machine>:/work/<me>/spanet_vbf_models/
+rsync <onnx dir>/<model>.onnx <me>@<analysis machine>:/work/<me>/spanet_vbf_models/
 ```
 
 and does, in order:
@@ -391,12 +391,14 @@ law run hh4b.RocPlot --options-file <options> --plot-name vbf_presel
 
 What the analysis reads is not the checkpoint but an ONNX file exported from
 it, on the machine the coffea files live on.  `hh4b.Performance` does that
-last step too:
+last step too, on lxplus, where the training is: the copy is a **push made
+from lxplus**, the way the inputs were pushed to EOS, not a pull made on the
+other machine.
 
-| task | by hand |
+| task | by hand, on lxplus |
 |---|---|
 | `hh4b.ExportModel` | `cd <run dir>/version_N && python -m spanet.export ./ <onnx dir>/<model>.onnx --gpu` |
-| `hh4b.TransferModel` | `rsync <onnx dir>/<model>.onnx <host>:<directory>/` |
+| `hh4b.TransferModel` | `rsync <onnx dir>/<model>.onnx <me>@<analysis machine>:<directory>/` |
 
 The ONNX file is named after the options file and all models are written into
 one directory, so the analysis finds them in one place:
@@ -433,14 +435,19 @@ ssh, which is what a directory on the same machine, or an already mounted one,
 needs.
 
 With `onnx_remote_dir` set, `hh4b.Performance` exports the model and copies
-it; without it, the model is exported and the run prints the `rsync` to paste
-on the other machine when the push is not possible from lxplus:
+it; without it, the model is exported and stays on EOS, and the run says which
+command would have been run:
 
 ```
-onnx model:       /eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx
-to copy it to the machine the coffea files live on, run there:
-  rsync xyz@lxplus.cern.ch:/eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx <destination directory>/
+wrote /eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx
+not copied anywhere: set 'onnx_host' and 'onnx_remote_dir' in law.cfg to copy
+it from here to the analysis machine, or run
+  rsync -avh --partial /eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx <user>@<analysis machine>:<directory>/
 ```
+
+It is `ssh`/`rsync` from lxplus outwards, so the destination has to be
+reachable from there (an agent or a key, as for any other rsync); when it is
+not, the printed command is what to run once it is.
 
 `--export` decides how far the chain goes:
 

@@ -461,10 +461,10 @@ source spanet_env/bin/activate
 python -m spanet.export <path_to_training>/out_seed_trainings_100/version_0/ <output_file_name>.onnx --gpu
 ```
 
-Then copy the file to the machine the analysis runs on:
+Then copy the file from lxplus to the machine the analysis runs on:
 
 ```bash
-rsync <user>@lxplus.cern.ch:<output_file_name>.onnx /work/<user>/spanet_vbf_models/
+rsync <output_file_name>.onnx <user>@<analysis machine>:/work/<user>/spanet_vbf_models/
 ```
 
 Both steps are part of the law pipeline (`hh4b.ExportModel`,
@@ -640,7 +640,9 @@ law run hh4b.ExportModel --options-file <options_file>
 The trained model is exported to ONNX as well, into
 `<eos_base>/spanet_model/<model>.onnx`, and copied back to the machine the
 coffea files came from when `onnx_host`/`onnx_remote_dir` are configured in
-`law.cfg` (otherwise the run prints the `rsync` to paste there).
+`law.cfg` -- an rsync from lxplus outwards, like the one that brought the
+inputs in (otherwise the model stays on EOS and the run prints the command it
+would have run).
 `--onnx-file` names the file, `--export no` skips the step; see
 [The ONNX model, and the way back](law_tasks/README.md#the-onnx-model-and-the-way-back).
 
