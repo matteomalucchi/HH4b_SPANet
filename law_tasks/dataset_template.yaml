@@ -7,13 +7,19 @@
 # no path has to be repeated here.  Every field can also be given on the
 # command line (--output-prefix, --regions, ...), and the fields that are
 # commented out show what happens without them.
+#
+# Write the directories as full paths, the way you would type them to go and
+# look at the files: `coffea_dir`, `output_dir` and `remote_dir` are taken as
+# they are when they start with a '/'.  A relative one is resolved against
+# `coffea_base` and `remote_input_base` of law.cfg, which is what the shared
+# law_tasks/datasets.yaml does.
 
 # -- what is converted ---------------------------------------------------
 output_prefix: My_Study_              # the -o argument of the converter
 regions: [region_of_GluGlu, region_of_VBF]   # one per class label
 class_labels: [GluGlu, VBF]           # converter default: [DATA, GluGlu]
 # coffea_file: output_all.coffea      # name of the coffea file in this directory
-# coffea_dir: /some/other/place       # only to convert a file somewhere else
+# coffea_dir: /work/me/out_hh4b/VBF/out_my_study   # default: this directory
 # max_jets: [5, 5]                    # one per jet collection
 
 # -- which collections and variables are saved ---------------------------
@@ -36,5 +42,6 @@ jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
 # every file of the output directory whose name starts with `output_prefix`
 # is copied to the training machine
 # output_dir: /work/me/h5             # default: this directory
-remote_dir: vbf/out_my_study          # relative to `remote_input_base`, the
-                                      # destination on the training machine
+remote_dir: /eos/user/m/me/spanet_infos/spanet_inputs/vbf/out_my_study
+                                      # where the files are copied on the
+                                      # training machine

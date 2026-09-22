@@ -95,7 +95,7 @@ regions: [hh4b_vbf_..._nokincut_region, hh4b_vbf_..._nokincut_region]
 class_labels: [GluGlu, VBF]
 jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
 jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
-remote_dir: vbf/out_ggf_vbf_spanet_input_..._vbfregions   # relative to remote_input_base
+remote_dir: /eos/user/m/me/spanet_infos/spanet_inputs/vbf/out_..._vbfregions
 ```
 
 The fields are at the top level, there is no name to invent and no path to
@@ -103,7 +103,13 @@ repeat: the dataset is named after the file -- after the *directory* when the
 file is called `dataset.yaml` -- and `coffea_dir` is the directory the file
 lives in.  The description stays with the samples it describes, so the next
 person who opens that directory can see how its h5 files were made, and the
-markers of the conversion are written next to it in `law/`.
+markers, the log and the journal of the conversion are written next to it.
+
+Write the directories as full paths, the way you would type them to go and
+look at the files: `coffea_dir`, `output_dir` and `remote_dir` are taken as
+they are when they start with a `/`.  A relative one is still resolved against
+`coffea_base` and `remote_input_base`, which is what the shared
+`law_tasks/datasets.yaml` below does.
 
 `law_tasks/dataset_template.yaml` is the file to copy: every field with what
 happens without it.
@@ -820,7 +826,8 @@ produced -- for a model, the directory its generated configurations are in:
     registration.json
     journal/
         20260917_101530_31415/
-            run.jsonl            the steps of that run, in order
+            run.log              everything the run printed, in order
+            run.jsonl            the steps of that run, as JSON
             001_Training.log     the output of the first command
             002_Predict.log
             003_TrainingMetrics.log
@@ -839,10 +846,15 @@ theirs next to the h5 files they produce, in `<coffea dir>/journal/`.
 `hh4b.Performance` and `hh4b.Dataset` print the path when they are done and
 keep it in their summary.
 
+`run.log` is what the run printed: every message of every step and the output
+of every command it executed, in the order they appeared on the terminal.  For
+a conversion it sits next to the h5 files that came out of it, so what was
+converted and how is there to be read afterwards.
+
 `run.jsonl` holds one JSON line per event: a step that started, finished or
 failed, and every bash command with the directory it ran in, its exit code,
 how long it took and the file its output went to.  The output is shown while
-it runs, exactly as before, *and* kept in that file.
+it runs, exactly as before, *and* kept in those files.
 
 ```bash
 cd <work_dir>/configs/<model>/journal/latest
@@ -905,6 +917,9 @@ training jobs; see [The bind mounts](#the-bind-mounts).
   training anyway, in a new `version_N`; `--model-version N` pins a specific
   version, and `--output-dir` points at a training directory that does not
   follow the naming convention.
+* The `.out`, `.err` and `.log` of the condor job are written into the
+  training directory itself, next to the `version_N` directories, and not into
+  the repository.
 * A job of this training that is still in the queue is picked up instead of
   submitting a second one.
 * `--job-config jobs/config/training_1gpu_3d.yaml` selects the condor

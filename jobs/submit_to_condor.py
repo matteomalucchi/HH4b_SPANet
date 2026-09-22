@@ -137,9 +137,15 @@ def build_submission(
             extra_args,
         )
     )
-    sub["Output"] = "{}/{}/{}-$(ClusterId).$(ProcId).out".format(basedir, log_dir, model)
-    sub["Error"] = "{}/{}/{}-$(ClusterId).$(ProcId).err".format(basedir, log_dir, model)
-    sub["Log"] = "{}/{}/{}-$(ClusterId).log".format(basedir, log_dir, model)
+    # next to the checkpoints and the tensorboard logs of the training, not in
+    # the repository: that is where one looks when a job goes wrong
+    sub["Output"] = "{}/{}/{}-$(ClusterId).$(ProcId).out".format(
+        output_dir, log_dir, model
+    )
+    sub["Error"] = "{}/{}/{}-$(ClusterId).$(ProcId).err".format(
+        output_dir, log_dir, model
+    )
+    sub["Log"] = "{}/{}/{}-$(ClusterId).log".format(output_dir, log_dir, model)
     sub["MY.SendCredential"] = True
     sub["MY.SingularityImage"] = '"{}"'.format(
         os.environ.get("SPANET_APPTAINER_IMAGE", SINGULARITY_IMAGE)

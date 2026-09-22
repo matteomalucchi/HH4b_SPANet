@@ -106,3 +106,6 @@ class Performance(ModelTask):
         self.publish_message(
             "journal:          {}".format(journal.journal_path(self.journal_base))
         )
+        self.publish_message(
+            "log:              {}".format(journal.transcript_path(self.journal_base))
+        )

@@ -4,6 +4,7 @@ Every ``law run`` invocation gets a directory of its own, next to what the
 steps produced: the generated configurations of a model, the h5 files of a
 dataset.
 
+    <base>/journal/<run id>/run.log                everything the run printed
     <base>/journal/<run id>/run.jsonl              one line per step and command
     <base>/journal/<run id>/001_ConvertDataset.log the output of that command
 
@@ -72,3 +73,14 @@ def record(base, entry):
 
 def journal_path(base):
     return os.path.join(run_dir(base), "run.jsonl")
+
+
+def transcript_path(base):
+    """The file every message and every line of output is written to."""
+    return os.path.join(run_dir(base), "run.log")
+
+
+def transcribe(base, text):
+    """Append ``text`` to the transcript of the current run."""
+    with open(transcript_path(base), "a") as fobj:
+        fobj.write(text)

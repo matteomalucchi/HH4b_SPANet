@@ -90,6 +90,19 @@ class BaseTask(law.Task):
         """Directory the journal of this task is written under."""
         return self.cfg.work_dir
 
+    def publish_message(self, msg, **kwargs):
+        """Print a message and keep it in the transcript of the run."""
+        self.transcribe("{}\n".format(msg))
+        return super(BaseTask, self).publish_message(msg, **kwargs)
+
+    def transcribe(self, text):
+        """Append ``text`` to the log of everything this run printed."""
+        try:
+            journal.transcribe(self.journal_base, text)
+        except OSError:
+            # a log that cannot be written must not stop the pipeline
+            pass
+
     def journal(self, event, **content):
         """Append one line to the journal of this ``law run``."""
         try:
@@ -262,6 +275,7 @@ class BaseTask(law.Task):
                 sys.stdout.write(text)
                 sys.stdout.flush()
                 stream.write(text)
+                self.transcribe(text)
 
             if sys.stdout.isatty():
                 # a pseudo terminal keeps the progress bars of spanet.train and

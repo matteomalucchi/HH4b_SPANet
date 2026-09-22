@@ -666,9 +666,12 @@ off, a plot left with nothing to compute is not made, and the ROC curves are
 drawn only for a model that classifies something.
 
 What a run did is kept in a `journal/<run>` directory next to what it
-produced -- for a model, next to its generated configurations in
-`<work_dir>/configs/<model>/journal/` -- with one JSON line per step and per
-bash command and the full output of each command next to it.
+produced -- for a conversion next to its h5 files, for a model next to its
+generated configurations in `<work_dir>/configs/<model>/journal/`. It holds
+`run.log`, everything the run printed, `run.jsonl`, one JSON line per step and
+per bash command, and the output of each command in a file of its own. The
+condor `.out`, `.err` and `.log` of a training land in the training directory,
+next to its `version_N`.
 
 The EOS areas shared inside the group are `extra_binds` in `law.cfg`, bound
 both in the container of the tasks and in the one of the training jobs.
