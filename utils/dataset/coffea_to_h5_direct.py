@@ -484,7 +484,19 @@ def get_parquet_save_directory(input_parquet):
     return col_dir
 
 
-def load_cols_parquet(rootdir):
+def get_datasets_and_categories(accumulator):
+    """Return the datasets and categories stored in the coffea accumulator (from the cutflow)."""
+    cutflow = accumulator.get("cutflow", {})
+    datasets = set(cutflow.get("initial", {}).keys()) | set(
+        accumulator.get("sum_genweights", {}).keys()
+    )
+    categories = set(cutflow.keys()) - {"initial", "skim", "presel"}
+    return datasets, categories
+
+
+def load_cols_parquet(rootdir, datasets=None, categories=None):
+    """Load the parquet columns from rootdir/dataset/region/variation/.
+    If `datasets` / `categories` are given, only those are loaded."""
     cols = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
     rootdir = pathlib.Path(rootdir)
 
@@ -492,9 +504,13 @@ def load_cols_parquet(rootdir):
     for dataset_dir in rootdir.iterdir():
         if not dataset_dir.is_dir():
             continue
+        if datasets and dataset_dir.name not in datasets:
+            continue
 
         for region_dir in dataset_dir.iterdir():
             if not region_dir.is_dir():
+                continue
+            if categories and region_dir.name not in categories:
                 continue
 
             for variation_dir in region_dir.iterdir():
@@ -536,7 +552,10 @@ def coffea_to_h5(
     if cols == {}:
         rootdir = get_parquet_save_directory(coffea_path)
         print("Empty columns, trying to read from parquet files from:", rootdir)
-        cols = load_cols_parquet(rootdir)
+        datasets, categories = get_datasets_and_categories(accumulator)
+        print("Loading only datasets:", sorted(datasets))
+        print("Loading only categories:", sorted(categories))
+        cols = load_cols_parquet(rootdir, datasets, categories)
 
     weight_norm_map = None
     if args.balance_weights != "none":
