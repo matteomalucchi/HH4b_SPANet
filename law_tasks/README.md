@@ -447,7 +447,9 @@ it from here to the analysis machine, or run
 
 It is `ssh`/`rsync` from lxplus outwards, so the destination has to be
 reachable from there (an agent or a key, as for any other rsync); when it is
-not, the printed command is what to run once it is.
+not, the printed command is what to run once it is.  The copy runs in the
+session and not in the container -- `rsync` is not in the image -- while the
+export enters it like the prediction does.
 
 `--export` decides how far the chain goes:
 
@@ -1076,9 +1078,13 @@ Payloads that need the CMS ML image (prediction, plots) are wrapped in
 `--apptainer no` skips the container (when law is already started inside one),
 `--apptainer yes` forces it; the default `auto` detects it.
 
-The dataset tasks are the exception: they run on the analysis machine in its
-own environment, so they never enter the container unless `--apptainer yes` is
-given, and they only activate `conversion_env` if it is configured.
+Two steps stay outside it in any case.  The dataset tasks run on the analysis
+machine in its own environment, so they never enter the container unless
+`--apptainer yes` is given, and they only activate `conversion_env` if it is
+configured.  `hh4b.TransferModel` copies a file that is already there: `rsync`
+and `ssh` are not in the image, so it runs them in the session itself, whatever
+`--apptainer` says.  `hh4b.ExportModel` does enter it, like the prediction,
+because `spanet.export` needs the environment.
 
 ### The bind mounts
 

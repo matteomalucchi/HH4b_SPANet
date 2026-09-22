@@ -176,6 +176,14 @@ class TransferModel(ExportParameters, ModelTask):
     #: a copy of the exported model: --overwrite-plots leaves it alone
     produces_data = True
 
+    def use_apptainer(self):
+        # rsync and ssh are not in the image, and this step needs nothing that
+        # is: it copies a file that is already there
+        return False
+
+    def venv_prefix(self):
+        return ""
+
     def requires(self):
         return self.clone(ExportModel)
 
