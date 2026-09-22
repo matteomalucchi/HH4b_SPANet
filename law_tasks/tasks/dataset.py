@@ -32,7 +32,9 @@ class DatasetTask(BaseTask):
     exclude_index = True
 
     dataset = luigi.Parameter(
-        description="name of the dataset in the dataset configuration",
+        default="",
+        description="name of the dataset in the dataset configuration; not "
+        "needed when --dataset-config describes a single dataset",
     )
     coffea_dir = luigi.Parameter(
         default="",
@@ -98,13 +100,19 @@ class DatasetTask(BaseTask):
     )
     dataset_config = luigi.Parameter(
         default="",
-        significant=False,
-        description="YAML file describing the datasets; default: from law.cfg",
+        description="YAML file describing the dataset, the one written next "
+        "to the coffea file it converts; default: the central configuration "
+        "from law.cfg",
     )
 
     @property
     def spec(self):
-        """The resolved dataset description."""
+        """The resolved dataset description, read once per task."""
+        if getattr(self, "_spec", None) is None:
+            self._spec = self._resolve_spec()
+        return self._spec
+
+    def _resolve_spec(self):
         overrides = {
             field: getattr(self, field)
             for field in datasets.FIELDS
@@ -167,7 +175,7 @@ class DatasetTask(BaseTask):
         )
 
     def write_marker(self, target, **content):
-        content.setdefault("dataset", self.dataset)
+        content.setdefault("dataset", self.spec.name)
         if self._commands:
             content.setdefault("commands", self._commands)
         target.parent.touch()
@@ -235,7 +243,7 @@ class TransferDataset(DatasetTask):
         return self.clone(ConvertDataset)
 
     def output(self):
-        return self.marker("transfer_{}.json".format(self.dataset))
+        return self.marker("transfer_{}.json".format(self.spec.name))
 
     def run(self):
         spec = self.spec
@@ -243,7 +251,7 @@ class TransferDataset(DatasetTask):
         if not files:
             raise RuntimeError(
                 "no file to transfer for dataset '{}'; check the 'collections' "
-                "setting".format(self.dataset)
+                "setting".format(self.spec.name)
             )
 
         host = self.cfg.remote_host
@@ -298,7 +306,7 @@ class Dataset(DatasetTask):
         return self.clone(TransferDataset)
 
     def output(self):
-        return self.marker("dataset_{}.json".format(self.dataset))
+        return self.marker("dataset_{}.json".format(self.spec.name))
 
     def run(self):
         spec = self.spec
@@ -321,7 +329,7 @@ class Dataset(DatasetTask):
         )
 
         self.publish_message("")
-        self.publish_message("dataset:     {}".format(self.dataset))
+        self.publish_message("dataset:     {}".format(spec.name))
         self.publish_message("coffea file: {}".format(spec.coffea_path))
         self.publish_message("local dir:   {}".format(spec.local_dir))
         self.publish_message("remote dir:  {}".format(spec.remote_path))

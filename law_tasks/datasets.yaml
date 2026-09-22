@@ -1,4 +1,13 @@
-# Datasets that hh4b.Dataset converts from coffea to SPANet h5 inputs.
+# Datasets that hh4b.Dataset converts from coffea to SPANet h5 inputs, by
+# name:  law run hh4b.Dataset --dataset <name>
+#
+# A dataset is better described by a file of its own, written next to the
+# coffea file it converts and passed to the command:
+#
+#   cp law_tasks/dataset_template.yaml <coffea dir>/dataset.yaml
+#   law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml
+#
+# This file keeps working for the datasets that are already in it.
 #
 # Paths are generic: `coffea_dir` is relative to the coffea base directory
 # (law.cfg `coffea_base` / $SPANET_COFFEA_BASE, default: the current directory)

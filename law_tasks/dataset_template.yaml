@@ -1,0 +1,40 @@
+# Copy this next to the coffea file it describes and convert it with
+#
+#   law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml
+#
+# The dataset is named after this file, or after the directory holding it when
+# the file is called dataset.yaml, and `coffea_dir` is that same directory, so
+# no path has to be repeated here.  Every field can also be given on the
+# command line (--output-prefix, --regions, ...), and the fields that are
+# commented out show what happens without them.
+
+# -- what is converted ---------------------------------------------------
+output_prefix: My_Study_              # the -o argument of the converter
+regions: [region_of_GluGlu, region_of_VBF]   # one per class label
+class_labels: [GluGlu, VBF]           # converter default: [DATA, GluGlu]
+# coffea_file: output_all.coffea      # name of the coffea file in this directory
+# coffea_dir: /some/other/place       # only to convert a file somewhere else
+# max_jets: [5, 5]                    # one per jet collection
+
+# -- which collections and variables are saved ---------------------------
+# the groups are defined in utils/dataset/collections_coffea_to_h5_direct.py
+jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
+jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
+# global_vars: GLOBAL_COLLECTIONS_VBF   # without it every non-jet variable
+#                                       # is saved ('all')
+# resonances: OLD_RESONANCES          # daughters of the TARGETS: 'h2: b3, b4'
+#                                     # instead of 'h2: b1, b2'; it has to
+#                                     # match the event file of the training
+
+# -- anything else for coffea_to_h5_direct.py ----------------------------
+# convert_args: "-n"                  # the weights are NOT normalized unless
+#                                     # this is used: `-n` divides them by
+#                                     # sum_genweights, `-bw class` rescales
+#                                     # each class to sum(|w|) = 1
+
+# -- where the h5 files go -----------------------------------------------
+# output_dir: /work/me/h5             # default: this directory
+# collections: [JetTotalSPANetPadded] # groups to send to the training
+#                                     # machine; default: all of them
+remote_dir: vbf/out_my_study          # relative to `remote_input_base`, the
+                                      # destination on the training machine

@@ -5,7 +5,8 @@ Repository with [SPANet](https://github.com/matteomalucchi/SPANet) configuration
 > [!TIP]
 > The whole chain described below -- dataset conversion, training, predictions,
 > training metrics, efficiency and ROC plots -- is automated with
-> [law](https://github.com/riga/law): `law run hh4b.Dataset --dataset <name>`
+> [law](https://github.com/riga/law):
+> `law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml`
 > on the machine with the coffea files, then
 > `law run hh4b.Performance --options-file <options>` on lxplus, each running
 > only the steps that are missing. See [`law_tasks/README.md`](law_tasks/README.md)
@@ -585,18 +586,22 @@ export SPANET_COFFEA_BASE="/work/${USER}/out_hh4b"
 export SPANET_REMOTE_HOST="<cern user>@lxplus.cern.ch"
 source setup_law.sh
 
-# convert output_all.coffea into the h5 inputs and rsync them to EOS;
-# the datasets are described in law_tasks/datasets.yaml
+# convert output_all.coffea into the h5 inputs and rsync them to EOS; the
+# dataset is described by a YAML file next to its coffea file, copied from
+# law_tasks/dataset_template.yaml
+law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml
+
+# law_tasks/datasets.yaml, which describes several datasets by name, still works
 law run hh4b.Dataset --dataset vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal
 
-# a dataset that is not in the file needs no edit
+# a dataset needs no file at all
 law run hh4b.Dataset --dataset my_study --coffea-dir VBF/out_my_study \
     --output-prefix My_Study_ --regions "my_region my_region" --remote-dir vbf/out_my_study
 
 # the weights are written as they come out of coffea; -n divides them by
 # sum_genweights, -bw class balances the classes (note the '=', without it
 # the leading dash is read as a law option)
-law run hh4b.Dataset --dataset <name> --convert-args="-n"
+law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml --convert-args="-n"
 ```
 
 The summary prints the `training_file` path to put into the options file. From

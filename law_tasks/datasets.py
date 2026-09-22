@@ -78,14 +78,40 @@ def load_yaml(path):
         return yaml.safe_load(fobj) or {}
 
 
+#: file names that say nothing about the dataset they describe
+GENERIC_NAMES = ("dataset", "datasets", "config", "conversion", "spanet")
+
+
+def config_name(path):
+    """Name of the dataset a configuration of its own describes."""
+    stem = os.path.splitext(os.path.basename(path))[0]
+    if stem.lower() in GENERIC_NAMES:
+        return os.path.basename(os.path.dirname(os.path.abspath(path))) or stem
+    return stem
+
+
 def load_config(path=None):
-    """Return the dataset configuration as ``(defaults, datasets)``."""
+    """Return the dataset configuration as ``(defaults, datasets, standalone)``.
+
+    Two shapes are read.  A file with a ``datasets`` mapping describes several
+    datasets, each selected by name -- the central ``law_tasks/datasets.yaml``
+    is one of those.  A file without it describes a single dataset, its fields
+    at the top level: that is the one written next to the coffea file it
+    converts, and then ``coffea_dir`` is the directory holding it and the name
+    comes from the file, or from that directory when the file is called
+    something like ``dataset.yaml``.
+    """
     path = path or settings().dataset_config
     if not path or not os.path.exists(path):
-        return {}, {}
+        return {}, {}, False
 
     content = load_yaml(path) or {}
-    return content.get("defaults") or {}, content.get("datasets") or {}
+    if "datasets" in content:
+        return content.get("defaults") or {}, content.get("datasets") or {}, False
+
+    entry = {key: value for key, value in content.items() if key != "defaults"}
+    entry.setdefault("coffea_dir", os.path.dirname(os.path.abspath(path)))
+    return content.get("defaults") or {}, {config_name(path): entry}, True
 
 
 def _as_list(value):
@@ -270,23 +296,40 @@ class Dataset(object):
         return command
 
 
-def resolve(name, config_path=None, **overrides):
+def resolve(name="", config_path=None, **overrides):
     """Build a :py:class:`Dataset` from the configuration and the overrides.
 
     Values given on the command line win over the dataset entry, which wins
     over the ``defaults`` section of the dataset configuration.
     """
-    defaults, datasets = load_config(config_path)
+    defaults, datasets, standalone = load_config(config_path)
+    path = config_path or settings().dataset_config
+
+    if standalone:
+        # the configuration next to the coffea file describes that one
+        # dataset, and is named after the file or the directory
+        only = next(iter(datasets))
+        if name and name != only:
+            raise ValueError(
+                "{} describes the single dataset '{}'; drop --dataset or pass "
+                "--dataset {}".format(path, only, only)
+            )
+        name = only
+    elif not name and not overrides.get("output_prefix"):
+        raise ValueError(
+            "no dataset given: pass --dataset <name> for one of [{}], or "
+            "--dataset-config <file> describing the dataset next to its coffea "
+            "file".format(", ".join(sorted(datasets)) or "none")
+        )
 
     if name in datasets:
         entry = datasets[name] or {}
     elif not overrides.get("output_prefix"):
         known = ", ".join(sorted(datasets)) or "none"
         raise ValueError(
-            "unknown dataset '{}' (known datasets: {}); either add it to {} or "
-            "pass at least --output-prefix".format(
-                name, known, config_path or settings().dataset_config
-            )
+            "unknown dataset '{}' (known datasets: {}); add it to {}, write a "
+            "configuration next to the coffea file and pass --dataset-config, "
+            "or pass at least --output-prefix".format(name, known, path)
         )
     else:
         entry = {}

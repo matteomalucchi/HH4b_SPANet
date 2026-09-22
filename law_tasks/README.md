@@ -57,7 +57,7 @@ source setup_law.sh
 ## Step 0: the inputs (on the analysis machine)
 
 ```bash
-law run hh4b.Dataset --dataset vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal
+law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml
 ```
 
 replaces the manual
@@ -75,9 +75,55 @@ rsync <prefix>*<collection>_*.h5 <user>@lxplus.cern.ch:<eos input dir>/
 | `hh4b.TransferDataset` | creates the destination directory and `rsync`s the h5 files to the training machine |
 | `hh4b.Dataset` | wrapper, writes a summary with the `training_file` path to put into the options file |
 
-The datasets live in `law_tasks/datasets.yaml` (`dataset_config` in
-`law.cfg`), whose `defaults` block lists every field there is, the ones no
-dataset shares commented out with what happens without them:
+### The configuration of a dataset
+
+A dataset is described by a YAML file **next to the coffea file it converts**,
+which is passed to the command:
+
+```bash
+cp $SPANET_MAIN_DIR/HH4b_SPANet/law_tasks/dataset_template.yaml \
+   /work/me/out_hh4b/VBF/out_my_study/dataset.yaml
+$EDITOR /work/me/out_hh4b/VBF/out_my_study/dataset.yaml
+
+law run hh4b.Dataset --dataset-config /work/me/out_hh4b/VBF/out_my_study/dataset.yaml
+```
+
+```yaml
+# /work/me/out_hh4b/VBF/out_my_study/dataset.yaml
+output_prefix: FixMASK_AllKlambda_..._JetGoodProvHiggsPaddedGlobal_
+regions: [hh4b_vbf_..._nokincut_region, hh4b_vbf_..._nokincut_region]
+class_labels: [GluGlu, VBF]
+jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
+jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
+collections: [JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded]
+remote_dir: vbf/out_ggf_vbf_spanet_input_..._vbfregions   # relative to remote_input_base
+```
+
+The fields are at the top level, there is no name to invent and no path to
+repeat: the dataset is named after the file -- after the *directory* when the
+file is called `dataset.yaml` -- and `coffea_dir` is the directory the file
+lives in.  The description stays with the samples it describes, so the next
+person who opens that directory can see how its h5 files were made, and the
+markers of the conversion are written next to it in `law/`.
+
+`law_tasks/dataset_template.yaml` is the file to copy: every field with what
+happens without it.
+
+Fields: `coffea_dir`, `coffea_file`, `output_dir` (default: the coffea
+directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
+`jet_like_global_vars`, `max_jets`, `resonances`, `convert_args` (anything
+else for the converter, e.g. the weight normalization, see below),
+`collections` (which jet collection groups to transfer, default: all) and
+`remote_dir`.
+
+### The central configuration
+
+`law_tasks/datasets.yaml` (`dataset_config` in `law.cfg`) describes several
+datasets at once, each selected by name, and keeps working:
+
+```bash
+law run hh4b.Dataset --dataset vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal
+```
 
 ```yaml
 defaults:                       # applied to every dataset
@@ -95,12 +141,9 @@ datasets:
     remote_dir: vbf/out_ggf_vbf_spanet_input_..._vbfregions   # relative to remote_input_base
 ```
 
-Fields: `coffea_dir`, `coffea_file`, `output_dir` (default: the coffea
-directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
-`jet_like_global_vars`, `max_jets`, `resonances`, `convert_args` (anything
-else for the converter, e.g. the weight normalization, see below),
-`collections` (which jet collection groups to transfer, default: all) and
-`remote_dir`.
+The two are told apart by the `datasets:` mapping: a file that has one
+describes several datasets and needs `--dataset`, a file without it describes
+the one it sits next to.  `--dataset-config` reads either.
 
 ### The collection groups
 
@@ -184,8 +227,8 @@ New sets are added to `RESONANCES_DICT` in
 `utils/performance/efficiency_functions.py` (the efficiencies); the converter
 lists the ones it knows in `--help` and rejects anything else.
 
-Every one of them is also a command line option, so a dataset that is not in
-the file needs no edit:
+Every one of them is also a command line option, so a dataset needs no file
+at all:
 
 ```bash
 law run hh4b.Dataset --dataset my_study \
