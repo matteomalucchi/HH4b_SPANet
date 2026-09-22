@@ -333,8 +333,8 @@ and does, in order:
 | `hh4b.Predict` | `spanet.predict` on the test file derived from the training file |
 | `hh4b.TrainingMetrics` | `scripts/plot_training_metrics.py` on the version directory |
 | `hh4b.RegisterModel` | writes the efficiency/ROC configurations containing this model |
-| `hh4b.EfficiencyPlots` | one `efficiency_studies.py` run per entry of `[efficiency_plots]` |
-| `hh4b.RocPlots` | one `ROC_plots.py` run per entry of `[roc_plots]` |
+| `hh4b.EfficiencyPlots` | one `efficiency_studies.py` run per entry of `[efficiency_plots]` the event file of the model allows |
+| `hh4b.RocPlots` | one `ROC_plots.py` run per entry of `[roc_plots]`, when the model classifies |
 | `hh4b.Performance` | wrapper, writes a summary with every produced path |
 
 Useful law flags: `--print-status -1` (what is done and what is missing),
@@ -886,18 +886,18 @@ derived from `$USER`:
 | ROC plots | `roc_plot_base` | `$SPANET_ROC_PLOT_DIR` | `<eos_base>/spanet_roc_curves` |
 | generated configs | `work_dir` | `$SPANET_LAW_WORK_DIR` | `<eos_base>/law_work` |
 | container | `apptainer_image`, `apptainer_binds` | `$SPANET_APPTAINER_IMAGE`, `$SPANET_APPTAINER_BINDS` | cmsml image; `/afs`, `/cvmfs`, the EOS home of `$USER` and all directories above |
+| shared areas | `extra_binds` | `$SPANET_APPTAINER_EXTRA_BINDS` | bound on top of those, in the tasks and in the training jobs |
+| conversion | `conversion_python` | `$SPANET_CONVERSION_PYTHON` | `python3` |
+| conversion scripts | `converter_script`, `collections_module` | *(none)* | `utils/dataset/coffea_to_h5_direct.py` and its `collections_coffea_to_h5_direct.py` |
+| transfer | `rsync_options` | `$SPANET_RSYNC_OPTIONS` | `-avh --partial` |
 
 The `[efficiency_plots]` and `[roc_plots]` sections define which plots are
 produced: the key is the subdirectory, the value the arguments handed to the
 plotting script.  Add a line there to add a plot to the pipeline.
 
-To read samples from somebody else's EOS area, add it to the binds:
-
-```bash
-export SPANET_APPTAINER_BINDS="/eos/user/m/mmalucch,/eos/user/t/tharte"
-```
-
-The same variable is used by `jobs/submit_to_condor.py` for the training jobs.
+The EOS areas holding the samples of the group are `extra_binds`, tracked in
+`law.cfg` and bound both in the container of the tasks and in the one of the
+training jobs; see [The bind mounts](#the-bind-mounts).
 
 ## Trainings
 
@@ -917,6 +917,10 @@ The same variable is used by `jobs/submit_to_condor.py` for the training jobs.
   up again).
 * `--local-training` runs `jobs/training.sh` in the current session instead
   (use `lxplus-gpu`).
+
+The steps after it take their own arguments the same way: `--predict-args` and
+`--prediction-checkpoint` for `spanet.predict`, `--metrics-args` for the
+training metric plots, `--plot-args` for a single efficiency or ROC plot.
 
 ## Containers
 

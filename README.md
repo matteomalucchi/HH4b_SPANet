@@ -203,7 +203,7 @@ The SPANet configuration is composed of two files: the `event_file` and the `opt
 In the following you can find some example configurations for the various tasks:
 
 - **Jet pairing**: [`event_file`](./event_files/HH4b/hh4b_5jet_btagWP.yaml), [`option_file`](./options_files/HH4b/1_14_2_h4b_5jets_ptvary_loose_300_btag_wp_newLeptonVeto_3L1Cut_UpdateJetVetoMap.json)
-- **Signal-background classification**: [`event_file`](./event_files/HH4b/classification/hh4b_classification_trial.yaml),[`option_file`](./options_files/HH4b/classification/hh4b_classification_trial.json)
+- **Signal-background classification**: [`event_file`](./event_files/HH4b/classification/Kevin/variables/hh4b_classification_trial.yaml), [`option_file`](./options_files/HH4b/classification/Kevin/variables/hh4b_classification_trial.json)
 - **Jet pairing + Signal-background classification**: [`event_file`](./event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification.yaml),[`option_file`](./options_files/HH4b/vbf_ggf/hh4b_pairing_vbf_ggf_pairing_classification.json)
 
 ## Train SPANet model locally
@@ -628,32 +628,42 @@ law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
 The test file, the prediction name, the `true_dict` key, the label, the color
 and the plot directories are derived from the options file with the
 conventions used so far, and each of them can be overridden on the command
-line. The efficiency and ROC plots are the entries of the `[efficiency_plots]`
-and `[roc_plots]` sections of `law.cfg`, each with its own region; `--region
+line.
+
+The efficiency and ROC plots are the entries of the `[efficiency_plots]` and
+`[roc_plots]` sections of `law.cfg`, each with its own region; `--region
 <name>` (e.g. `inclusive` for no selection) replaces it for a run and keeps
-those plots apart from the configured ones. `--output-dir` points the whole chain at a training directory that does
-not follow the naming convention at all. Adding `--test-file <other file>` evaluates a model that is already
-trained on another sample: the training is reused, the training metric plots
-are not redone, and the predictions, the configurations and the plots of that
+those plots apart from the configured ones.
+
+`--test-file <other file>` evaluates a model that is already trained on
+another sample: the training is reused, the training metric plots are not
+redone, and the predictions, the configurations and the plots of that
 evaluation are kept apart from the ones of the model's own test file.
+`--output-dir` points the whole chain at a training directory that does not
+follow the naming convention at all.
 
 A finished result is never redone by accident, and a task that would write
 next to files it does not own stops and names them instead. `--overwrite`
 reruns the task it is given and every step below it -- the conversion, a new
 training in a new `version_N` and its prediction included; `--overwrite-plots`
 does the same but keeps the data, redoing only the configurations and the
-plots. Results of a training that has
-been replaced by a newer one are redone on their own: the configurations and
-the plots record the `version_N` they were made from. Which files each flag
-replaces is spelled out in
+plots.
+
+Results of a training that has been replaced by a newer one are redone on
+their own: the configurations and the plots record the `version_N` they were
+made from. Which files each flag replaces is spelled out in
 [What is overwritten, and when](law_tasks/README.md#what-is-overwritten-and-when).
 
 The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
-The jet collections, the index offsets and the resonance set of those entries
-are read from the `event_info_file` of the model, and an efficiency plot whose
-resonance the event file does not define is left out instead of failing.
+
+The `event_info_file` of the model fills those entries in -- the jet
+collections, the index offsets, the resonance set and whether the prediction
+holds the Higgs and the VBF pairing -- and decides which plots are made at
+all: an efficiency whose resonance the event file does not define is switched
+off, a plot left with nothing to compute is not made, and the ROC curves are
+drawn only for a model that classifies something.
 
 What a run did is kept in a `journal/<run>` directory next to what it
 produced -- for a model, next to its generated configurations in
