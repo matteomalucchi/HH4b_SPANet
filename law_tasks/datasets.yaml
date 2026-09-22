@@ -97,9 +97,61 @@ datasets:
     regions:
       - 4b_region
       - 4b_region
-    collections: [JetGoodProvHiggsPtFlattenPadded]
+    collections: [JetGoodProvHiggs]
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
     jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
     jet_like_global_vars: []
     global_vars: []
     resonances: OLD_RESONANCES
+  
+  vbf_ggf_all_klambda_JetGood_ggF4kl_TotVBF_2024:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    output_prefix: ggF4kl_TotVBF_NormWeights_AllKlambda_VBFggF_HIggsPairing_
+    regions:
+      - 4b_region
+      - 4b_region
+    collections: [JetGoodProvHiggs]
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
+    jet_like_global_vars: []
+    global_vars: []
+    resonances: OLD_RESONANCES
+    coffea_file: output_ggF4kl_TotVBF.coffea 
+
+  vbf_ggf_all_klambda_SeparateHiggsVBF_2022_postEE:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    output_prefix: AllKlambda_VBFggF_SeparateHiggsVBF_
+    regions:
+      - 4b_region
+      - 4b_region
+    collections: null
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
+    jet_like_global_vars: []
+    resonances: DEFAULT_RESONANCES
+  
+  vbf_ggf_all_klambda_SeparateHiggsVBF_NormWeightsPerSample_2022_postEE:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    output_prefix: NormWeightsPerSample_AllKlambda_VBFggF_SeparateHiggsVBF_
+    regions:
+      - 4b_region
+      - 4b_region
+    collections: null
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
+    jet_like_global_vars: []
+    resonances: DEFAULT_RESONANCES
+    convert_args: "--balance-weights=sample" 
+
+  vbf_ggf_all_klambda_SeparateHiggsVBF_NormWeightsSumGenWeights_2022_postEE:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    output_prefix: NormWeightsSumGenWeights_AllKlambda_VBFggF_SeparateHiggsVBF_
+    regions:
+      - 4b_region
+      - 4b_region
+    collections: null
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
+    jet_like_global_vars: []
+    resonances: DEFAULT_RESONANCES
+    convert_args: "-n" 

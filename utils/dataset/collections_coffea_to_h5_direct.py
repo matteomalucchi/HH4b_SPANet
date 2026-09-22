@@ -11,6 +11,15 @@ jet_collections_dict = {
                 "min_num_jets": 4,
             },
         },
+        {
+            "JetGoodProvHiggsPadded": {
+                "saved_name": "Jet",
+                "max_num_jets": 5,
+                "resonances": ["h1", "h2"],
+                "prov_key": "provenance",
+                "min_num_jets": 4,
+            },
+        },
     ],
     "JET_COLLECTIONS_SEPARATE_HIGGS_VBF": [
         {
