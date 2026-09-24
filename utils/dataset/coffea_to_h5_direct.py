@@ -30,17 +30,29 @@ SEED = 9999
 _permutations = {}
 _pt_flatten_mixing_warned = False
 
+OLD_RESONANCES = {
+    "h1": (1, ("b1", "b2")),
+    "h2": (2, ("b3", "b4")),
+    "vbf": (3, ("q1", "q2")),
+}
 DEFAULT_RESONANCES = {
     "h1": (1, ("b1", "b2")),
     "h2": (2, ("b1", "b2")),
     "vbf": (3, ("q1", "q2")),
 }
-RESONANCES = {
-    "h1": (1, ("b1", "b2")),
-    "h2": (2, ("b1", "b2")),
-    "vbf": (3, ("q1", "q2")),
+# the daughters of h2 are the names of the TARGETS written into the h5, so the
+# set chosen here has to be the one of the EVENT section of the event file the
+# model is trained with: 'h2: b3, b4' is OLD_RESONANCES, 'h2: b1, b2' is
+# DEFAULT_RESONANCES
+RESONANCES_DICT = {
+    "DEFAULT_RESONANCES": DEFAULT_RESONANCES,
+    "OLD_RESONANCES": OLD_RESONANCES,
+}
+# added to whichever set is chosen
+EXTRA_RESONANCES = {
     "add": (-1, ("a1", ))
 }
+RESONANCES = dict(DEFAULT_RESONANCES, **EXTRA_RESONANCES)
 MIN_NUM_JETS = 4
 
 # -----------------------------------------------------------------------------
@@ -80,6 +92,16 @@ p.add_argument(
     nargs="+",
     default=["h1","h2","vbf","add"],
     help="Resonances to be produced either for dummies or from provenance",
+)
+p.add_argument(
+    "-rs",
+    "--resonances",
+    choices=sorted(RESONANCES_DICT),
+    default="DEFAULT_RESONANCES",
+    help="Set of resonances the TARGETS are written with, i.e. the names of "
+    "the daughters of each resonance: 'h2: b1, b2' for DEFAULT_RESONANCES, "
+    "'h2: b3, b4' for OLD_RESONANCES. It has to match the EVENT section of "
+    "the event file the model is trained with.",
 )
 p.add_argument(
     "-j",
@@ -192,6 +214,8 @@ args = p.parse_args()
 
 if args.norm_weights and args.balance_weights != "none":
     p.error("--norm-weights and --balance-weights are mutually exclusive.")
+
+RESONANCES = dict(RESONANCES_DICT[args.resonances], **EXTRA_RESONANCES)
 
 # -----------------------------------------------------------------------------
 # Utilities
@@ -460,7 +484,19 @@ def get_parquet_save_directory(input_parquet):
     return col_dir
 
 
-def load_cols_parquet(rootdir):
+def get_datasets_and_categories(accumulator):
+    """Return the datasets and categories stored in the coffea accumulator (from the cutflow)."""
+    cutflow = accumulator.get("cutflow", {})
+    datasets = set(cutflow.get("initial", {}).keys()) | set(
+        accumulator.get("sum_genweights", {}).keys()
+    )
+    categories = set(cutflow.keys()) - {"initial", "skim", "presel"}
+    return datasets, categories
+
+
+def load_cols_parquet(rootdir, datasets=None, categories=None):
+    """Load the parquet columns from rootdir/dataset/region/variation/.
+    If `datasets` / `categories` are given, only those are loaded."""
     cols = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
     rootdir = pathlib.Path(rootdir)
 
@@ -468,9 +504,13 @@ def load_cols_parquet(rootdir):
     for dataset_dir in rootdir.iterdir():
         if not dataset_dir.is_dir():
             continue
+        if datasets and dataset_dir.name not in datasets:
+            continue
 
         for region_dir in dataset_dir.iterdir():
             if not region_dir.is_dir():
+                continue
+            if categories and region_dir.name not in categories:
                 continue
 
             for variation_dir in region_dir.iterdir():
@@ -512,7 +552,10 @@ def coffea_to_h5(
     if cols == {}:
         rootdir = get_parquet_save_directory(coffea_path)
         print("Empty columns, trying to read from parquet files from:", rootdir)
-        cols = load_cols_parquet(rootdir)
+        datasets, categories = get_datasets_and_categories(accumulator)
+        print("Loading only datasets:", sorted(datasets))
+        print("Loading only categories:", sorted(categories))
+        cols = load_cols_parquet(rootdir, datasets, categories)
 
     weight_norm_map = None
     if args.balance_weights != "none":
@@ -560,7 +603,7 @@ def coffea_to_h5(
                 jet_coll_group: {
                     "saved_name": "Jet",
                     "max_num_jets": max_jets[j],
-                    "resonances": list(DEFAULT_RESONANCES.keys()),
+                    "resonances": list(RESONANCES_DICT[args.resonances].keys()),
                     "prov_key": "provenance",
                 }
             }

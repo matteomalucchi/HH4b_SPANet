@@ -29,21 +29,22 @@ run2_dataset_MC = "9_jets_vbf_ggf_all_Klambda"
 run2_dataset_DATA = ""
 
 spanet_dict = {
-    # --- HIggs pairing ---
-    # "5_jets_ptvary_btag_5wp_300e_3L1cuts_allklambda": {
-    #     "file": f"/eos/user/t/tharte/Analysis_data/predictions/1_13_2_spanet_loose_MC_postEE_pt_vary_btagWP_s100_newLeptonVeto_3L1Cut_UpdateJetVetoMap_MC.h5",
-    #     "true": "5_jets_pt_true_5wp_3L1cuts_allklambda",
-    #     "label": "SPANet btag 5 WP - Flattened pt [0.3,1.7] - 3L1 triggers",
-    #     "color": "firebrick",
-    # },
+    # --- Higgs pairing ---
+    "5_jets_ptvary_btag_5wp_300e_3L1cuts_allklambda": {
+        "file": f"/eos/user/t/tharte/Analysis_data/predictions/1_13_2_spanet_loose_MC_postEE_pt_vary_btagWP_s100_newLeptonVeto_3L1Cut_UpdateJetVetoMap_MC.h5",
+        "true": "5_jets_pt_true_5wp_3L1cuts_allklambda",
+        "label": "SPANet btag 5 WP - Flattened pt [0.3,1.7] - 3L1 triggers",
+        "color": "firebrick",
+        "higgs": True,
+    },
     # allKlambda_HiggsPairing 100e
-    # f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5": {
-    #     "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5",
-    #     "true": "true_allklambda_HiggsPairing",
-    #     "label": "SPANet - ggF/VBF - HiggsPairing",
-    #     "color": "orange",
-    #     "vbf": True,
-    # },
+    f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5": {
+        "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5",
+        "true": "true_allklambda_HiggsPairing",
+        "label": "SPANet - ggF/VBF - HiggsPairing",
+        "color": "orange",
+        "higgs": True,
+    },
     # --- VBF/ggF pairing ---
     # 'hh4b_pairing_vbf_ggf_pairing_classification': {
     #     'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification/out_seed_trainings_100/version_2/predicitons.h5',

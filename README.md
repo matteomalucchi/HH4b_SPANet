@@ -2,6 +2,16 @@
 
 Repository with [SPANet](https://github.com/matteomalucchi/SPANet) configuration for HH4b analysis. Originally forked from <https://github.com/mmarchegiani/ttHbb_SPANet>.
 
+> [!TIP]
+> The whole chain described below -- dataset conversion, training, predictions,
+> training metrics, efficiency and ROC plots -- is automated with
+> [law](https://github.com/riga/law):
+> `law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml`
+> on the machine with the coffea files, then
+> `law run hh4b.Performance --options-file <options>` on lxplus, each running
+> only the steps that are missing. See [`law_tasks/README.md`](law_tasks/README.md)
+> and the [Automated pipeline with law](#automated-pipeline-with-law) section.
+
 ## Running SPANet within the `cmsml` docker container
 
 In order to use the SPANet package we use the prebuilt **apptainer** image for machine learning applications in CMS, [`cmsml`](https://hub.docker.com/r/cmsml/cmsml).
@@ -193,7 +203,7 @@ The SPANet configuration is composed of two files: the `event_file` and the `opt
 In the following you can find some example configurations for the various tasks:
 
 - **Jet pairing**: [`event_file`](./event_files/HH4b/hh4b_5jet_btagWP.yaml), [`option_file`](./options_files/HH4b/1_14_2_h4b_5jets_ptvary_loose_300_btag_wp_newLeptonVeto_3L1Cut_UpdateJetVetoMap.json)
-- **Signal-background classification**: [`event_file`](./event_files/HH4b/classification/hh4b_classification_trial.yaml),[`option_file`](./options_files/HH4b/classification/hh4b_classification_trial.json)
+- **Signal-background classification**: [`event_file`](./event_files/HH4b/classification/Kevin/variables/hh4b_classification_trial.yaml), [`option_file`](./options_files/HH4b/classification/Kevin/variables/hh4b_classification_trial.json)
 - **Jet pairing + Signal-background classification**: [`event_file`](./event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification.yaml),[`option_file`](./options_files/HH4b/vbf_ggf/hh4b_pairing_vbf_ggf_pairing_classification.json)
 
 ## Train SPANet model locally
@@ -218,6 +228,14 @@ In order to train the SPANet model on HTCondor, one must first define 2 environm
 ```bash
 export SPANET_MAIN_DIR="/afs/cern.ch/user/m/mmalucch" # main directory where the SPANet and HH4b_SPANet repositories are saved
 export SPANET_ENV_DIR="/afs/cern.ch/user/m/mmalucch/spanet_env" # path to the virtual environment 
+```
+
+The jobs bind `/afs`, the EOS home of `$USER` and the output directory into the
+container. To read samples from somebody else's EOS area, list the additional
+paths in `SPANET_APPTAINER_BINDS`:
+
+```bash
+export SPANET_APPTAINER_BINDS="/eos/user/m/mmalucch,/eos/user/t/tharte"
 ```
 
 Subsequently, one can use the following command outside the singularity but inside the venv:
@@ -443,6 +461,16 @@ source spanet_env/bin/activate
 python -m spanet.export <path_to_training>/out_seed_trainings_100/version_0/ <output_file_name>.onnx --gpu
 ```
 
+Then copy the file from lxplus to the machine the analysis runs on:
+
+```bash
+rsync <output_file_name>.onnx <user>@<analysis machine>:/work/<user>/spanet_vbf_models/
+```
+
+Both steps are part of the law pipeline (`hh4b.ExportModel`,
+`hh4b.TransferModel`), see
+[Automated pipeline with law](#automated-pipeline-with-law).
+
 ## Performance
 
 This repo contains also a script to determine the pairing efficiency and the ROC of the models. It runs on the files gained from `spanet.predict`.
@@ -548,3 +576,130 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 # e.g. for VBF
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r vbf_no_kin_cuts
 ```
+
+## Automated pipeline with law
+
+All the steps above -- converting the coffea files into SPANet inputs and
+copying them to EOS, submitting the training, computing the predictions,
+plotting the training metrics, registering the model in the performance
+configurations, producing the efficiency and ROC plots and exporting the
+trained model to ONNX -- are chained together with
+[law](https://github.com/riga/law). Every step declares its
+outputs, so only what is missing is executed: running the pipeline on a model
+that is already trained starts directly with the predictions.
+
+The chain spans the two machines it always did: the conversion runs where the
+coffea files are, the training and the performance run on lxplus.
+
+```bash
+# on the machine holding the coffea files, in the analysis environment
+export SPANET_COFFEA_BASE="/work/${USER}/out_hh4b"
+export SPANET_REMOTE_HOST="<cern user>@lxplus.cern.ch"
+source setup_law.sh
+
+# convert output_all.coffea into the h5 inputs and rsync them to EOS; the
+# dataset is described by a YAML file next to its coffea file, copied from
+# law_tasks/dataset_template.yaml
+law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml
+
+# law_tasks/datasets.yaml, which describes several datasets by name, still works
+law run hh4b.Dataset --dataset vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal
+
+# a dataset needs no file at all
+law run hh4b.Dataset --dataset my_study --coffea-dir VBF/out_my_study \
+    --output-prefix My_Study_ --regions "my_region my_region" --remote-dir vbf/out_my_study
+
+# the weights are written as they come out of coffea; -n divides them by
+# sum_genweights, -bw class balances the classes (note the '=', without it
+# the leading dash is read as a law option)
+law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml --convert-args="-n"
+```
+
+The summary prints the `training_file` path to put into the options file. From
+there on, everything runs on lxplus:
+
+```bash
+# once per session, inside the virtual environment and outside the singularity
+source setup_law.sh
+
+# train (or reuse the training), predict and produce every performance plot
+law run hh4b.Performance \
+    --options-file options_files/HH4b/vbf_ggf/hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetHiggsGlobal_DNNVars_VBFNoKinCut_ClassLoss7.json \
+    --seed 100
+
+# what is done and what is missing
+law run hh4b.Performance --options-file <options_file> --print-status -1
+
+# single steps
+law run hh4b.Predict --options-file <options_file>
+law run hh4b.EfficiencyPlots --options-file <options_file>
+law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
+law run hh4b.ExportModel --options-file <options_file>
+```
+
+The trained model is exported to ONNX as well, into
+`<eos_base>/spanet_model/<model>.onnx`, and copied back to the machine the
+coffea files came from when `onnx_host`/`onnx_remote_dir` are configured in
+`law.cfg` -- an rsync from lxplus outwards, like the one that brought the
+inputs in (otherwise the model stays on EOS and the run prints the command it
+would have run).
+`--onnx-file` names the file, `--export no` skips the step; see
+[The ONNX model, and the way back](law_tasks/README.md#the-onnx-model-and-the-way-back).
+
+The test file, the prediction name, the `true_dict` key, the label, the color
+and the plot directories are derived from the options file with the
+conventions used so far, and each of them can be overridden on the command
+line.
+
+The efficiency and ROC plots are the entries of the `[efficiency_plots]` and
+`[roc_plots]` sections of `law.cfg`, each with its own region; `--region
+<name>` (e.g. `inclusive` for no selection) replaces it for a run and keeps
+those plots apart from the configured ones.
+
+`--test-file <other file>` evaluates a model that is already trained on
+another sample: the training is reused, the training metric plots are not
+redone, and the predictions, the configurations and the plots of that
+evaluation are kept apart from the ones of the model's own test file.
+`--output-dir` points the whole chain at a training directory that does not
+follow the naming convention at all.
+
+A finished result is never redone by accident, and a task that would write
+next to files it does not own stops and names them instead. `--overwrite`
+reruns the task it is given and every step below it -- the conversion, a new
+training in a new `version_N` and its prediction included; `--overwrite-plots`
+does the same but keeps the data, redoing only the configurations and the
+plots.
+
+Results of a training that has been replaced by a newer one are redone on
+their own: the configurations and the plots record the `version_N` they were
+made from. Which files each flag replaces is spelled out in
+[What is overwritten, and when](law_tasks/README.md#what-is-overwritten-and-when).
+
+The performance configurations tracked in git are not modified: a
+configuration importing them and adding the new model is generated per model
+(add `--update-base-config` to also append the entries to the tracked files).
+
+The `event_info_file` of the model fills those entries in -- the jet
+collections, the index offsets, the resonance set and whether the prediction
+holds the Higgs and the VBF pairing -- and decides which plots are made at
+all: an efficiency whose resonance the event file does not define is switched
+off, a plot left with nothing to compute is not made, and the ROC curves are
+drawn only for a model that classifies something.
+
+What a run did is kept in a `journal/<run>` directory next to what it
+produced -- for a conversion next to its h5 files, for a model next to its
+generated configurations in `<work_dir>/configs/<model>/journal/`. It holds
+`run.log`, everything the run printed, `run.jsonl`, one JSON line per step and
+per bash command, and the output of each command in a file of its own. The
+condor `.out`, `.err` and `.log` of a training land in the training directory,
+next to its `version_N`.
+
+The EOS areas shared inside the group are `extra_binds` in `law.cfg`, bound
+both in the container of the tasks and in the one of the training jobs.
+
+Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
+`SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
+`SPANET_REMOTE_INPUT_DIR`, `SPANET_ONNX_DIR`, ...) or, as a last resort, from generic `$USER`
+based defaults, so no path has to be edited to use the pipeline.
+
+The full documentation is in [`law_tasks/README.md`](law_tasks/README.md).

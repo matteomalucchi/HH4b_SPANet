@@ -1,0 +1,156 @@
+# Datasets that hh4b.Dataset converts from coffea to SPANet h5 inputs, by
+# name:  law run hh4b.Dataset --dataset <name>
+#
+# A dataset is better described by a file of its own, written next to the
+# coffea file it converts and passed to the command:
+#
+#   cp law_tasks/dataset_template.yaml <coffea dir>/dataset.yaml
+#   law run hh4b.Dataset --dataset-config <coffea dir>/dataset.yaml
+#
+# This file keeps working for the datasets that are already in it.
+#
+# The paths here stay RELATIVE, because this file is shared through the
+# repository and everybody has their coffea files somewhere else: `coffea_dir`
+# is resolved against the coffea base directory (law.cfg `coffea_base` /
+# $SPANET_COFFEA_BASE, default: the current directory) and `remote_dir`
+# against the input directory on the training machine (law.cfg
+# `remote_input_base` / $SPANET_REMOTE_INPUT_DIR, default:
+# /eos/user/${USER:0:1}/$USER/spanet_infos/spanet_inputs).
+#
+# A file written next to its coffea file is yours alone and holds the paths in
+# full, the way you would type them to go and look at the files.  An absolute
+# path is taken as it is in either file.
+#
+# Every field can also be given on the command line, e.g.
+#   law run hh4b.Dataset --dataset my_study --coffea-dir ... --output-prefix ...
+# which is enough to convert a dataset that is not listed here.
+#
+# `jets`, `global_vars` and `jet_like_global_vars` take either the collections
+# and variables themselves or the name of a group defined in
+# utils/dataset/collections_coffea_to_h5_direct.py -- `jet_collections_dict`,
+# `global_collections_dict` and `jet_like_global_collections_dict`
+# respectively. A `GLOBAL_COLLECTIONS_*` group needs one entry per jet
+# collection group of `jets`.
+
+# Applied to every dataset below, and overridden by any of them. Every field
+# is listed here: the ones that are commented out are the ones no dataset
+# shares, or where the default is the right thing; the comment says what
+# happens without them.
+defaults:
+  # -- where the coffea file is ------------------------------------------
+  coffea_file: output_all.coffea # name of the file in `coffea_dir`
+  # coffea_dir: VBF/out_my_study      # relative to `coffea_base`; per dataset
+
+  # -- what is converted -------------------------------------------------
+  class_labels: [GluGlu, VBF] # converter default: [DATA, GluGlu]
+  # regions: [region_of_GluGlu, region_of_VBF]   # one per class; per dataset
+  # max_jets: [5, 5]                  # one per jet collection; this is the
+  # converter default as well
+
+  # -- which collections and variables are saved -------------------------
+  jets: JET_COLLECTIONS_VBF_PAIRING_AFTER_HIGGS_PAIRING_TOTAL
+  jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
+  # global_vars: GLOBAL_COLLECTIONS_VBF   # without it the converter saves
+  # every non-jet variable ('all')
+
+  # resonances: OLD_RESONANCES        # how the daughters of the TARGETS are
+  # named: 'h2: b1, b2' with the default
+  # (DEFAULT_RESONANCES), 'h2: b3, b4'
+  # with OLD_RESONANCES; it has to match
+  # the EVENT section of the event file
+  # the model is trained with
+
+  # -- anything else for coffea_to_h5_direct.py --------------------------
+  # convert_args: "-n"                # the weights are NOT normalized unless
+  # this is used: `-n` divides them by
+  # sum_genweights, `-bw class` rescales
+  # each class to sum(|w|) = 1
+
+  # -- where the h5 files go ---------------------------------------------
+  # every file of the output directory whose name starts with `output_prefix`
+  # is copied to the training machine
+  # output_dir: /work/me/h5           # default: next to the coffea file
+  # output_prefix: My_Study_          # the -o argument; per dataset
+  # remote_dir: vbf/out_my_study      # relative to `remote_input_base`; the
+  # destination on the training machine
+
+datasets:
+  # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,
+  # VBF regions without kinematic cuts, Higgs jets also as global variables
+  vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
+    output_prefix: FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCut_JetGoodProvHiggsPaddedGlobal_
+    regions:
+      - hh4b_vbf_best_candidates_6_jets_nokincut_region
+      - hh4b_vbf_best_candidates_6_jets_nokincut_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions
+
+  # VBF/ggF, all k-lambda, VBF pairing after Higgs pairing, DNN variables,
+  # VBF regions without kinematic cuts, Higgs jets also as global variables
+  vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal_2024:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    output_prefix: NormWeights_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCut_JetGoodProvHiggsPaddedGlobal_
+    regions:
+      - vbf_best_candidates_6_jets_nokincut_4b_region
+      - vbf_best_candidates_6_jets_nokincut_4b_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+
+  vbf_ggf_all_klambda_JetGood_2024:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    output_prefix: NormWeights_AllKlambda_VBFggF_HIggsPairing_
+    regions:
+      - 4b_region
+      - 4b_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
+    jet_like_global_vars: []
+    global_vars: []
+    resonances: OLD_RESONANCES
+  
+  vbf_ggf_all_klambda_JetGood_ggF4kl_TotVBF_2024:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    output_prefix: ggF4kl_TotVBF_NormWeights_AllKlambda_VBFggF_HIggsPairing_
+    regions:
+      - 4b_region
+      - 4b_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    jets: JET_GOOD_COLLECTIONS_HIGGS_PAIRING
+    jet_like_global_vars: []
+    global_vars: []
+    resonances: OLD_RESONANCES
+    coffea_file: output_ggF4kl_TotVBF.coffea 
+
+  vbf_ggf_all_klambda_SeparateHiggsVBF_2022_postEE:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    output_prefix: AllKlambda_VBFggF_SeparateHiggsVBF_
+    regions:
+      - 4b_region
+      - 4b_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
+    jet_like_global_vars: []
+    resonances: DEFAULT_RESONANCES
+  
+  vbf_ggf_all_klambda_SeparateHiggsVBF_NormWeightsPerSample_2022_postEE:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    output_prefix: NormWeightsPerSample_AllKlambda_VBFggF_SeparateHiggsVBF_
+    regions:
+      - 4b_region
+      - 4b_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
+    jet_like_global_vars: []
+    resonances: DEFAULT_RESONANCES
+    convert_args: "--balance-weights=sample" 
+
+  vbf_ggf_all_klambda_SeparateHiggsVBF_NormWeightsSumGenWeights_2022_postEE:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    output_prefix: NormWeightsSumGenWeights_AllKlambda_VBFggF_SeparateHiggsVBF_
+    regions:
+      - 4b_region
+      - 4b_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Update
+    jets: JET_COLLECTIONS_SEPARATE_HIGGS_VBF
+    jet_like_global_vars: []
+    resonances: DEFAULT_RESONANCES
+    convert_args: "-n" 

@@ -1,5 +1,11 @@
 # coffea_to_h5_direct.py
 
+> The conversion, the transfer to the training machine and everything after it
+> are automated by the law tasks: `law run hh4b.Dataset --dataset-config
+> <coffea dir>/dataset.yaml` runs exactly the command described here, with the
+> arguments taken from a YAML file next to the coffea one.  See
+> [`law_tasks/README.md`](../../law_tasks/README.md).
+
 Converts `.coffea` accumulator files directly to HDF5 files in the SPANet input format, without an intermediate Parquet step.
 
 ## Basic usage
@@ -27,12 +33,44 @@ path/to/output/prefix_name<JetCollectionName>_test.h5
 | `-cl`, `--class-labels` | `DATA GluGlu` | Class labels for classification, one per region |
 | `-j`, `--jets` | `JetTotalSPANetPtFlattenPadded JetTotalSPANetPadded` | Jet collections to process (see [Collection configuration](#collection-configuration)) |
 | `-g`, `--global-vars` | `all` | Global (event-level) variables to save, or `all` (see [Global variables](#global-variables)) |
+| `-jg`, `--jet-like-global-vars` | *(none)* | Jet-like collections unpacked into 1-D global variables (`Jet_1`, `Jet_2`, …), or the name of a `jet_like_global_collections_dict` group |
 | `-m`, `--max-jets` | `5 5` | Maximum number of jets to keep, one value per jet collection |
+| `-rs`, `--resonances` | `DEFAULT_RESONANCES` | Set the `TARGETS` are written with, i.e. how the daughters are named: `h2: b1, b2` with `DEFAULT_RESONANCES`, `h2: b3, b4` with `OLD_RESONANCES`.  It has to match the `EVENT` section of the event file the model is trained with (see [Resonances](#resonances)) |
+| `-rd`, `--resonance-list` | `h1 h2 vbf add` | Which resonances are written, out of the chosen set |
 | `-tf`, `--train-frac` | `0.8` | Fraction of events used for training |
 | `-ns`, `--no-shuffle` | off | Disable random shuffling of events |
-| `-n`, `--norm-weights` | off | Normalize weights by `sum_genweights` |
-| `-rw`, `--remove-high-weights` | off | Remove events with weight > 100 (only for regions whose name contains `postW`) |
 | `--novars` | off | Expect the old save format without variations (no `nominal` key) |
+| `--downscale_training` | off | Downscale the training fraction of the background by 33398/1629245 (mixed vs. 2b) |
+
+Weights are written **as they come out of coffea** unless one of these is
+given:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-n`, `--norm-weights` | off | Divide the weights by `sum_genweights`.  Mutually exclusive with `--balance-weights` |
+| `-bw`, `--balance-weights` | `none` | Rescale by a target computed from `sum(\|weight\|)` instead: `class` gives every class the same total, `sample` balances every dataset on its own |
+| `--balance-sample-scope` | `global` | Only with `--balance-weights=sample`: `global` normalizes every sample independently, `within-class` additionally forces the total of each class to be equal |
+| `-nwt`, `--neg-weight-treatment` | `none` | What to do with negative weights: `none`, `zero` or `abs` |
+| `-rw`, `--remove-high-weights` | off | Drop events whose weight is very high, in the regions whose name contains `post` |
+| `-acwf`, `--all-cat-weight-filter` | off | The same, in every category |
+| `--weight-threshold` | *(dynamic)* | Fixed absolute threshold for the two filters above |
+| `--weight-threshold-factor` | `10.0` | Factor on `median(\|w\|)` used as the dynamic threshold; ignored with `--weight-threshold` |
+
+## Resonances
+
+The `TARGETS` of the h5 are named after the daughters of each resonance, and
+`-rs` picks the set:
+
+| set | `h1` | `h2` | `vbf` |
+|---|---|---|---|
+| `DEFAULT_RESONANCES` (default) | `b1`, `b2` | `b1`, `b2` | `q1`, `q2` |
+| `OLD_RESONANCES` | `b1`, `b2` | `b3`, `b4` | `q1`, `q2` |
+
+It has to be the set of the `EVENT` section of the event file the model is
+trained with, since those are the names SPANet looks for.  The `add`
+resonance (`a1`) is written with either of them, and `-rd` selects which
+resonances are written at all.  A new set is added to `RESONANCES_DICT` at the
+top of `coffea_to_h5_direct.py`.
 
 ## Collection configuration
 
@@ -154,9 +192,9 @@ train.h5 / test.h5
 │   └── Event/              # global variables
 │       ├── kl
 │       └── ...
-├── TARGETS/
+├── TARGETS/                # the daughters follow -rs, see Resonances
 │   ├── h1/  b1, b2
-│   ├── h2/  b3, b4
+│   ├── h2/  b1, b2         # b3, b4 with OLD_RESONANCES
 │   └── vbf/ q1, q2
 ├── WEIGHTS/
 │   └── weight
