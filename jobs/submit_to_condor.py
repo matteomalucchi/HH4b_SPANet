@@ -118,6 +118,8 @@ def build_submission(
     ncpu = cfg["ncpu"] if ncpu is None else ncpu
     output_dir = output_dir or basedir
 
+    print("Training output directory: {}/{}".format(output_dir, log_dir))
+
     sub = htcondor.Submit()
     if interactive:
         sub["InteractiveJob"] = True
@@ -137,15 +139,20 @@ def build_submission(
             extra_args,
         )
     )
-    # next to the checkpoints and the tensorboard logs of the training, not in
-    # the repository: that is where one looks when a job goes wrong
-    sub["Output"] = "{}/{}/{}-$(ClusterId).$(ProcId).out".format(
-        output_dir, log_dir, model
-    )
-    sub["Error"] = "{}/{}/{}-$(ClusterId).$(ProcId).err".format(
-        output_dir, log_dir, model
-    )
-    sub["Log"] = "{}/{}/{}-$(ClusterId).log".format(output_dir, log_dir, model)
+    # condor schedds cannot write Output/Error directly to /eos: they are
+    # declared as paths relative to output_dir (created in the job's local
+    # sandbox on the execute node) and shipped to EOS via the xrootd transfer
+    # plugin through output_destination. The Log file is schedd-managed and
+    # cannot go through that plugin, so it stays on AFS next to the repo.
+    sub["Output"] = "{}/{}-$(ClusterId).$(ProcId).out".format(log_dir, model)
+    sub["Error"] = "{}/{}-$(ClusterId).$(ProcId).err".format(log_dir, model)
+    sub["output_destination"] = "root://eosuser.cern.ch/{}/".format(output_dir)
+    sub["MY.XRDCP_CREATE_DIR"] = True
+    sub["Log"] = "{}/{}-$(ClusterId).log".format(log_dir, model)
+    # sub["Log"] = "{}/condor_logs/{}/{}-$(ClusterId).log".format(
+    #     basedir, log_dir, model
+    # )
+    
     sub["MY.SendCredential"] = True
     sub["MY.SingularityImage"] = '"{}"'.format(
         os.environ.get("SPANET_APPTAINER_IMAGE", SINGULARITY_IMAGE)
@@ -173,8 +180,10 @@ def build_submission(
 
 
 def create_log_dirs(sub):
-    for folder in ["Output", "Error", "Log"]:
-        os.makedirs(os.path.dirname(sub[folder]), exist_ok=True)
+    # Output/Error are relative to the job's own sandbox and shipped to EOS
+    # via output_destination (auto-created there through MY.XRDCP_CREATE_DIR);
+    # only Log is written locally and needs its directory to pre-exist.
+    os.makedirs(os.path.dirname(sub["Log"]), exist_ok=True)
 
 
 def submit(sub, dry=False):

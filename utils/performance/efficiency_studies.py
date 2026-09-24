@@ -123,7 +123,7 @@ cv_c2v_kl_values_dict = {
     "1.94": "$\\kappa_{V}$=-1.21 \n$\\kappa_{2V}$=1.94 \n$\\kappa_{\\lambda}$=-0.94",
     "2.72": "$\\kappa_{V}$=-1.6 \n$\\kappa_{2V}$=2.72 \n$\\kappa_{\\lambda}$=-1.36",
     "3.57": "$\\kappa_{V}$=-1.83 \n$\\kappa_{2V}$=3.57 \n$\\kappa_{\\lambda}$=-3.39",
-    "3.87": "$\\kappa_{V}$=-2.12 \n$\\kappa_{2V}$=3.87 \n$\\kappa_{\\lambda}$=-5.96",
+    "3.87": "$\\kappa_{V}$=$\pm$2.12 \n$\\kappa_{2V}$=3.87 \n$\\kappa_{\\lambda}$=-5.96",
     "0.0": "$\\kappa_{V}$=1\n$\\kappa_{2V}$=0\n$\\kappa_{\\lambda}$=1",
     "1.0": "$\\kappa_{V}$=1\n$\\kappa_{2V}$=1 \n$\\kappa_{\\lambda}$=1",
 }
