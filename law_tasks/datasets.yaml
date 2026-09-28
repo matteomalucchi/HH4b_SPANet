@@ -94,6 +94,15 @@ datasets:
       - vbf_best_candidates_6_jets_nokincut_4b_region
       - vbf_best_candidates_6_jets_nokincut_4b_region
     remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+  
+  vbf_ggf_all_klambda_dnnvars_nokincut_higgsglobal_ggF4kl_TotVBF_2024:
+    coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    output_prefix: ggF4kl_TotVBF_NormWeights_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCut_JetGoodProvHiggsPaddedGlobal_
+    regions:
+      - vbf_best_candidates_6_jets_nokincut_4b_region
+      - vbf_best_candidates_6_jets_nokincut_4b_region
+    remote_dir: vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
+    coffea_file: output_ggF4kl_TotVBF.coffea 
 
   vbf_ggf_all_klambda_JetGood_2024:
     coffea_dir: VBF/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024
