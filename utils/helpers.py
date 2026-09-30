@@ -138,36 +138,34 @@ def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet", n_h
     return mask
 
 
+def get_class_array(column_file, default=None):
+    """The class of every event of the file, or ``default`` when it has none."""
+    for group in ("EVENT", "Event"):
+        try:
+            return column_file["CLASSIFICATIONS"][group]["class"][()].astype(np.int64)
+        except KeyError:
+            logger.info(
+                f'The file doesn\'t contain a "CLASSIFICATIONS/{group}" array'
+            )
+    logger.warning("The file doesn't contain a class array")
+    return default
+
+
 def get_class_mask(class_label, column_file, jet_coll="Jet"):
     if class_label:
         if not isinstance(class_label, (list, tuple)):
             class_label = [class_label]
         class_labels = [int(c) for c in class_label]
-        try:
-            class_array = column_file["CLASSIFICATIONS"]["EVENT"]["class"][()].astype(
-                np.int64
-            )
+
+        class_array = get_class_array(column_file)
+        if class_array is not None:
             mask = np.isin(class_array, class_labels)
             logger.info(f"Masking for class {class_labels} with {np.sum(mask)} events")
-        except KeyError:
-            try:
-                logger.info(
-                    'The file doesn\'t contain an "EVENT" array, so trying with "Event" instead'
-                )
-                class_array = column_file["CLASSIFICATIONS"]["Event"]["class"][
-                    ()
-                ].astype(np.int64)
-                mask = np.isin(class_array, class_labels)
-                logger.info(f"Masking for class {class_labels} with {np.sum(mask)} events")
-            except KeyError:
-                logger.warning(
-                    "The file doesn't contain a class array. Setting the mask for the class to True ..."
-                )
-                mask = ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
-    else:
-        mask = ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
+            return mask
 
-    return mask
+        logger.warning("Setting the mask for the class to True ...")
+
+    return ak.ones_like(column_file["INPUTS"][jet_coll]["MASK"][:, 0])
 
 
 

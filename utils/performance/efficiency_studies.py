@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 
 from efficiency_functions import (
+    CLASS_PROCESS_DICT,
+    DEFAULT_PROCESS,
     best_reco_higgs,
     calculate_diff_efficiencies,
     calculate_efficiencies,
@@ -20,6 +22,7 @@ from efficiency_functions import (
     plot_histos_1d,
     plot_mhh,
     separate_klambda,
+    split_by_klambda,
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -584,6 +587,22 @@ def main():
     # keep only the correct jets
     jet = jet_for_idx[0][mask_true]
 
+    # the process of every event decides the k the Run 2 pairing uses
+    class_array = helpers.get_class_array(truefile)
+    if class_array is None:
+        all_processes = None
+        logger.info(
+            f"The true file has no class, pairing everything as {DEFAULT_PROCESS}"
+        )
+    else:
+        processes = np.array(
+            [
+                CLASS_PROCESS_DICT.get(int(c), DEFAULT_PROCESS)
+                for c in class_array[mask_true]
+            ]
+        )
+        all_processes = [processes]
+
     # These lists are to be expanded. Didn't think of a better way than to copy them here already
     # if not klambda, the two lists stay equal.
     alltrue_idx = [idx_true]
@@ -606,6 +625,11 @@ def main():
         alltrue_idx.extend(true_kl_idx_list)
         alljet.extend(jet_separate_klambda)
         all_name_list.extend(kl_values)
+        if all_processes is not None:
+            # split the processes the same way, so that they stay aligned
+            all_processes.extend(
+                split_by_klambda(all_processes[0], truefile, mask_true)
+            )
 
     # Fully matched events
     mask_fully_matched = [
@@ -630,6 +654,7 @@ def main():
         higgs=do_higgs_pairing,
         vbf=do_vbf_pairing,
         n_higgs_jets=n_higgs_jets,
+        processes=all_processes,
     )
 
     if not args.data:

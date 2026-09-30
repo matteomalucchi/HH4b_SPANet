@@ -568,6 +568,39 @@ The three are made from the same configuration, with the same labels and
 colors, so they can be read side by side: the last one is the ceiling the
 first one is measured against.
 
+#### The k of the Run 2 pairing
+
+The Run 2 method pairs the jets by the distance
+$|m_1 - k\,m_2| / \sqrt{1 + k^2}$ of the two candidates, ordered by pt, and
+the k it compares them with depends on what the event is:
+
+| | HH | ZZ | ZH | HZ |
+|---|---|---|---|---|
+| k | 1.04 | 1.02 | 0.76 | 1.40 |
+
+`ZH` and `HZ` are the same process seen twice: the event is `HZ` when the
+**leading** pt candidate is the heavier one (the Higgs) and `ZH` when the
+**subleading** one is, so that choice is made per event and per candidate
+pair, from the masses themselves.
+
+Which process an event is cannot be told from the jets, so it is read off the
+class written in the h5 file, through `CLASS_PROCESS_DICT` at the top of
+`utils/performance/efficiency_functions.py`:
+
+```python
+CLASS_PROCESS_DICT = {
+    0: "HH",  # ggF HH
+    1: "HH",  # VBF HH
+    2: "ZZ",
+    3: "ZH",
+}
+```
+
+Edit it when a sample numbers its classes differently. A class that is not in
+there, and a file with no class at all, is paired as HH with k = 1.04, which
+is what the method did for every event before. The k values themselves are
+`RUN2_K_VALUES` in the same file.
+
 > [!TIP]
 > To pass the configuration with the input files for the efficiency computation through the argument `-conf`, use the relative path from where you are executing the script.
 >
