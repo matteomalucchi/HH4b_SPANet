@@ -33,7 +33,7 @@ container themselves whenever a payload needs it.
 # once, e.g. in the .bashrc
 export SPANET_MAIN_DIR="/afs/cern.ch/user/${USER:0:1}/${USER}"                       # SPANet + HH4b_SPANet checkouts
 export SPANET_ENV_DIR="/eos/user/${USER:0:1}/${USER}/spanet_infos/spanet_env_test_eos"  # virtual environment
-export EOS_SPANET="/eos/user/${USER:0:1}/${USER}/spanet_infos/spanet_outputs"        # where out_spanet_outputs lives
+export EOS_SPANET="/eos/user/${USER:0:1}/${USER}/php-plots/SPANet_studies/training_outputs"  # where the trainings go
 
 # in every session, from the repository root
 cd $SPANET_MAIN_DIR/HH4b_SPANet
@@ -387,6 +387,58 @@ law run hh4b.EfficiencyPlots --options-file <options> --seed 100
 law run hh4b.RocPlot --options-file <options> --plot-name vbf_presel
 ```
 
+## Everything of a training in one directory
+
+A training is one directory, named after the day it was started and the
+options file, and everything that belongs to it is inside:
+
+```
+<output base>/2026-01-15_out_<model>/out_seed_trainings_100/
+    version_0/
+        checkpoints/                     the training
+        predict_<test>.h5                the prediction
+        training_plots/                  the training metrics
+    configs/
+        efficiency_configuration_<model>.py
+        roc_configuration_<model>.py     what the plots are made with
+        registration.json
+        journal/                         what every run of the pipeline did
+    efficiency_plots/<plot>/             the efficiency plots
+    roc_plots/<plot>/                    the ROC plots
+    law/*.json                           the markers law reads
+    training-<cluster>.out, .err, .log   the condor job
+```
+
+The output base is the area served by the CERN website, so all of it can be
+looked at in a browser:
+
+```
+/eos/user/x/xyz/php-plots/SPANet_studies/training_outputs
+```
+
+Both halves are configurable, `web_base` and `output_base` in `law.cfg`
+(`$SPANET_WEB_BASE`, `$EOS_SPANET`), and `--output-base` for a single run.
+
+The date is the day the directory is created, and it is read back afterwards,
+never guessed: a model whose training is already there keeps writing into the
+directory it is in, whatever today is, and only a training that does not exist
+yet gets today's date.  The layouts used before -- an undated `out_<model>`,
+and `out_spanet_outputs/out_<model>` -- are recognised as well, so a training
+made before this change is still found and reused.  `--training-date
+2026-01-15` pins the prefix when several directories could match, and
+`--output-dir` replaces the path outright (see [A training in a directory of
+its own](#a-training-in-a-directory-of-its-own)).
+
+To collect the plots of every model in one place instead, as they were
+before, set `eff_plot_base` / `roc_plot_base` in `law.cfg`; they then go to
+`<base>/plots_<model>/<plot>/` again.
+
+A training that was made before all this is not touched: law finds it, reports
+it complete and leaves the configurations and the plots it made back then in
+`law_work/configs/<model>/` and under the old plot bases.  Only what is made
+from now on -- a step that is redone, an evaluation on another test file, a
+new training -- is written into the training directory.
+
 ## The ONNX model, and the way back
 
 What the analysis reads is not the checkpoint but an ONNX file exported from
@@ -525,7 +577,7 @@ so nothing is overwritten and the two can be compared:
 
 | | configured | `--region inclusive` |
 |---|---|---|
-| plots | `plots_<model>/VBFEff_vbf_presel/` | `plots_<model>/VBFEff_vbf_presel_inclusive/` |
+| plots | `efficiency_plots/VBFEff_vbf_presel/` | `efficiency_plots/VBFEff_vbf_presel_inclusive/` |
 | marker | `law/efficiency_VBFEff_vbf_presel.json` | `law/efficiency_VBFEff_vbf_presel_inclusive.json` |
 | summary | `law/performance.json` | `law/performance_inclusive.json` |
 
@@ -564,8 +616,8 @@ apart, so a model evaluated on several samples does not overwrite itself:
 | | own test file | another test file |
 |---|---|---|
 | prediction | `predict_<test>.h5` | `predict_<evaluation>_<test>.h5` |
-| configurations | `<work_dir>/configs/<model>/` | `<work_dir>/configs/<model>_<evaluation>/` |
-| plots | `plots_<model>/` | `plots_<model>_<evaluation>/` |
+| configurations | `<run dir>/configs/` | `<run dir>/configs_<evaluation>/` |
+| plots | `<run dir>/efficiency_plots/<plot>/` | `<run dir>/efficiency_plots/<evaluation>/<plot>/` |
 | summary | `law/performance.json` | `law/performance_<evaluation>.json` |
 | legend | the usual label | the label plus ` - <evaluation>` |
 
@@ -581,10 +633,11 @@ telling enough, and `--plot-dir` still overrides the plot directory outright.
 
 ### A training in a directory of its own
 
-The training directory is derived from the options file name and the seed,
+The training directory is derived from the date, the options file name and
+the seed,
 
 ```
-<output base>/out_spanet_outputs/out_<options basename>/out_seed_trainings_<seed>/version_N
+<output base>/<YYYY-MM-DD>_out_<options basename>/out_seed_trainings_<seed>/version_N
 ```
 
 which a directory that was renamed, or one made before the pipeline existed,
@@ -603,9 +656,9 @@ next to its `version_N`, and so are the markers -- the directory has to be
 writable.  Everything that is *named* keeps following the options file: the
 generated configurations, the plot directories, the truth key and the legend.
 
-`--output-base <their out_spanet_outputs parent>` stays the shorter way when
-the directory does follow the convention but lives somewhere else, e.g. under
-the EOS of a colleague.
+`--output-base <the directory their trainings are in>` stays the shorter way
+when the directory does follow the convention but lives somewhere else, e.g.
+under the EOS of a colleague.
 
 Two trainings of the same options file in two directories would share those
 names; `--suffix _<something>` gives the second one an identity of its own:
@@ -642,9 +695,9 @@ so the question is always *which steps are redone*.
 | `hh4b.TransferDataset` | the same h5 files in the destination directory on the training machine |
 | `hh4b.Training` | a new `version_N/` -- **only** with `--overwrite`, otherwise it adopts the one that is there |
 | `hh4b.Predict` | `version_N/predict_<test file>.h5` |
-| `hh4b.RegisterModel` | `<work_dir>/configs/<model>/{efficiency,roc}_configuration_<model>.py` and `registration.json` |
+| `hh4b.RegisterModel` | `<run dir>/configs/{efficiency,roc}_configuration_<model>.py` and `registration.json` |
 | `hh4b.TrainingMetrics` | `version_N/training_plots/` |
-| `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | everything the plotting script writes into `<plot base>/<plot dir>/<plot name>/` |
+| `hh4b.EfficiencyPlot`, `hh4b.RocPlot` | everything the plotting script writes into `<run dir>/{efficiency,roc}_plots/<plot name>/` |
 | `hh4b.ExportModel` | `<onnx dir>/<model>.onnx` |
 | `hh4b.TransferModel` | the same file in `onnx_remote_dir` on the analysis machine |
 | `hh4b.Performance`, `hh4b.Dataset` | only their summary |
@@ -690,11 +743,11 @@ law run hh4b.Performance --options-file <options> --overwrite-plots
 replaces exactly these:
 
 ```
-<work_dir>/configs/<model>/efficiency_configuration_<model>.py
-<work_dir>/configs/<model>/roc_configuration_<model>.py
-<work_dir>/configs/<model>/registration.json
-<eff plot base>/<plot dir>/<every efficiency plot>/*
-<roc plot base>/<plot dir>/<every ROC plot>/*
+<run dir>/configs/efficiency_configuration_<model>.py
+<run dir>/configs/roc_configuration_<model>.py
+<run dir>/configs/registration.json
+<run dir>/efficiency_plots/<every efficiency plot>/*
+<run dir>/roc_plots/<every ROC plot>/*
 <run dir>/version_N/training_plots/*
 <run dir>/law/*.json                     (the markers of the steps above)
 ```
@@ -761,8 +814,8 @@ leave the step unable to ever complete.  A half written registration, for
 instance, is simply rewritten:
 
 ```
-<work_dir>/configs/<model>/registration.json     # there
-<work_dir>/configs/<model>/*_configuration_*.py  # gone
+<run dir>/configs/registration.json     # there
+<run dir>/configs/*_configuration_*.py  # gone
 ```
 
 ## A new training replaces what was derived from the old one
@@ -930,9 +983,12 @@ classification are independent.
 writes
 
 ```
-<work_dir>/configs/<model>/efficiency_configuration_<model>.py
-<work_dir>/configs/<model>/roc_configuration_<model>.py
+<run dir>/configs/efficiency_configuration_<model>.py
+<run dir>/configs/roc_configuration_<model>.py
 ```
+
+i.e. inside the training directory they describe, next to the plots they are
+used for.
 
 which import `utils/performance/efficiency_configuration_vbf_ggf.py` and
 `utils/roccurves/roc_configuration_vbf_ggf.py` and add the entries of the new
@@ -947,10 +1003,10 @@ not there yet.
 ## What ran: the journal
 
 Every `law run` writes what it did in a `journal` directory next to what it
-produced -- for a model, the directory its generated configurations are in:
+produced -- for a model, the `configs` directory of its training:
 
 ```
-<work_dir>/configs/<model>/
+<run dir>/configs/
     efficiency_configuration_<model>.py
     roc_configuration_<model>.py
     registration.json
@@ -967,11 +1023,11 @@ produced -- for a model, the directory its generated configurations are in:
 so for the model of the example above the logs are in
 
 ```
-/eos/user/m/mmalucch/spanet_infos/law_work/configs/hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetHiggsGlobal_DNNVars_VBFNoKinCut_ClassLoss7_2024/journal/latest/
+/eos/user/m/mmalucch/php-plots/SPANet_studies/training_outputs/2026-01-15_out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetHiggsGlobal_DNNVars_VBFNoKinCut_ClassLoss7_2024/out_seed_trainings_100/configs/journal/latest/
 ```
 
 An evaluation on another test file keeps its own, under
-`<model>_<evaluation>/journal/`, and the steps that convert a dataset write
+`configs_<evaluation>/journal/`, and the steps that convert a dataset write
 theirs next to the h5 files they produce, in `<coffea dir>/journal/`.
 `hh4b.Performance` and `hh4b.Dataset` print the path when they are done and
 keep it in their summary.
@@ -987,7 +1043,7 @@ how long it took and the file its output went to.  The output is shown while
 it runs, exactly as before, *and* kept in those files.
 
 ```bash
-cd <work_dir>/configs/<model>/journal/latest
+cd <run dir>/configs/journal/latest
 
 # what the run did, in order
 python3 -c 'import json
@@ -1023,10 +1079,11 @@ derived from `$USER`:
 | h5 inputs (lxplus) | `input_base` | `$SPANET_INPUT_DIR` | `<eos_base>/spanet_inputs` |
 | virtual env | `spanet_env_dir` | `$SPANET_ENV_DIR` | `$VIRTUAL_ENV` |
 | output base | `eos_base` | `$SPANET_EOS_BASE` | `/eos/user/${USER:0:1}/$USER/spanet_infos` |
-| trainings | `output_base` | `$EOS_SPANET` | `<eos_base>/spanet_outputs` |
-| efficiency plots | `eff_plot_base` | `$SPANET_EFF_PLOT_DIR` | `<eos_base>/spanet_eff_plots/vbf` |
-| ROC plots | `roc_plot_base` | `$SPANET_ROC_PLOT_DIR` | `<eos_base>/spanet_roc_curves` |
-| generated configs | `work_dir` | `$SPANET_LAW_WORK_DIR` | `<eos_base>/law_work` |
+| website area | `web_base` | `$SPANET_WEB_BASE` | `/eos/user/${USER:0:1}/$USER/php-plots/SPANet_studies` |
+| trainings | `output_base` | `$EOS_SPANET` | `<web_base>/training_outputs` |
+| efficiency plots | `eff_plot_base` | `$SPANET_EFF_PLOT_DIR` | the training directory |
+| ROC plots | `roc_plot_base` | `$SPANET_ROC_PLOT_DIR` | the training directory |
+| journal of a task without a training | `work_dir` | `$SPANET_LAW_WORK_DIR` | `<eos_base>/law_work` |
 | exported models | `onnx_base` | `$SPANET_ONNX_DIR` | `<eos_base>/spanet_model` |
 | where they are copied | `onnx_host`, `onnx_remote_dir` | `$SPANET_ONNX_HOST`, `$SPANET_ONNX_REMOTE_DIR` | nowhere: the model is exported and not copied |
 | container | `apptainer_image`, `apptainer_binds` | `$SPANET_APPTAINER_IMAGE`, `$SPANET_APPTAINER_BINDS` | cmsml image; `/afs`, `/cvmfs`, the EOS home of `$USER` and all directories above |

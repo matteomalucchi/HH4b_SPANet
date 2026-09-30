@@ -147,33 +147,56 @@ class Settings(object):
         return cfg_get("eos_base", "SPANET_EOS_BASE", _default_eos_base())
 
     @property
+    def web_base(self):
+        """The published area the trainings are written into.
+
+        ``php-plots`` is served by the CERN website, so everything a training
+        produces -- the plots included -- can be looked at in a browser.
+        """
+        user = _user()
+        if user:
+            eos_home = "/eos/user/{}/{}".format(user[0], user)
+            if os.path.isdir(eos_home):
+                default = os.path.join(eos_home, "php-plots", "SPANet_studies")
+                return cfg_get("web_base", "SPANET_WEB_BASE", default)
+        return cfg_get(
+            "web_base",
+            "SPANET_WEB_BASE",
+            os.path.join(self.eos_base, "php-plots", "SPANet_studies"),
+        )
+
+    @property
     def output_base(self):
-        """Directory in which ``out_spanet_outputs`` is created."""
+        """Directory holding the training directories.
+
+        One directory per model and seed lives in here, and everything that
+        belongs to that training is inside it: the checkpoints, the
+        prediction, the generated configurations, the journal and the plots.
+        """
         return cfg_get(
             "output_base",
             "EOS_SPANET",
-            os.path.join(self.eos_base, "spanet_outputs"),
+            os.path.join(self.web_base, "training_outputs"),
         )
 
     @property
     def eff_plot_base(self):
-        return cfg_get(
-            "eff_plot_base",
-            "SPANET_EFF_PLOT_DIR",
-            os.path.join(self.eos_base, "spanet_eff_plots", "vbf"),
-        )
+        """Shared directory for the efficiency plots; empty: the training one."""
+        return cfg_get("eff_plot_base", "SPANET_EFF_PLOT_DIR", "")
 
     @property
     def roc_plot_base(self):
-        return cfg_get(
-            "roc_plot_base",
-            "SPANET_ROC_PLOT_DIR",
-            os.path.join(self.eos_base, "spanet_roc_curves"),
-        )
+        """Shared directory for the ROC plots; empty: the training one."""
+        return cfg_get("roc_plot_base", "SPANET_ROC_PLOT_DIR", "")
 
     @property
     def work_dir(self):
-        """Where the generated performance configurations are written."""
+        """Fallback journal directory of the tasks that have no training.
+
+        The configurations, the plots and the journal of a model live in its
+        training directory; this is only what is left for a task that belongs
+        to no training at all.
+        """
         return cfg_get(
             "work_dir",
             "SPANET_LAW_WORK_DIR",
@@ -406,6 +429,7 @@ class Settings(object):
         # make sure the directories the tasks read from/write to are visible
         for path in (
             self.eos_base,
+            self.web_base,
             self.output_base,
             self.onnx_base,
             self.eff_plot_base,

@@ -91,11 +91,14 @@ class Training(ModelTask):
             constraint='Owner == "{}"'.format(os.environ.get("USER", "")),
             projection=["ClusterId", "JobStatus", "Out"],
         )
+        # the date prefix of the directory is not known for a job that was
+        # submitted on another day, so the model and the seed identify it
+        tail = os.path.join("out_{}".format(self.model_key), self.seed_dir_name)
         return sorted(
             {
                 int(job["ClusterId"])
                 for job in jobs
-                if self.log_dir_rel in str(job.get("Out", ""))
+                if tail in str(job.get("Out", ""))
             }
         )
 
@@ -228,6 +231,10 @@ class Training(ModelTask):
                     "rerun the pipeline once the job is done".format(cluster_id)
                 )
             self._wait_for(cluster_id)
+
+        # the job may have written into the directory of the day it was
+        # submitted on, which is not necessarily the one guessed above
+        self.forget_run_dir()
 
         versions = self.existing_versions()
         new = [v for v in versions if v not in existing] or versions

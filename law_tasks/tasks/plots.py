@@ -98,16 +98,37 @@ class PlotTask(ModelTask):
         )
 
     @property
-    def plot_base(self):
+    def shared_plot_base(self):
+        """A directory configured for the plots of every model, if any."""
         return (
             self.cfg.eff_plot_base if self.kind == "efficiency" else self.cfg.roc_plot_base
         )
 
     @property
+    def plot_base(self):
+        """Where the plots of this kind are written.
+
+        The training directory, so that everything of a training is in one
+        place; ``eff_plot_base`` / ``roc_plot_base`` of law.cfg send them to a
+        directory shared by all models instead.
+        """
+        return self.shared_plot_base or os.path.join(
+            self.run_dir, "{}_plots".format(self.kind)
+        )
+
+    @property
     def main_dir(self):
+        """The level between the base and the plots of one configuration.
+
+        Inside the training directory there is nothing to keep apart but the
+        evaluations, since the model is the directory itself; a shared base
+        needs the name of the model as it always did.
+        """
         if self.plot_dir:
             return self.plot_dir
-        return naming.derive_plot_dir(self.model_key) + self.eval_suffix
+        if self.shared_plot_base:
+            return naming.derive_plot_dir(self.model_key) + self.eval_suffix
+        return self.eval_key
 
     @property
     def region_suffix(self):

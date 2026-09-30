@@ -646,6 +646,24 @@ would have run).
 `--onnx-file` names the file, `--export no` skips the step; see
 [The ONNX model, and the way back](law_tasks/README.md#the-onnx-model-and-the-way-back).
 
+Everything a training produces lands in one directory, named after the day it
+was started and the options file, under the area served by the CERN website so
+that it can be read in a browser:
+
+```
+/eos/user/x/xyz/php-plots/SPANet_studies/training_outputs/2026-01-15_out_<model>/out_seed_trainings_100/
+    version_0/            checkpoints, prediction and training metric plots
+    configs/              the generated efficiency/ROC configurations, the journal
+    efficiency_plots/     the efficiency plots
+    roc_plots/            the ROC plots
+    law/                  the markers law reads
+```
+
+`web_base` and `output_base` in `law.cfg` (`$SPANET_WEB_BASE`, `$EOS_SPANET`)
+move that base; a training that is already there keeps its own date, whatever
+today is, and the layouts used before are still found. See
+[Everything of a training in one directory](law_tasks/README.md#everything-of-a-training-in-one-directory).
+
 The test file, the prediction name, the `true_dict` key, the label, the color
 and the plot directories are derived from the options file with the
 conventions used so far, and each of them can be overridden on the command
@@ -688,7 +706,7 @@ drawn only for a model that classifies something.
 
 What a run did is kept in a `journal/<run>` directory next to what it
 produced -- for a conversion next to its h5 files, for a model next to its
-generated configurations in `<work_dir>/configs/<model>/journal/`. It holds
+generated configurations in `<training dir>/configs/journal/`. It holds
 `run.log`, everything the run printed, `run.jsonl`, one JSON line per step and
 per bash command, and the output of each command in a file of its own. The
 condor `.out`, `.err` and `.log` of a training land in the training directory,
@@ -699,7 +717,7 @@ both in the container of the tasks and in the one of the training jobs.
 
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
 `SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
-`SPANET_REMOTE_INPUT_DIR`, `SPANET_ONNX_DIR`, ...) or, as a last resort, from generic `$USER`
+`SPANET_REMOTE_INPUT_DIR`, `SPANET_WEB_BASE`, `SPANET_ONNX_DIR`, ...) or, as a last resort, from generic `$USER`
 based defaults, so no path has to be edited to use the pipeline.
 
 The full documentation is in [`law_tasks/README.md`](law_tasks/README.md).

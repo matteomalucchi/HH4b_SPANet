@@ -381,7 +381,7 @@ class ModelTask(BaseTask):
     output_base = luigi.Parameter(
         default="",
         significant=False,
-        description="directory in which 'out_spanet_outputs' lives; default: "
+        description="directory holding the training directories; default: "
         "from law.cfg / $EOS_SPANET",
     )
     output_dir = luigi.Parameter(
@@ -389,8 +389,14 @@ class ModelTask(BaseTask):
         description="directory of this training, the one holding the "
         "'version_N' subdirectories; replaces the whole path derived from the "
         "options file name and the seed, for a model that does not follow the "
-        "convention; default: <output base>/out_spanet_outputs/out_<model>/"
+        "convention; default: <output base>/<date>_out_<model>/"
         "out_seed_trainings_<seed>",
+    )
+    training_date = luigi.Parameter(
+        default="",
+        description="date prefix 'YYYY-MM-DD' of the training directory; "
+        "default: the prefix of the directory that is already there, and "
+        "today for a training that does not exist yet",
     )
     test_file = luigi.Parameter(
         default="",
@@ -424,24 +430,72 @@ class ModelTask(BaseTask):
         return self.output_base or self.cfg.output_base
 
     @property
+    def seed_dir_name(self):
+        return "out_seed_trainings_{}".format(self.seed)
+
+    @property
+    def model_dir_name(self):
+        """``<YYYY-MM-DD>_out_<model_key>``, the date being today's."""
+        date = self.training_date or time.strftime("%Y-%m-%d")
+        return "{}_out_{}".format(date, self.model_key)
+
+    def existing_run_dirs(self):
+        """The training directories of this model that are already there.
+
+        The name of a new one carries today's date, so the date of an existing
+        training must not be guessed: it is read off the directory instead.
+        The most recent one comes first, and the layouts used before the date
+        (and before the trainings moved out of ``out_spanet_outputs``) are
+        still recognised, so a training made earlier is still found.
+        """
+        base = self.base_dir
+        parents = [base, os.path.join(base, "out_spanet_outputs")]
+        names = ["[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_out_", "out_"]
+
+        found = []
+        for parent in parents:
+            for name in names:
+                matches = glob.glob(
+                    os.path.join(parent, name + glob.escape(self.model_key))
+                )
+                for path in sorted(matches, reverse=True):
+                    run_dir = os.path.join(path, self.seed_dir_name)
+                    if os.path.isdir(run_dir) and run_dir not in found:
+                        found.append(run_dir)
+        return found
+
+    @property
     def run_dir(self):
         """Where the trainings of this model live, one ``version_N`` each.
 
-        ``.../out_spanet_outputs/out_<model_key>/out_seed_trainings_<seed>``,
-        or ``--output-dir`` when the directory does not follow that
-        convention.  Everything else keeps following the options file: the
-        predictions and the markers are written here, the configurations and
-        the plots are still named after the model.
+        ``<output base>/<date>_out_<model_key>/out_seed_trainings_<seed>``, or
+        ``--output-dir`` when the directory does not follow that convention.
+        Everything that belongs to this training is written in here: the
+        checkpoints, the prediction, the markers, the generated
+        configurations, the journal and the plots.
         """
         if self.output_dir:
             return os.path.abspath(self.cfg.expand(self.output_dir))
-        return os.path.join(self.base_dir, self.log_dir_rel)
+
+        if getattr(self, "_run_dir", None) is None:
+            existing = [] if self.training_date else self.existing_run_dirs()
+            self._run_dir = existing[0] if existing else os.path.join(
+                self.base_dir, self.model_dir_name, self.seed_dir_name
+            )
+        return self._run_dir
+
+    def forget_run_dir(self):
+        """Look the training directory up again.
+
+        A training that was submitted on another day writes into the directory
+        of *that* day, so once a job is done the directory has to be searched
+        for again instead of keeping the one guessed before it ran.
+        """
+        self._run_dir = None
 
     @property
     def submit_base(self):
         """Directory a condor training writes ``log_dir_rel`` into."""
-        if not self.output_dir:
-            return self.base_dir
         run_dir, base = self.run_dir, self.base_dir
         if run_dir.startswith(os.path.join(base, "")):
             return base
@@ -450,13 +504,7 @@ class ModelTask(BaseTask):
     @property
     def log_dir_rel(self):
         """Training directory relative to the output base, as condor sees it."""
-        if self.output_dir:
-            return os.path.relpath(self.run_dir, self.submit_base)
-        return os.path.join(
-            "out_spanet_outputs",
-            "out_{}".format(self.model_key),
-            "out_seed_trainings_{}".format(self.seed),
-        )
+        return os.path.relpath(self.run_dir, self.submit_base)
 
     @property
     def marker_dir(self):
@@ -464,10 +512,13 @@ class ModelTask(BaseTask):
 
     @property
     def config_dir(self):
-        """Where the generated configurations and the journal of a model live."""
-        return os.path.join(
-            self.cfg.work_dir, "configs", self.model_key + self.eval_suffix
-        )
+        """Where the generated configurations and the journal of a model live.
+
+        Inside the training directory, so that everything that describes a
+        training is found next to it; an evaluation on another test file keeps
+        its own ``configs_<evaluation>``.
+        """
+        return os.path.join(self.run_dir, "configs" + self.eval_suffix)
 
     @property
     def journal_base(self):
