@@ -360,6 +360,8 @@ def run2_algorithm(jet, mask_fully_matched, higgs=True, vbf=False, n_higgs_jets=
         # implement the Run 2 pairing algorithm
         comb_idx = [[(0, 1), (2, 3)], [(0, 2), (1, 3)], [(0, 3), (1, 2)]]
 
+        # the first resonance in the pair is the one with the highest pt, 
+        # so we order the higgs candidates by pt
         higgs_candidates_unflatten_order = [reco_higgs(j, comb_idx) for j in jet]
         distance = [
             distance_pt_func(higgs, 1.04)[0]

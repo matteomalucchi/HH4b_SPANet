@@ -49,7 +49,7 @@ spanet_dict = {
         "file": "/eos/user/m/mmalucch/spanet_infos/spanet_outputs/out_spanet_outputs/out_hh4b_pairing_vbf_ggf_all_Klambda_HiggsPairing_2024/out_seed_trainings_100/version_0/predict_ggF4kl_TotVBF_ggF4kl_TotVBF_NormWeights_AllKlambda_VBFggF_HIggsPairing_JetGoodProvHiggsPadded_test.h5",
         "true": "9jets_all_Klambda_HiggsPairing_2024",
         "label": "HiggsPairing - 2024 - ggF4kl_TotVBF",
-        "color": "lime",
+        "color": "blue",
         "higgs": True,
         "vbf": False,
         "jet_coll_higgs": "Jet",
