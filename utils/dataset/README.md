@@ -23,6 +23,8 @@ path/to/output/prefix_name<JetCollectionName>_train.h5
 path/to/output/prefix_name<JetCollectionName>_test.h5
 ```
 
+At the end, for each jet collection group, a table is printed with the number of train, test and total (train+test) events written for each dataset, plus a `TOTAL` row with the number of events in the final train and test files combining all datasets. Events removed by the high-weight filter are not counted.
+
 ## All CLI options
 
 | Flag | Default | Description |

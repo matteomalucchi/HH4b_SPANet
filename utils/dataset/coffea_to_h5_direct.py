@@ -29,6 +29,8 @@ H5_PADDING_VALUE = 9999.0
 SEED = 9999
 _permutations = {}
 _pt_flatten_mixing_warned = False
+# number of events written per jet collection group and dataset: {group: {dataset: [n_train, n_test]}}
+_event_counts = defaultdict(lambda: defaultdict(lambda: [0, 0]))
 
 OLD_RESONANCES = {
     "h1": (1, ("b1", "b2")),
@@ -49,9 +51,7 @@ RESONANCES_DICT = {
     "OLD_RESONANCES": OLD_RESONANCES,
 }
 # added to whichever set is chosen
-EXTRA_RESONANCES = {
-    "add": (-1, ("a1", ))
-}
+EXTRA_RESONANCES = {"add": (-1, ("a1",))}
 RESONANCES = dict(DEFAULT_RESONANCES, **EXTRA_RESONANCES)
 MIN_NUM_JETS = 4
 
@@ -90,7 +90,7 @@ p.add_argument(
     "-rd",
     "--resonance-list",
     nargs="+",
-    default=["h1","h2","vbf","add"],
+    default=["h1", "h2", "vbf", "add"],
     help="Resonances to be produced either for dummies or from provenance",
 )
 p.add_argument(
@@ -108,14 +108,16 @@ p.add_argument(
     "--jets",
     nargs="+",
     default=["JetTotalSPANetPtFlattenPadded", "JetTotalSPANetPadded"],
-    help="Jet collections to process (must match keys in coffea file)."+ "\nIf the value is one of the predefined uppercase collection groups (e.g. 'JET_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of collections defined in collections_coffea_to_h5_direct.py.",
+    help="Jet collections to process (must match keys in coffea file)."
+    + "\nIf the value is one of the predefined uppercase collection groups (e.g. 'JET_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of collections defined in collections_coffea_to_h5_direct.py.",
 )
 p.add_argument(
     "-g",
     "--global-vars",
     nargs="+",
     default=["all"],
-    help="Global variables to save, or 'all' to save all non-jet variables as global variables."+ "\nIf the value is one of the predefined uppercase collection groups (e.g. 'GLOBAL_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of variables defined in collections_coffea_to_h5_direct.py.",
+    help="Global variables to save, or 'all' to save all non-jet variables as global variables."
+    + "\nIf the value is one of the predefined uppercase collection groups (e.g. 'GLOBAL_COLLECTIONS_SEPARATE_HIGGS_VBF'), it will be replaced by the corresponding list of variables defined in collections_coffea_to_h5_direct.py.",
 )
 p.add_argument(
     "-jg",
@@ -144,37 +146,37 @@ p.add_argument(
     choices=["none", "class", "sample"],
     default="none",
     help="Instead of normalizing weights by sum_genweights, rescale by a target computed "
-        "from sum(|weight|) after high-weight filtering (if enabled). "
-        "'class': every class ends up with the same total sum(|weight|)=1, aggregated over "
-        "all samples/datasets in that class (matches the old --balance-class-weights). "
-        "'sample': every individual dataset/sample is balanced on its own; see "
-        "--balance-sample-scope for how classes are treated. "
-        "Mutually exclusive with --norm-weights.",
+    "from sum(|weight|) after high-weight filtering (if enabled). "
+    "'class': every class ends up with the same total sum(|weight|)=1, aggregated over "
+    "all samples/datasets in that class (matches the old --balance-class-weights). "
+    "'sample': every individual dataset/sample is balanced on its own; see "
+    "--balance-sample-scope for how classes are treated. "
+    "Mutually exclusive with --norm-weights.",
 )
 p.add_argument(
     "--balance-sample-scope",
     choices=["global", "within-class", "custom"],
     default="global",
     help="Only used when --balance-weights=sample. "
-        "'global': every sample is normalized independently to sum(|weight|)=1, regardless "
-        "of class; classes with more samples end up with a larger total. "
-        "'within-class': samples are still individually balanced to each other, but each "
-        "class's aggregate total is additionally forced to be equal across classes "
-        "(sum(|weight|)=1 per class, split evenly among its samples).",
+    "'global': every sample is normalized independently to sum(|weight|)=1, regardless "
+    "of class; classes with more samples end up with a larger total. "
+    "'within-class': samples are still individually balanced to each other, but each "
+    "class's aggregate total is additionally forced to be equal across classes "
+    "(sum(|weight|)=1 per class, split evenly among its samples).",
 )
 p.add_argument(
     "-rw",
     "--remove-high-weights",
     action="store_true",
     help="Remove events with very high weights (only applies to regions containing 'post' in name). "
-        "Threshold is set dynamically (N x median of |w|) unless --weight-threshold is given.",
+    "Threshold is set dynamically (N x median of |w|) unless --weight-threshold is given.",
 )
 p.add_argument(
     "-acwf",
     "--all-cat-weight-filter",
     action="store_true",
     help="Remove events with very high weights (from all categories). "
-        "Threshold is set dynamically (N x median of |w|) unless --weight-threshold is given.",
+    "Threshold is set dynamically (N x median of |w|) unless --weight-threshold is given.",
 )
 p.add_argument(
     "--weight-threshold",
@@ -187,7 +189,7 @@ p.add_argument(
     type=float,
     default=10.0,
     help="Multiplicative factor on median(|w|) used as dynamic threshold (default: 10). "
-        "Ignored if --weight-threshold is set.",
+    "Ignored if --weight-threshold is set.",
 )
 p.add_argument(
     "-nwt",
@@ -246,7 +248,7 @@ def create_resonances_targets_from_provenance(jets_prov, max_jets, resonances=No
     """
 
     # local jet indices per event
-    if max_jets<=1:
+    if max_jets <= 1:
         jets_prov = ak.singletons(jets_prov)
     indices = ak.local_index(jets_prov)
 
@@ -516,8 +518,10 @@ def load_cols_parquet(rootdir, datasets=None, categories=None):
             for variation_dir in region_dir.iterdir():
                 if not variation_dir.is_dir():
                     continue
-                
-                print(f"Loading parquet dataset from dataset '{dataset_dir.name}', region '{region_dir.name}', variation '{variation_dir.name}'")
+
+                print(
+                    f"Loading parquet dataset from dataset '{dataset_dir.name}', region '{region_dir.name}', variation '{variation_dir.name}'"
+                )
                 cols[dataset_dir.name][dataset_dir.name][region_dir.name][
                     variation_dir.name
                 ] = ds.dataset(variation_dir, format="parquet")
@@ -560,15 +564,27 @@ def coffea_to_h5(
     weight_norm_map = None
     if args.balance_weights != "none":
         weight_norm_map, class_abs_sum, n_samples_per_class = compute_weight_norm_map(
-            cols, regions, class_labels, weight_name, args.balance_weights, args.balance_sample_scope, args.neg_weight_treatment, args, dataset_to_class_index
+            cols,
+            regions,
+            class_labels,
+            weight_name,
+            args.balance_weights,
+            args.balance_sample_scope,
+            args.neg_weight_treatment,
+            args,
+            dataset_to_class_index,
         )
         print()
         print("-" * 80)
-        print(f"Balancing weights (mode={args.balance_weights}, sample_scope={args.balance_sample_scope})")
+        print(
+            f"Balancing weights (mode={args.balance_weights}, sample_scope={args.balance_sample_scope})"
+        )
         print("sum(|weight|) per class (post-filtering, before balancing):")
         for idx, total in sorted(class_abs_sum.items()):
             label = class_labels[idx] if idx < len(class_labels) else str(idx)
-            print(f"  class {idx} ({label}): sum(|weight|) = {total:.6f}, n_samples = {n_samples_per_class[idx]}")
+            print(
+                f"  class {idx} ({label}): sum(|weight|) = {total:.6f}, n_samples = {n_samples_per_class[idx]}"
+            )
 
     path_base = os.path.splitext(h5_path)[0]
     out_dir_name = os.path.dirname(h5_path)
@@ -612,11 +628,15 @@ def coffea_to_h5(
 
         h5_tr = f"{path_base}{jet_coll_group_str}_train.h5"
         h5_te = f"{path_base}{jet_coll_group_str}_test.h5"
-        
-        print("\n\n\n######################################################################")
+
+        print(
+            "\n\n\n######################################################################"
+        )
         print("SAVING JET COLLECTION GROUP:", jet_coll_group_str)
-        print("#######################################################################\n")
-        
+        print(
+            "#######################################################################\n"
+        )
+
         with h5py.File(h5_tr, "w") as ftr, h5py.File(h5_te, "w") as fte:
 
             def mk(f):
@@ -665,11 +685,19 @@ def coffea_to_h5(
                     N = len(w)
 
                     w, weight_mask, apply_weight_filter = process_weights(
-                        w, region, payload, sum_genweights, dataset, weight_norm_map, skey, class_idx, args
+                        w,
+                        region,
+                        payload,
+                        sum_genweights,
+                        dataset,
+                        weight_norm_map,
+                        skey,
+                        class_idx,
+                        args,
                     )
 
                     if class_idx == 0 and args.downscale_training:
-                        train_frac_sample = train_frac*33398/1629245
+                        train_frac_sample = train_frac * 33398 / 1629245
                     else:
                         train_frac_sample = train_frac
                     train_mask = (
@@ -682,9 +710,18 @@ def coffea_to_h5(
                         train_mask = train_mask & weight_mask
                         test_mask = test_mask & weight_mask
 
+                    _event_counts[jet_coll_group_str][dataset][0] += int(
+                        np.sum(train_mask)
+                    )
+                    _event_counts[jet_coll_group_str][dataset][1] += int(
+                        np.sum(test_mask)
+                    )
+
                     print()
-                    print("-"*80)
-                    print(f"DEBUG: checking excluded weights: {list(w[~train_mask & ~test_mask][:20])}")
+                    print("-" * 80)
+                    print(
+                        f"DEBUG: checking excluded weights: {list(w[~train_mask & ~test_mask][:20])}"
+                    )
 
                     write_block_split(
                         tr_w,
@@ -819,13 +856,21 @@ def coffea_to_h5(
                                     and global_variables[0] in global_collections_dict
                                     and (
                                         (
-                                            name in global_collections_dict[global_variables[0]][j]
-                                            and isinstance(global_collections_dict[global_variables[0]][j][name], dict)
+                                            name
+                                            in global_collections_dict[
+                                                global_variables[0]
+                                            ][j]
+                                            and isinstance(
+                                                global_collections_dict[
+                                                    global_variables[0]
+                                                ][j][name],
+                                                dict,
+                                            )
                                         )
                                         or (
-                                            global_collections_dict[global_variables[0]][j].get(
-                                                "__save_all_remaining__", False
-                                            )
+                                            global_collections_dict[
+                                                global_variables[0]
+                                            ][j].get("__save_all_remaining__", False)
                                             and f"{coll}_N" not in payload_columns
                                         )
                                     )
@@ -833,15 +878,18 @@ def coffea_to_h5(
                                 and jet_i == 0
                                 and type(arr_u[0]) is not np.ndarray
                             ):
-                                coll_dict = global_collections_dict[global_variables[0]][j]
-                                if (
-                                    name in coll_dict
-                                    and isinstance(coll_dict[name], dict)
+                                coll_dict = global_collections_dict[
+                                    global_variables[0]
+                                ][j]
+                                if name in coll_dict and isinstance(
+                                    coll_dict[name], dict
                                 ):
                                     if (
-                                        "PtFlatten" in jet_coll and "PtFlatten" not in name
+                                        "PtFlatten" in jet_coll
+                                        and "PtFlatten" not in name
                                     ) or (
-                                        "PtFlatten" not in jet_coll and "PtFlatten" in name
+                                        "PtFlatten" not in jet_coll
+                                        and "PtFlatten" in name
                                     ):
                                         global _pt_flatten_mixing_warned
                                         _pt_flatten_mixing_warned = True
@@ -931,17 +979,27 @@ def coffea_to_h5(
                             n_var = jlg_info["n_var"]
                             is_padded_2d = n_var is None or n_var not in payload_columns
                             if is_padded_2d and n_var is not None:
-                                matching = [c for c in payload_columns if jlg_coll.lower() in c.lower()]
-                                print(f"INFO: '{n_var}' not found, treating '{jlg_coll}' as 2D padded. Columns: {matching}")
+                                matching = [
+                                    c
+                                    for c in payload_columns
+                                    if jlg_coll.lower() in c.lower()
+                                ]
+                                print(
+                                    f"INFO: '{n_var}' not found, treating '{jlg_coll}' as 2D padded. Columns: {matching}"
+                                )
                             for var_name in payload_columns:
                                 var_coll, var = infer_collection_and_var(var_name)
                                 if var_coll != jlg_coll or var == "N":
                                     continue
-                                saved_var_base = jlg_info["saved_name_var"] if jlg_info["saved_name_var"] is not None else var_coll
+                                saved_var_base = (
+                                    jlg_info["saved_name_var"]
+                                    if jlg_info["saved_name_var"] is not None
+                                    else var_coll
+                                )
                                 arr_jlg = np.array(payload[var_name])
                                 if is_padded_2d:
                                     max_jets = jlg_info["max_jets"]
-                                    arr_jlg=np.stack(arr_jlg)
+                                    arr_jlg = np.stack(arr_jlg)
                                     # arr_jlg = arr_jlg.reshape(-1, max_jets)
                                     # n_jets = arr_jlg.shape[1]
                                     # breakpoint()
@@ -975,8 +1033,12 @@ def coffea_to_h5(
                                     jagged = unflatten_to_jagged(arr_jlg, jet_n)
                                     n_jets = int(ak.max(jet_n))
                                     for idx in range(n_jets):
-                                        per_jet = ak.pad_none(jagged, idx + 1, axis=1)[:, idx]
-                                        per_jet = ak.fill_none(per_jet, COFFEA_PADDING_VALUE)
+                                        per_jet = ak.pad_none(jagged, idx + 1, axis=1)[
+                                            :, idx
+                                        ]
+                                        per_jet = ak.fill_none(
+                                            per_jet, COFFEA_PADDING_VALUE
+                                        )
                                         per_jet = ak.where(
                                             per_jet == COFFEA_PADDING_VALUE,
                                             H5_PADDING_VALUE,
@@ -1040,6 +1102,23 @@ def coffea_to_h5(
         print(f"Wrote: {h5_tr}, {h5_te}")
 
 
+def print_event_counts():
+    """Print the number of train/test/total events per dataset and in the final files."""
+    for group, counts in _event_counts.items():
+        width = max([len("TOTAL")] + [len(d) for d in counts])
+        print("\n" + "=" * 80)
+        print(f"EVENT COUNTS for jet collection group: {group}")
+        print("=" * 80)
+        print(f"{'dataset':<{width}}  {'train':>12}  {'test':>12}  {'total':>12}")
+        tot_tr, tot_te = 0, 0
+        for dataset, (n_tr, n_te) in sorted(counts.items()):
+            print(f"{dataset:<{width}}  {n_tr:>12}  {n_te:>12}  {n_tr + n_te:>12}")
+            tot_tr += n_tr
+            tot_te += n_te
+        print("-" * (width + 42))
+        print(f"{'TOTAL':<{width}}  {tot_tr:>12}  {tot_te:>12}  {tot_tr + tot_te:>12}")
+
+
 if __name__ == "__main__":
 
     coffea_to_h5(
@@ -1055,9 +1134,17 @@ if __name__ == "__main__":
         do_data_shuffling=not args.no_shuffle,
     )
 
+    print_event_counts()
+
     if _pt_flatten_mixing_warned:
         print("\n" + "!" * 80)
-        print("!!! WARNING: Mixing pt-flatten and non-pt-flatten collections detected !!!")
-        print("!!! Maybe need to change the global variable configuration,            !!!")
-        print("!!! maybe you just need to reorder the global variables.               !!!")
+        print(
+            "!!! WARNING: Mixing pt-flatten and non-pt-flatten collections detected !!!"
+        )
+        print(
+            "!!! Maybe need to change the global variable configuration,            !!!"
+        )
+        print(
+            "!!! maybe you just need to reorder the global variables.               !!!"
+        )
         print("!" * 80 + "\n")
