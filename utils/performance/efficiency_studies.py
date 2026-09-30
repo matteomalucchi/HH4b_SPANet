@@ -365,6 +365,7 @@ def main():
             # Performing the matching
             (
                 frac_fully_matched,
+                unc_frac_fully_matched,
                 efficiencies_fully_matched,
                 total_efficiencies_fully_matched,
                 unc_eff_fully_matched,
@@ -485,6 +486,8 @@ def main():
         }
         if not args.data:
             df_collection[model_name] = df_collection[model_name] | {
+                "frac_fully_matched": frac_fully_matched,
+                "unc_frac_fully_matched": unc_frac_fully_matched,
                 "efficiencies_fully_matched": efficiencies_fully_matched,
                 "unc_efficiencies_fully_matched": unc_eff_fully_matched,
                 "total_efficiencies_fully_matched": total_efficiencies_fully_matched,
@@ -632,7 +635,8 @@ def main():
     if not args.data:
         # compute efficiencies for fully matched events for Run 2 pairing
         (
-            frac_fully_matched,
+            frac_fully_matched_run2,
+            unc_frac_fully_matched_run2,
             efficiencies_run2,
             total_efficiencies_run2,
             unc_efficiencies_run2,
@@ -724,6 +728,8 @@ def main():
     }
     if not args.data:
         r2_model = r2_model | {
+            "frac_fully_matched_run2": frac_fully_matched_run2,
+            "unc_frac_fully_matched_run2": unc_frac_fully_matched_run2,
             "efficiencies_fully_matched_run2": efficiencies_run2,
             "unc_efficiencies_fully_matched_run2": unc_efficiencies_run2,
             "total_efficiencies_fully_matched_run2": total_efficiencies_run2,
@@ -738,6 +744,21 @@ def main():
         }
 
     # Plotting begins here
+    run2_label = (
+        r"Leading $m_{jj}$"
+        if (args.vbf and args.ignore_higgs)
+        else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"
+    )
+    labels = [model["file_dict"]["label"] for model in df_collection.values()] + [
+        run2_label
+    ]
+    colors = [model["file_dict"]["color"] for model in df_collection.values()] + [
+        "yellowgreen"
+    ]
+    all_kl_values = [model["kl_values"] for model in df_collection.values()] + [
+        r2_model["kl_values"]
+    ]
+
     if not args.data:
         if args.klambda:
             logger.info("\n")
@@ -756,12 +777,9 @@ def main():
                     for model in df_collection.values()
                 ]
                 + [r2_model["unc_efficiencies_fully_matched_run2"][1:]],
-                [model["kl_values"] for model in df_collection.values()]
-                + [r2_model["kl_values"]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                all_kl_values,
+                labels,
+                colors,
                 "eff_fully_matched_allklambda",
                 plot_dir,
                 xlabels=(
@@ -769,6 +787,29 @@ def main():
                 ),
                 cmstext=args.cmstext,
                 region=args.region,
+            )
+            logger.info(
+                "Plotting the fraction of fully matched events for all klambda values"
+            )
+            plot_diff_eff_klambda(
+                [model["frac_fully_matched"][1:] for model in df_collection.values()]
+                + [r2_model["frac_fully_matched_run2"][1:]],
+                [
+                    model["unc_frac_fully_matched"][1:]
+                    for model in df_collection.values()
+                ]
+                + [r2_model["unc_frac_fully_matched_run2"][1:]],
+                all_kl_values,
+                labels,
+                colors,
+                "frac_fully_matched_allklambda",
+                plot_dir,
+                xlabels=(
+                    cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None
+                ),
+                cmstext=args.cmstext,
+                region=args.region,
+                ylabel="Fraction of fully matched events",
             )
             plot_diff_eff_klambda(
                 [
@@ -781,12 +822,9 @@ def main():
                     for model in df_collection.values()
                 ]
                 + [r2_model["unc_total_efficiencies_fully_matched_run2"][1:]],
-                [model["kl_values"] for model in df_collection.values()]
-                + [r2_model["kl_values"]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                all_kl_values,
+                labels,
+                colors,
                 "tot_eff_fully_matched_allklambda",
                 plot_dir,
                 xlabels=(
@@ -803,10 +841,8 @@ def main():
                 + [r2_model["diff_eff_run2"][0]],
                 [model["unc_diff_eff_spanet"][0] for model in df_collection.values()]
                 + [r2_model["unc_diff_eff_run2"][0]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                labels,
+                colors,
                 plot_dir,
                 "diff_eff_spanet",
                 cmstext=args.cmstext,
@@ -821,10 +857,8 @@ def main():
                     for model in df_collection.values()
                 ]
                 + [r2_model["total_unc_diff_eff_run2"][0]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                labels,
+                colors,
                 plot_dir,
                 "total_diff_eff_spanet",
                 cmstext=args.cmstext,

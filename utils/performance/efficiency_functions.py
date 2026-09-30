@@ -189,6 +189,9 @@ def calculate_efficiencies(
     ]
     logger.info(f"matching_{label}_model: {[len(c) for c in matching_eval_model]}")
     fraction = [ak.sum(m) / len(m) for m in mask]
+    unc_fraction = [
+        sqrt(frac * (1 - frac) / len(m)) for frac, m in zip(fraction, mask)
+    ]
     total_model_eff = [eff * frac for frac, eff in zip(fraction, model_eff)]
     unc_model_eff = [
         sqrt(eff * (1 - eff) / len(matching_eval_ds))
@@ -219,6 +222,7 @@ def calculate_efficiencies(
 
     return (
         fraction,
+        unc_fraction,
         model_eff,
         total_model_eff,
         unc_model_eff,
@@ -749,6 +753,11 @@ def plot_histos_2d(mh_bins, higgs, label, name, plot_dir="plots", cmstext="Priva
     )
 
 
+def default_ylabel(name):
+    """The efficiency label the plots used so far, total or not."""
+    return "$\\varepsilon^{tot}$" if "tot" in name else "$\\varepsilon$"
+
+
 def plot_diff_eff(
     mhh_bins,
     efficiency,
@@ -759,6 +768,7 @@ def plot_diff_eff(
     file_name,
     cmstext="Private",
     region=None,
+    ylabel=None,
 ):
 
     # ---------------------------------------------------------
@@ -795,7 +805,7 @@ def plot_diff_eff(
         .set_output(f"{plot_dir}/{file_name}")
         .set_labels(
             xlabel=r"$m_{HH}$ [GeV]",
-            ylabel="$\\varepsilon^{tot}$" if "tot" in file_name else "$\\varepsilon$",
+            ylabel=ylabel or default_ylabel(file_name),
         )
         .set_data(series_dict, plot_type="graph")
         .set_options(
@@ -824,6 +834,7 @@ def plot_diff_eff_klambda(
     xlabels=None,  # dict: {kl_value: "label"}
     cmstext="Private",
     region=None,
+    ylabel=None,
 ):
     """
     Parameters
@@ -893,7 +904,7 @@ def plot_diff_eff_klambda(
         .set_output(f"{plot_dir}/{name}")
         .set_labels(
             xlabel=xlabel,
-            ylabel="$\\varepsilon^{tot}$" if "tot" in name else "$\\varepsilon$",
+            ylabel=ylabel or default_ylabel(name),
             xticklabels=tick_labels,
             label_pos=positions,
             xtick_fontsize=11,

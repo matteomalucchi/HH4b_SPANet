@@ -555,6 +555,19 @@ python utils/performance/efficiency_studies.py -pd <plot_dir>  -conf utils/perfo
 
 ```
 
+With `-k` the script writes, for every model of the configuration and for the
+Run 2 method, one point per $\kappa_{2V}$ dataset:
+
+| plot | what it shows |
+|---|---|
+| `eff_fully_matched_allklambda` | the pairing efficiency on the fully matched events, $\varepsilon$ |
+| `tot_eff_fully_matched_allklambda` | the same, times the fraction of fully matched events, $\varepsilon^{tot}$ |
+| `frac_fully_matched_allklambda` | that fraction itself, i.e. how many events can be paired correctly at all |
+
+The three are made from the same configuration, with the same labels and
+colors, so they can be read side by side: the last one is the ceiling the
+first one is measured against.
+
 > [!TIP]
 > To pass the configuration with the input files for the efficiency computation through the argument `-conf`, use the relative path from where you are executing the script.
 >
