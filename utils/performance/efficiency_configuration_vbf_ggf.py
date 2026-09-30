@@ -45,6 +45,17 @@ spanet_dict = {
         "color": "orange",
         "higgs": True,
     },
+    "hh4b_pairing_vbf_ggf_all_Klambda_HiggsPairing_2024": {
+        "file": "/eos/user/m/mmalucch/spanet_infos/spanet_outputs/out_spanet_outputs/out_hh4b_pairing_vbf_ggf_all_Klambda_HiggsPairing_2024/out_seed_trainings_100/version_0/predict_ggF4kl_TotVBF_ggF4kl_TotVBF_NormWeights_AllKlambda_VBFggF_HIggsPairing_JetGoodProvHiggsPadded_test.h5",
+        "true": "9jets_all_Klambda_HiggsPairing_2024",
+        "label": "HiggsPairing - 2024 - ggF4kl_TotVBF",
+        "color": "lime",
+        "higgs": True,
+        "vbf": False,
+        "jet_coll_higgs": "Jet",
+        "offset_jet_idx_higgs": 0,
+        "resonances": "OLD_RESONANCES",
+    },
     # --- VBF/ggF pairing ---
     # 'hh4b_pairing_vbf_ggf_pairing_classification': {
     #     'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification/out_seed_trainings_100/version_2/predicitons.h5',
@@ -60,12 +71,12 @@ spanet_dict = {
         "color": "blue",
         "vbf": True,
     },
-    'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda': {
-        'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_2/JetTotalSPANetPadded_kl_combined_EVENT_AllKlambda_classification_ptvarytraining_reverse_test.h5',
-        'true': '9_jets_vbf_ggf_all_Klambda',
-        'label': 'SPANet - VBF/ggF - pairing+classification - 9 jets',
-        'color': 'dodgerblue',
-        'vbf': True,
+    "hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda": {
+        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda/out_seed_trainings_100/version_2/JetTotalSPANetPadded_kl_combined_EVENT_AllKlambda_classification_ptvarytraining_reverse_test.h5",
+        "true": "9_jets_vbf_ggf_all_Klambda",
+        "label": "SPANet - VBF/ggF - pairing+classification - 9 jets",
+        "color": "dodgerblue",
+        "vbf": True,
     },
     # 'hh4b_pairing_vbf_ggf_pairing_classification_allKalmbda_7jets_100e': {
     #     'file': f'{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_pairing_classification_allKlambda_7jets/out_seed_trainings_100/version_1/predict_7jets_100e_JetTotalSPANetPadded_test.h5',
@@ -266,6 +277,11 @@ true_dict = {
     "5_jets_pt_true_5wp_3L1cuts_allklambda": {
         "name": f"{true_dir_thierry}/1_13_2_loose_MC_postEE_pt_nominal_btagWP_newLeptonVeto_3L1Cut_UpdateJetVetoMap/output_JetGood_test.h5",
         "klambda": "postEE",
+    },
+    "9jets_all_Klambda_HiggsPairing_2024": {
+        "name": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/out_ggf_vbf_spanet_input_AllKlambda_DetaMjjCentrality_VBFPairingAfterHiggsPairing_DNNVars_vbfregions_2024/ggF4kl_TotVBF_NormWeights_AllKlambda_VBFggF_HIggsPairing_JetGoodProvHiggsPadded_test.h5",
+        "klambda": "postEE",
+        "jet_coll_higgs": "Jet",
     },
     # --- VBF/ggF pairing ---
     "9_jets_vbf_ggf_SM": {
