@@ -140,11 +140,15 @@ def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet", n_h
 
 def get_class_mask(class_label, column_file, jet_coll="Jet"):
     if class_label:
+        if not isinstance(class_label, (list, tuple)):
+            class_label = [class_label]
+        class_labels = [int(c) for c in class_label]
         try:
             class_array = column_file["CLASSIFICATIONS"]["EVENT"]["class"][()].astype(
                 np.int64
             )
-            mask = class_array == int(class_label)
+            mask = np.isin(class_array, class_labels)
+            logger.info(f"Masking for class {class_labels} with {np.sum(mask)} events")
         except KeyError:
             try:
                 logger.info(
@@ -153,7 +157,8 @@ def get_class_mask(class_label, column_file, jet_coll="Jet"):
                 class_array = column_file["CLASSIFICATIONS"]["Event"]["class"][
                     ()
                 ].astype(np.int64)
-                mask = class_array == int(class_label)
+                mask = np.isin(class_array, class_labels)
+                logger.info(f"Masking for class {class_labels} with {np.sum(mask)} events")
             except KeyError:
                 logger.warning(
                     "The file doesn't contain a class array. Setting the mask for the class to True ..."

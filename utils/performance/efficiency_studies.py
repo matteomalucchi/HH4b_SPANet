@@ -93,7 +93,11 @@ parser.add_argument(
     help="Plot the Higgs mass histograms",
 )
 parser.add_argument(
-    "-c", "--class-label", default=None, help="Consider only the class specified"
+    "-c",
+    "--class-label",
+    default=None,
+    nargs="+",
+    help="Consider only the class(es) specified. If more than one is passed, they are merged (kept without distinction)",
 )
 parser.add_argument(
     "-conf",
@@ -236,6 +240,8 @@ def main():
             n_higgs_jets=n_higgs_jets,
         )
         assert all(mask_region_spanet == mask_region_true)
+        
+        logger.info(f"Fraction of events in the region {args.region}: {ak.sum(mask_region_true) / len(mask_region_true)}")
 
         # define the class mask
         # take the one for the true file because
@@ -244,6 +250,8 @@ def main():
         mask_class_true = helpers.get_class_mask(
             args.class_label, truefile, jet_coll=jet_coll_higgs
         )
+        
+        logger.info(f"Fraction of events in the class {args.class_label}: {ak.sum(mask_class_true) / len(mask_class_true)}")
 
         if args.num_events:
             mask_num_events = helpers.get_region_mask(
@@ -258,11 +266,21 @@ def main():
         else:
             mask_num_events = ak.ones_like(truefile["INPUTS"][jet_coll_higgs]["MASK"][:, 0])
 
+        logger.info(f"Number of events after the masks : {ak.sum(mask_region_true & mask_class_true & mask_num_events)}")
+
         mask_spanet = mask_region_spanet & mask_class_true & mask_num_events
         mask_true = mask_region_true & mask_class_true & mask_num_events
 
         logger.info(f"Number of events after the masks : {ak.sum(mask_true)}")
+        logger.info(f"Fraction of events after the masks : {ak.sum(mask_true) / len(mask_true)}")
 
+        if ak.sum(mask_true) == 0:
+            logger.warning(
+                f"No events left after applying the masks for model {model_name}. Skipping."
+            )
+            continue
+        
+        
         if jet_coll_vbf is not None:
             jet_higgs = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll_higgs)
             jet_vbf = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll_vbf)
