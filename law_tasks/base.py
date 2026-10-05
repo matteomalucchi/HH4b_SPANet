@@ -248,11 +248,16 @@ class BaseTask(law.Task):
 
     # -- execution ---------------------------------------------------------
 
-    def run_command(self, command, gpu=False, cwd=None, wrap=True):
+    def run_command(self, command, gpu=False, cwd=None, wrap=True, tolerate=None):
         """Print, run and record ``command``, raising when it fails.
 
         The output is shown as it comes and kept in the journal of the run, so
         that what a step did can be read back afterwards.
+
+        ``tolerate`` is a string a failing command may print to say that it
+        did not fail for a reason worth stopping for -- a plot of samples the
+        file does not hold, for instance.  The exit code is then returned
+        instead of raised, and the caller decides what to do with it.
         """
         full = self.wrap_command(command, gpu=gpu) if wrap else command
         self.publish_message("running: {}".format(full))
@@ -272,12 +277,33 @@ class BaseTask(law.Task):
         self.journal("command", **entry)
 
         if code != 0:
+            if tolerate and self.command_said(log, tolerate):
+                self.publish_message(
+                    "the command stopped with '{}' (exit code {})".format(
+                        tolerate, code
+                    )
+                )
+                return code
             raise RuntimeError(
                 "command failed with exit code {}:\n{}\nits output is in {}".format(
                     code, full, log
                 )
             )
         return code
+
+    @staticmethod
+    def command_said(log, needle):
+        """Whether the output of the last command holds ``needle``."""
+        try:
+            with open(log) as fobj:
+                return needle in fobj.read()
+        except OSError:
+            return False
+
+    @property
+    def last_command_log(self):
+        """Path of the file the output of the last command went to."""
+        return self._commands[-1]["log"] if self._commands else ""
 
     def command_log(self):
         """Path of the file the output of the next command is written to."""

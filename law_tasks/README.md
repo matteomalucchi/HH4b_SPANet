@@ -545,6 +545,7 @@ the arguments of its entry in `law.cfg` -- `-r <region>`, what
 VBFEff_vbf_no_kin_cuts: --vbf -c 1 -ih -r vbf_no_kin_cuts -k
 VBFEff_vbf_presel:      --vbf -c 1 -ih -r vbf_presel -k
 HiggsEff:               -c 0 -k                       # no -r: inclusive
+ZZ_ZH_Eff:              -c 2 3 -k                     # ZZ and ZH events
 
 [roc_plots]
 vbf_no_kin_cuts: -r vbf_no_kin_cuts -klb 1 all -s 0.8
@@ -954,6 +955,41 @@ The same two facts are in the entry of the generated configuration, as
 `"higgs"` and `"vbf"`, which is what the script reads before computing an
 efficiency at all.
 
+### And which samples a plot needs
+
+Whether the *resonances* allow a plot is known from the event file, before
+anything runs.  Whether the *events* are there is not: `ZZ_ZH_Eff` asks for
+the classes 2 and 3, which only a few test files hold.  That plot is tried
+anyway, and when the file has none of those events the script stops with
+
+```
+MISSING SAMPLES: no model has an event left: the file holds none of the
+classes ['2', '3'] in the region 'inclusive'
+The script was NOT successful: it made no plot, because the samples it needs
+are missing.
+```
+
+which is not a failure of the pipeline: the plot is reported as not made, the
+run carries on and `hh4b.Performance` still finishes successfully.
+
+That entry pairs the Run 2 candidates as HH, like every other plot; add
+`--process-k` to it (in `law.cfg`, or with `--plot-args --process-k` for one
+run) to use the k of each process instead -- 1.02 for ZZ, and 0.76 or 1.40 for
+a Z and a Higgs, depending on which of the two is the leading one in pt.
+
+```
+not made:         ZZ_ZH_Eff (the samples it needs are missing from the test file)
+```
+
+The marker of that plot holds `"skipped"` instead of a plot directory, and the
+log of the command (`<run>/configs/journal/latest/NNN_EfficiencyPlot.log`) has
+the full output of the attempt.  Any *other* failure of the script still stops
+the pipeline, as it should: only the message above is tolerated.
+
+A file that has no class array at all is a different matter -- nothing can be
+selected, so `-c` is ignored and every event is used, which is what it always
+did.
+
 ### And which ROC curves
 
 A ROC curve is drawn from the classification of the prediction, which a model
@@ -989,6 +1025,12 @@ writes
 
 i.e. inside the training directory they describe, next to the plots they are
 used for.
+
+The Run 2 method is evaluated on **this model's** true file, the very file the
+model is compared against (`run2_dataset_MC` of the generated configuration is
+the truth entry written below it), so the two numbers come from the same
+events.  `--run2-dataset base` keeps the file the base configuration points
+at, and `--run2-dataset <key>` picks another entry by name.
 
 which import `utils/performance/efficiency_configuration_vbf_ggf.py` and
 `utils/roccurves/roc_configuration_vbf_ggf.py` and add the entries of the new

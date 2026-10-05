@@ -54,6 +54,12 @@ class RegisterModel(ModelTask):
         "('DEFAULT_RESONANCES', 'OLD_RESONANCES'); default: the one matching "
         "the EVENT section of the event file",
     )
+    run2_dataset = luigi.Parameter(
+        default="",
+        description="true_dict key the Run 2 method is evaluated on; 'base' "
+        "keeps the one of the base configuration; default: the true entry of "
+        "this model, so that the two are compared on the same file",
+    )
     baseline_models = luigi.Parameter(
         default="all",
         description="models of the base configuration to keep for comparison: "
@@ -126,6 +132,11 @@ class RegisterModel(ModelTask):
 
         model_keys["higgs"] = self._flag(self.higgs, info.has_higgs)
         model_keys["vbf"] = self._flag(self.vbf, info.has_vbf)
+
+        # the true entry is also what the Run 2 method is evaluated on, and
+        # there these two say which resonances the FILE holds
+        true_keys["higgs"] = info.has_higgs
+        true_keys["vbf"] = info.has_vbf
         self.publish_message(
             "event file: {}".format(os.path.basename(info.path))
         )
@@ -192,6 +203,7 @@ class RegisterModel(ModelTask):
                 true_key,
                 true_entry,
                 baseline_models=self.baseline_models,
+                run2_dataset=self.run2_dataset,
             )
             path = registry.write_module(self.config_path(kind), source)
             self.publish_message("wrote {}".format(path))
@@ -213,6 +225,7 @@ class RegisterModel(ModelTask):
             prediction_file=prediction,
             test_file=evaluation_file,
             event_file=self.event_info_path,
+            run2_dataset=self.run2_dataset or true_key,
             spanet_entry=spanet_entry,
             true_entry=true_entry,
         )

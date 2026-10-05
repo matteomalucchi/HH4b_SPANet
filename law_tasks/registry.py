@@ -39,7 +39,9 @@ def _load_base(path):
 
 _base = _load_base(_BASE_CONFIG)
 
-run2_dataset_MC = getattr(_base, "run2_dataset_MC", "")
+# the Run 2 method is evaluated on the true file of this model, the one the
+# model is compared against, and not on the one of the base configuration
+run2_dataset_MC = {run2_mc}
 run2_dataset_DATA = getattr(_base, "run2_dataset_DATA", "")
 roc_dict = dict(getattr(_base, "roc_dict", {{}}))
 
@@ -150,8 +152,22 @@ def _format(dictionary, indent=0):
     return text
 
 
-def render_module(key, base_config, spanet_entry, true_key, true_entry, baseline_models="all"):
-    """Return the source code of the generated configuration module."""
+def render_module(
+    key,
+    base_config,
+    spanet_entry,
+    true_key,
+    true_entry,
+    baseline_models="all",
+    run2_dataset="",
+):
+    """Return the source code of the generated configuration module.
+
+    ``run2_dataset`` is the ``true_dict`` key the Run 2 method is evaluated
+    on: empty means this model's own true entry, so that both are measured on
+    the same file, ``base`` keeps whatever the base configuration points at,
+    and anything else is taken as that key.
+    """
     if baseline_models == "all":
         baseline = "dict(_base.spanet_dict)"
     elif baseline_models in ("none", ""):
@@ -162,10 +178,16 @@ def render_module(key, base_config, spanet_entry, true_key, true_entry, baseline
             "{{k: v for k, v in _base.spanet_dict.items() if k in {!r}}}".format(keep)
         )
 
+    if run2_dataset in ("base", "_base"):
+        run2_mc = 'getattr(_base, "run2_dataset_MC", "")'
+    else:
+        run2_mc = repr(run2_dataset or true_key)
+
     return GENERATED_HEADER.format(
         key=key,
         base=os.path.abspath(base_config),
         baseline=baseline,
+        run2_mc=run2_mc,
         spanet_entry=_format(spanet_entry),
         true_key=true_key,
         true_entry=_format(true_entry),

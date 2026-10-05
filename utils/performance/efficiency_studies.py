@@ -12,6 +12,9 @@ from pathlib import Path
 from efficiency_functions import (
     CLASS_PROCESS_DICT,
     DEFAULT_PROCESS,
+    MISSING_SAMPLES_EXIT,
+    MISSING_SAMPLES_MESSAGE,
+    MissingSamples,
     best_reco_higgs,
     calculate_diff_efficiencies,
     calculate_efficiencies,
@@ -101,6 +104,15 @@ parser.add_argument(
     default=None,
     nargs="+",
     help="Consider only the class(es) specified. If more than one is passed, they are merged (kept without distinction)",
+)
+parser.add_argument(
+    "-pk",
+    "--process-k",
+    default=False,
+    action="store_true",
+    help="pair the Run 2 candidates with the k of the process of each event "
+    "(HH, ZZ, ZH/HZ, see CLASS_PROCESS_DICT); by default every event is "
+    "paired with the k of HH, 1.04",
 )
 parser.add_argument(
     "-conf",
@@ -503,6 +515,12 @@ def main():
                 "true_higgs_fully_matched": true_higgs_fully_matched,
             }
 
+    if not df_collection:
+        raise MissingSamples(
+            "no model has an event left: the file holds none of the classes "
+            "{} in the region '{}'".format(args.class_label, args.region)
+        )
+
     # -- Loading Run2 model
     truefile = h5py.File(true_dict[run2_dataset]["name"], "r")
     truefile_klambda = true_dict[run2_dataset]["klambda"]
@@ -553,6 +571,14 @@ def main():
     )
     mask_true = mask_region_true & mask_class_true
 
+    if ak.sum(mask_true) == 0:
+        raise MissingSamples(
+            "the true file of the Run 2 method, {}, holds no event of the "
+            "classes {} in the region '{}'".format(
+                run2_dataset, args.class_label, args.region
+            )
+        )
+
     if jet_coll_vbf is not None:
         jet_higgs_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll_higgs)
         jet_vbf_only_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll_vbf)
@@ -587,12 +613,14 @@ def main():
     # keep only the correct jets
     jet = jet_for_idx[0][mask_true]
 
-    # the process of every event decides the k the Run 2 pairing uses
-    class_array = helpers.get_class_array(truefile)
+    # the process of every event decides the k the Run 2 pairing uses, but
+    # only when it is asked for: by default everything is paired as HH
+    class_array = helpers.get_class_array(truefile) if args.process_k else None
     if class_array is None:
         all_processes = None
         logger.info(
-            f"The true file has no class, pairing everything as {DEFAULT_PROCESS}"
+            f"Pairing every event of the Run 2 method as {DEFAULT_PROCESS}"
+            + ("" if args.process_k else " (pass --process-k for the k of each process)")
         )
     else:
         processes = np.array(
@@ -960,5 +988,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except MissingSamples as error:
+        # not a failure of the script: the samples this plot needs are simply
+        # not in the file, which is the normal case for most trainings
+        logger.error(f"{MISSING_SAMPLES_MESSAGE}: {error}")
+        logger.error(
+            "The script was NOT successful: it made no plot, because the "
+            "samples it needs are missing."
+        )
+        sys.exit(MISSING_SAMPLES_EXIT)
+
     logger.info(f"Plots saved in {args.plot_dir}")

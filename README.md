@@ -553,6 +553,16 @@ python utils/performance/efficiency_studies.py -pd <plot_dir>  -c 1 -conf utils/
 # run Higgs pairing (without VBF pairing) on ggF+VBF events
 python utils/performance/efficiency_studies.py -pd <plot_dir>  -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
 
+## ZZ and ZH ##
+
+# the efficiency on the ZZ and ZH events, the classes 2 and 3 (only a few test
+# files hold them; the script stops with 'MISSING SAMPLES' when they are not
+# there, which is the expected answer for most trainings)
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/ZZ_ZH_Eff -conf <configuration> -c 2 3 -k
+
+# ... and with the k of each process in the Run 2 pairing
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/ZZ_ZH_Eff -conf <configuration> -c 2 3 -k --process-k
+
 ```
 
 With `-k` the script writes, for every model of the configuration and for the
@@ -571,8 +581,9 @@ first one is measured against.
 #### The k of the Run 2 pairing
 
 The Run 2 method pairs the jets by the distance
-$|m_1 - k\,m_2| / \sqrt{1 + k^2}$ of the two candidates, ordered by pt, and
-the k it compares them with depends on what the event is:
+$|m_1 - k\,m_2| / \sqrt{1 + k^2}$ of the two candidates, ordered by pt.  Every
+event is paired with the k of HH, 1.04, unless `--process-k` is given: then the
+k depends on what the event is:
 
 | | HH | ZZ | ZH | HZ |
 |---|---|---|---|---|
@@ -598,8 +609,8 @@ CLASS_PROCESS_DICT = {
 
 Edit it when a sample numbers its classes differently. A class that is not in
 there, and a file with no class at all, is paired as HH with k = 1.04, which
-is what the method did for every event before. The k values themselves are
-`RUN2_K_VALUES` in the same file.
+is also what every event gets without `--process-k`. The k values themselves
+are `RUN2_K_VALUES` in the same file.
 
 > [!TIP]
 > To pass the configuration with the input files for the efficiency computation through the argument `-conf`, use the relative path from where you are executing the script.

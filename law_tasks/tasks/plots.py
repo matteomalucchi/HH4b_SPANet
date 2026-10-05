@@ -1,5 +1,6 @@
 """Training metric, efficiency and ROC plots of a model."""
 
+import json
 import os
 import shlex
 
@@ -10,6 +11,13 @@ from law_tasks import naming
 from law_tasks.base import ModelTask
 from law_tasks.tasks.register import RegisterModel
 from law_tasks.tasks.training import Training
+
+#: what efficiency_studies.py prints when the file holds no event of what the
+#: plot asks for -- a ZZ/ZH efficiency of a training without those samples,
+#: for instance.  That is not a failure: the plot is reported as not made and
+#: the pipeline carries on (utils/performance/efficiency_functions.py holds
+#: the same string).
+MISSING_SAMPLES = "MISSING SAMPLES"
 
 
 class TrainingMetrics(ModelTask):
@@ -181,6 +189,17 @@ class PlotTask(ModelTask):
     def output(self):
         return self.eval_marker("{}_{}.json".format(self.kind, self.plot_name))
 
+    def recorded_skip(self):
+        """Why the plot was not made when it ran, from its marker."""
+        target = self.output()
+        if not os.path.exists(target.path):
+            return None
+        try:
+            with open(target.path) as fobj:
+                return json.load(fobj).get("skipped")
+        except (ValueError, OSError):
+            return None
+
     def unsupported_reason(self):
         """Why the event file of the model does not allow this plot."""
         if self.needs_classification:
@@ -255,7 +274,25 @@ class PlotTask(ModelTask):
         if self.plot_args:
             command += " " + self.plot_args
 
-        self.run_command(command)
+        code = self.run_command(command, tolerate=MISSING_SAMPLES)
+        if code != 0:
+            # the samples this plot asks for are not in the file, which is
+            # what most trainings look like: the plot is not made, and that
+            # is the end of it
+            reason = "the samples it needs are missing from the test file"
+            self.publish_message(
+                "{} was not made: {} (see {})".format(
+                    self.plot_name, reason, self.last_command_log
+                )
+            )
+            self.write_marker(
+                self.output(),
+                skipped=reason,
+                configuration=configuration,
+                arguments=arguments,
+            )
+            return
+
         self.write_marker(
             self.output(),
             plot_dir=self.target_dir,

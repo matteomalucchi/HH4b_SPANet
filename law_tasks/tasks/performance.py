@@ -77,13 +77,18 @@ class Performance(ExportParameters, ModelTask):
                 metrics = json.load(fobj)
 
         collections = self.requires()
-        efficiency = {
-            task.plot_name: task.target_dir
-            for task in collections["efficiency"].requires()
-        }
-        roc = {task.plot_name: task.target_dir for task in collections["roc"].requires()}
-        skipped = dict(collections["efficiency"].skipped())
-        skipped.update(collections["roc"].skipped())
+        efficiency, roc, skipped = {}, {}, {}
+        for kind, made in (("efficiency", efficiency), ("roc", roc)):
+            # the plots the event file rules out are known before anything
+            # runs; the ones whose samples are not in the test file say so in
+            # their marker once they tried
+            skipped.update(collections[kind].skipped())
+            for task in collections[kind].requires():
+                reason = task.recorded_skip()
+                if reason:
+                    skipped[task.plot_name] = reason
+                else:
+                    made[task.plot_name] = task.target_dir
 
         onnx, onnx_copy = None, None
         if "export" in self.input():

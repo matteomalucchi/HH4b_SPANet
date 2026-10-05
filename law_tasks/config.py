@@ -58,6 +58,8 @@ DEFAULT_EFFICIENCY_PLOTS = {
     "VBFEff_vbf_no_kin_cuts": "--vbf -c 1 -ih -r vbf_no_kin_cuts -k",
     "VBFEff_vbf_presel": "--vbf -c 1 -ih -r vbf_presel -k",
     "HiggsEff": "-c 0 -k",
+    # classes 2 and 3; only a few test files hold them
+    "ZZ_ZH_Eff": "-c 2 3 -k",
 }
 
 #: ROC plots produced by ``hh4b.RocPlots``: name -> extra arguments

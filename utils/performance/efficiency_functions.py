@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 vector.register_awkward()
 vector.register_numba()
 
+#: a plot that asks for events the file does not hold is not an error: most
+#: trainings have no ZZ/ZH sample, for instance.  The script says so with this
+#: marker and exits with MISSING_SAMPLES_EXIT, which the law task
+#: hh4b.EfficiencyPlot recognises and reports as a plot it did not make
+#: (law_tasks/tasks/plots.py has the same two values).
+MISSING_SAMPLES_MESSAGE = "MISSING SAMPLES"
+MISSING_SAMPLES_EXIT = 3
+
+
+class MissingSamples(Exception):
+    """The file holds no event of what was asked for."""
+
+
 #: k of the Run 2 pairing distance, |m1 - k * m2| / sqrt(1 + k^2), for every
 #: pair of resonances.  The two candidates are ordered by pt, so 'HZ' is the
 #: event whose LEADING pt candidate is the heavier one (the Higgs) and 'ZH'
