@@ -910,8 +910,8 @@ below:
 | `jet_coll_vbf` | the sequential input of the VBF daughters, when it is not the same one | both entries |
 | `n_higgs_jets` | `0` when the VBF jets have a collection of their own, otherwise the four leading jets of the single collection (the default of the script) | both entries |
 | `offset_jet_idx_higgs`, `offset_jet_idx_vbf` | minus the slots of the collections *before* the one of that resonance: SPANet numbers the jets over its sequential inputs concatenated, the file stores them per collection | the model entry |
-| `resonances` | the `RESONANCES_DICT` entry whose daughters are the ones of the event file: `h1: b1 b2`, `h2: b3 b4` is `OLD_RESONANCES`, `h2: b1 b2` is `DEFAULT_RESONANCES`; `--resonances <set>` forces it | the model entry |
-| `higgs`, `vbf` | whether the event file defines the Higgs resonances and the VBF one, i.e. which pairings the prediction holds; `--higgs yes|no` / `--vbf yes|no` force them | the model entry |
+| `resonances` | the `RESONANCES_DICT` entry whose daughters are the ones of the event file: `h1: b1 b2`, `h2: b3 b4` is `OLD_RESONANCES`, `h2: b1 b2` is `DEFAULT_RESONANCES`; `--resonances <set>` forces it | both entries |
+| `higgs`, `vbf` | whether the event file defines the Higgs resonances and the VBF one; in the model entry which pairings the prediction holds, in the truth entry which ones the file holds; `--higgs yes|no` / `--vbf yes|no` force them in the model entry | both entries |
 
 `efficiency_studies.py` asks the entry which pairings the file holds before
 computing an efficiency, so a model whose event file has only the VBF
@@ -938,6 +938,11 @@ jets give what the configurations of this repository say by hand:
 "offset_jet_idx_vbf": -4,           # JetHiggs has four slots
 "resonances": "DEFAULT_RESONANCES",
 ```
+
+`resonances`, `higgs` and `vbf` are in the truth entry as well, because the
+Run 2 method is evaluated on it: the names of the daughters are what it reads
+the targets of the file with, exactly as the model entry does for the
+prediction.
 
 A collection whose name contains `VBF` is taken to hold the VBF jets alone,
 which is what makes `n_higgs_jets` zero; `--extra-true-keys` overrides it, and

@@ -117,10 +117,10 @@ class RegisterModel(ModelTask):
     def derived_keys(self):
         """The jet and resonance keys of the entries, from the event file.
 
-        ``jet_coll_higgs``, ``jet_coll_vbf`` and ``n_higgs_jets`` describe the
-        file and belong to both entries; the index offsets and the resonance
-        set describe the prediction and belong to the model entry alone.  Both
-        are overridden by --extra-spanet-keys / --extra-true-keys.
+        ``jet_coll_higgs``, ``jet_coll_vbf``, ``n_higgs_jets`` and
+        ``resonances`` describe the file and belong to both entries; the index
+        offsets describe the prediction and belong to the model entry alone.
+        Both are overridden by --extra-spanet-keys / --extra-true-keys.
         """
         info = self.event_info
         slots = eventinfo.input_slots(self.evaluation_file, info.needs_slots())
@@ -133,10 +133,14 @@ class RegisterModel(ModelTask):
         model_keys["higgs"] = self._flag(self.higgs, info.has_higgs)
         model_keys["vbf"] = self._flag(self.vbf, info.has_vbf)
 
-        # the true entry is also what the Run 2 method is evaluated on, and
-        # there these two say which resonances the FILE holds
+        # the true entry is also what the Run 2 method is evaluated on: there
+        # these two say which resonances the FILE holds, and 'resonances' how
+        # its daughters are named, exactly as in the model entry
         true_keys["higgs"] = info.has_higgs
         true_keys["vbf"] = info.has_vbf
+        if model_keys.get("resonances"):
+            true_keys["resonances"] = model_keys["resonances"]
+
         self.publish_message(
             "event file: {}".format(os.path.basename(info.path))
         )
