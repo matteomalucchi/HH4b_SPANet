@@ -30,13 +30,13 @@ run2_dataset_DATA = ""
 
 spanet_dict = {
     # --- Higgs pairing ---
-    "5_jets_ptvary_btag_5wp_300e_3L1cuts_allklambda": {
-        "file": f"/eos/user/t/tharte/Analysis_data/predictions/1_13_2_spanet_loose_MC_postEE_pt_vary_btagWP_s100_newLeptonVeto_3L1Cut_UpdateJetVetoMap_MC.h5",
-        "true": "5_jets_pt_true_5wp_3L1cuts_allklambda",
-        "label": "SPANet btag 5 WP - Flattened pt [0.3,1.7] - 3L1 triggers",
-        "color": "firebrick",
-        "higgs": True,
-    },
+    # "5_jets_ptvary_btag_5wp_300e_3L1cuts_allklambda": {
+    #     "file": f"/eos/user/t/tharte/Analysis_data/predictions/1_13_2_spanet_loose_MC_postEE_pt_vary_btagWP_s100_newLeptonVeto_3L1Cut_UpdateJetVetoMap_MC.h5",
+    #     "true": "5_jets_pt_true_5wp_3L1cuts_allklambda",
+    #     "label": "SPANet btag 5 WP - Flattened pt [0.3,1.7] - 3L1 triggers",
+    #     "color": "firebrick",
+    #     "higgs": True,
+    # },
     # allKlambda_HiggsPairing 100e
     f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5": {
         "file": f"{spanet_dir_nestor}vbf/predictions_allKlambda_HiggsPairing.h5",
