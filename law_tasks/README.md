@@ -34,11 +34,21 @@ container themselves whenever a payload needs it.
 export SPANET_MAIN_DIR="/afs/cern.ch/user/${USER:0:1}/${USER}"                       # SPANet + HH4b_SPANet checkouts
 export SPANET_ENV_DIR="/eos/user/${USER:0:1}/${USER}/spanet_infos/spanet_env_test_eos"  # virtual environment
 export EOS_SPANET="/eos/user/${USER:0:1}/${USER}/php-plots/SPANet_studies/training_outputs"  # where the trainings go
+export SPANET_EFF_BASE_CONFIG="utils/performance/efficiency_configuration_vbf_ggf.py"  # the efficiency configuration to extend
 
 # in every session, from the repository root
 cd $SPANET_MAIN_DIR/HH4b_SPANet
 source setup_law.sh
 ```
+
+`$SPANET_EFF_BASE_CONFIG` is the one setting with no default: it names the
+efficiency configuration the generated one extends, i.e. which models a new
+one is drawn next to.  `eff_base_config` in `law.cfg` does the same; without
+either, `hh4b.RegisterModel` stops and says what to set.  A relative path is
+read from the repository.
+
+`setup_law.sh` says so at the end of its output, so an unset one is seen right
+away and not after a training.
 
 `setup_law.sh` activates the environment, exports `LAW_CONFIG_FILE`, makes the
 `law_tasks` package importable and builds the task index (needed for the shell
@@ -1026,6 +1036,12 @@ writes
 i.e. inside the training directory they describe, next to the plots they are
 used for.
 
+Which configuration is extended is `eff_base_config` / `$SPANET_EFF_BASE_CONFIG`
+for the efficiency -- required, there is no default -- and `roc_base_config` /
+`$SPANET_ROC_BASE_CONFIG` for the ROC curves, which does default to the one
+tracked in the repository.  A path that is set but does not exist is reported
+as such instead of failing later inside the plotting script.
+
 The Run 2 method is evaluated on **this model's** true file, the very file the
 model is compared against (`run2_dataset_MC` of the generated configuration is
 the truth entry written below it), so the two numbers come from the same
@@ -1132,6 +1148,8 @@ derived from `$USER`:
 | shared areas | `extra_binds` | `$SPANET_APPTAINER_EXTRA_BINDS` | bound on top of those, in the tasks and in the training jobs |
 | conversion | `conversion_python` | `$SPANET_CONVERSION_PYTHON` | `python3` |
 | conversion scripts | `converter_script`, `collections_module` | *(none)* | `utils/dataset/coffea_to_h5_direct.py` and its `collections_coffea_to_h5_direct.py` |
+| efficiency configuration to extend | `eff_base_config` | `$SPANET_EFF_BASE_CONFIG` | **none, it has to be set** |
+| ROC configuration to extend | `roc_base_config` | `$SPANET_ROC_BASE_CONFIG` | `utils/roccurves/roc_configuration_vbf_ggf.py` |
 | transfer | `rsync_options` | `$SPANET_RSYNC_OPTIONS` | `-avh --partial` |
 
 The `[efficiency_plots]` and `[roc_plots]` sections define which plots are

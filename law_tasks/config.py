@@ -246,11 +246,43 @@ class Settings(object):
             os.path.join(self.repo_dir, "scripts", "plot_training_metrics.py"),
         )
 
+    def _base_config(self, option, env_var, kind, example, default=None):
+        """A configuration the generated one extends, as an absolute path.
+
+        A relative path is read from the repository, so that the setting can
+        name a configuration tracked in git without a full path.
+        """
+        path = cfg_get(option, env_var, default)
+        if not path:
+            raise RuntimeError(
+                "no configuration for the {} plots: export ${} (or set "
+                "'{}' in the [hh4b_spanet] section of law.cfg) to the "
+                "configuration the generated one has to extend, e.g.\n"
+                "  export {}={}".format(kind, env_var, option, env_var, example)
+            )
+
+        path = os.path.expandvars(os.path.expanduser(path))
+        if not os.path.isabs(path):
+            path = os.path.join(self.repo_dir, path)
+        if not os.path.exists(path):
+            raise RuntimeError(
+                "the {} configuration '{}' does not exist (from '{}' / "
+                "${})".format(kind, path, option, env_var)
+            )
+        return os.path.abspath(path)
+
     @property
     def eff_base_config(self):
-        return cfg_get(
+        """The efficiency configuration the generated one extends.
+
+        There is no default: which models a new one is drawn next to is a
+        choice, and guessing it silently compares against something else than
+        intended.  It has to be named, in law.cfg or in the environment.
+        """
+        return self._base_config(
             "eff_base_config",
-            None,
+            "SPANET_EFF_BASE_CONFIG",
+            "efficiency",
             os.path.join(
                 self.repo_dir,
                 "utils",
@@ -261,12 +293,16 @@ class Settings(object):
 
     @property
     def roc_base_config(self):
-        return cfg_get(
-            "roc_base_config",
-            None,
-            os.path.join(
-                self.repo_dir, "utils", "roccurves", "roc_configuration_vbf_ggf.py"
-            ),
+        """The ROC configuration the generated one extends.
+
+        This one keeps a default, the configuration tracked in the repository;
+        law.cfg and $SPANET_ROC_BASE_CONFIG replace it.
+        """
+        default = os.path.join(
+            self.repo_dir, "utils", "roccurves", "roc_configuration_vbf_ggf.py"
+        )
+        return self._base_config(
+            "roc_base_config", "SPANET_ROC_BASE_CONFIG", "ROC", default, default=default
         )
 
     # -- dataset conversion and transfer -----------------------------------
