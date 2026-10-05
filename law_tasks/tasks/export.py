@@ -24,6 +24,7 @@ import law
 import luigi
 
 from law_tasks.base import ModelTask
+from law_tasks.tasks.plots import EfficiencyPlots, RocPlots, TrainingMetrics
 from law_tasks.tasks.training import Training
 
 
@@ -59,6 +60,45 @@ class ExportParameters(object):
         "usually the one the analysis reads the models from; default: from "
         "law.cfg / $SPANET_ONNX_REMOTE_DIR, and no copy when that is unset",
     )
+    after_plots = luigi.BoolParameter(
+        default=False,
+        significant=False,
+        description="wait for the configurations, the metrics and all the "
+        "plots of the model, so that the export is the last step of the run; "
+        "what hh4b.Performance asks for; default: False",
+    )
+    plot_dir = luigi.Parameter(
+        default="",
+        significant=False,
+        description="only read with --after-plots, to wait for the plots of "
+        "that directory; default: the one derived from the options basename",
+    )
+    region = luigi.Parameter(
+        default="",
+        significant=False,
+        description="only read with --after-plots, to wait for the plots of "
+        "that region; default: the region of each entry",
+    )
+
+    def plot_requirements(self):
+        """What has to be there before the model is exported.
+
+        Nothing, unless the export is the last step of the run: then it is
+        everything else the pipeline makes, so that the hours of plotting do
+        not wait behind a GPU that trades an ONNX file.
+        """
+        if not self.after_plots:
+            return {}
+
+        reqs = {
+            "efficiency": self.clone(EfficiencyPlots),
+            "roc": self.clone(RocPlots),
+        }
+        # as in hh4b.Performance: the metrics belong to the training, not to
+        # the sample it is evaluated on
+        if not self.eval_key:
+            reqs["metrics"] = self.clone(TrainingMetrics)
+        return reqs
 
     @property
     def onnx_name(self):
@@ -123,7 +163,7 @@ class ExportModel(ExportParameters, ModelTask):
     )
 
     def requires(self):
-        return self.clone(Training)
+        return dict(self.plot_requirements(), training=self.clone(Training))
 
     def output(self):
         return {
@@ -132,7 +172,7 @@ class ExportModel(ExportParameters, ModelTask):
         }
 
     def run(self):
-        with open(self.input().path) as fobj:
+        with open(self.input()["training"].path) as fobj:
             version = json.load(fobj)["version"]
 
         version_dir = self.version_dir(version)

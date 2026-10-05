@@ -59,8 +59,11 @@ class Performance(ExportParameters, ModelTask):
         # only happens when there is somewhere to copy it to
         if self.export != "no" and not self.eval_key:
             _, destination = self.onnx_destination
+            # after_plots puts it last: the export (and the copy) of a model
+            # is what the pipeline does once everything else is there
             reqs["export"] = self.clone(
-                TransferModel if destination or self.export == "yes" else ExportModel
+                TransferModel if destination or self.export == "yes" else ExportModel,
+                after_plots=True,
             )
         return reqs
 

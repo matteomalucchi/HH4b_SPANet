@@ -374,7 +374,7 @@ and does, in order:
 | `hh4b.RegisterModel` | writes the efficiency/ROC configurations containing this model |
 | `hh4b.EfficiencyPlots` | one `efficiency_studies.py` run per entry of `[efficiency_plots]` the event file of the model allows |
 | `hh4b.RocPlots` | one `ROC_plots.py` run per entry of `[roc_plots]`, when the model classifies |
-| `hh4b.ExportModel` | `spanet.export` on the training, writing `<onnx dir>/<model>.onnx` |
+| `hh4b.ExportModel` | `spanet.export` on the training, writing `<run dir>/<model>.onnx` -- **last**, once everything above is there |
 | `hh4b.TransferModel` | copies that file to the machine the analysis runs on, when one is configured |
 | `hh4b.Performance` | wrapper, writes a summary with every produced path |
 
@@ -454,7 +454,10 @@ new training -- is written into the training directory.
 
 What the analysis reads is not the checkpoint but an ONNX file exported from
 it, on the machine the coffea files live on.  `hh4b.Performance` does that
-last step too, on lxplus, where the training is: the copy is a **push made
+last step too -- really last: the export waits for the configurations, the
+metrics and every plot, so the plots are not held up behind a GPU that traces
+a network, and the run ends with the model that comes out of it.  It happens
+on lxplus, where the training is: the copy is a **push made
 from lxplus**, the way the inputs were pushed to EOS, not a pull made on the
 other machine.
 
@@ -542,6 +545,9 @@ or to export a model that was trained long ago:
 law run hh4b.ExportModel --options-file <options>
 law run hh4b.TransferModel --options-file <options> --overwrite-plots
 ```
+
+`--after-plots` is what makes the export wait; `hh4b.Performance` passes it,
+and `law run hh4b.ExportModel` on its own waits for the training alone.
 
 `--export-args` forwards anything else to `spanet.export`
 (`--input-log-transform`, `--output-log-transform`, `--opset 15`, ...), and
