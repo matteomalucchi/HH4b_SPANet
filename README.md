@@ -694,8 +694,8 @@ law run hh4b.RocPlot --options-file <options_file> --plot-name vbf_presel
 law run hh4b.ExportModel --options-file <options_file>
 ```
 
-The trained model is exported to ONNX as well, into
-`<eos_base>/spanet_model/<model>.onnx`, and copied back to the machine the
+The trained model is exported to ONNX as well, into the training directory as
+`<model>.onnx`, and copied back to the machine the
 coffea files came from when `onnx_host`/`onnx_remote_dir` are configured in
 `law.cfg` -- an rsync from lxplus outwards, like the one that brought the
 inputs in (otherwise the model stays on EOS and the run prints the command it

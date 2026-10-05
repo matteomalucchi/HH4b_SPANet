@@ -413,6 +413,7 @@ options file, and everything that belongs to it is inside:
         roc_configuration_<model>.py     what the plots are made with
         registration.json
         journal/                         what every run of the pipeline did
+    <model>.onnx                         the exported model
     efficiency_plots/<plot>/             the efficiency plots
     roc_plots/<plot>/                    the ROC plots
     law/*.json                           the markers law reads
@@ -462,15 +463,18 @@ other machine.
 | `hh4b.ExportModel` | `cd <run dir>/version_N && python -m spanet.export ./ <onnx dir>/<model>.onnx --gpu` |
 | `hh4b.TransferModel` | `rsync <onnx dir>/<model>.onnx <me>@<analysis machine>:<directory>/` |
 
-The ONNX file is named after the options file and all models are written into
-one directory, so the analysis finds them in one place:
+The ONNX file is named after the options file and written into the training
+directory, next to the checkpoints it was exported from, the prediction and
+the plots:
 
 ```
-<eos_base>/spanet_model/hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7.onnx
+<run dir>/hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7.onnx
 ```
 
-`--onnx-dir` and `--onnx-file` change either half, e.g. to keep the shorter
-names used so far:
+`onnx_base` in `law.cfg` (`$SPANET_ONNX_DIR`) collects the models of every
+training in one directory instead, the way `eff_plot_base` does for the plots.
+`--onnx-dir` and `--onnx-file` change either half for a single run, e.g. to
+keep the shorter names used so far:
 
 ```bash
 law run hh4b.Performance --options-file <options> \
@@ -485,9 +489,18 @@ is configured the same way, in `law.cfg` on **lxplus**:
 
 ```ini
 [hh4b_spanet]
-onnx_base: /eos/user/x/xyz/spanet_infos/spanet_model   # where the export writes
-onnx_host: xyz@t3ui03.psi.ch                           # where the analysis runs
-onnx_remote_dir: /work/xyz/spanet_vbf_models           # where it reads the models
+onnx_host: xyz@t3ui03.psi.ch                  # where the analysis runs
+onnx_remote_dir: /work/xyz/spanet_vbf_models  # where it reads the models
+```
+
+**Both of them have to be there for the copy to happen**, and neither has a
+default: the host of the analysis machine cannot be guessed from lxplus.  With
+them unset the model is exported and nothing is copied, which `hh4b.Performance`
+says in its summary:
+
+```
+onnx model:       <run dir>/<model>.onnx
+not copied:       no destination: set 'onnx_host' and 'onnx_remote_dir' in law.cfg ...
 ```
 
 `$SPANET_ONNX_DIR`, `$SPANET_ONNX_HOST` and `$SPANET_ONNX_REMOTE_DIR` do the
@@ -496,16 +509,17 @@ single run.  An empty (or `local`) host copies into `onnx_remote_dir` without
 ssh, which is what a directory on the same machine, or an already mounted one,
 needs.
 
-With `onnx_remote_dir` set, `hh4b.Performance` exports the model and copies
-it; without it, the model is exported and stays on EOS, and the run says which
-command would have been run:
+The export step says the same, with the command it would have run:
 
 ```
-wrote /eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx
+wrote <run dir>/<model>.onnx
 not copied anywhere: set 'onnx_host' and 'onnx_remote_dir' in law.cfg to copy
 it from here to the analysis machine, or run
-  rsync -avh --partial /eos/user/x/xyz/spanet_infos/spanet_model/<model>.onnx <user>@<analysis machine>:<directory>/
+  rsync -avh --partial <run dir>/<model>.onnx <user>@<analysis machine>:<directory>/
 ```
+
+`--export yes` turns that into an error instead, for a run that must not end
+without the copy.
 
 It is `ssh`/`rsync` from lxplus outwards, so the destination has to be
 reachable from there (an agent or a key, as for any other rsync); when it is
@@ -1142,8 +1156,8 @@ derived from `$USER`:
 | efficiency plots | `eff_plot_base` | `$SPANET_EFF_PLOT_DIR` | the training directory |
 | ROC plots | `roc_plot_base` | `$SPANET_ROC_PLOT_DIR` | the training directory |
 | journal of a task without a training | `work_dir` | `$SPANET_LAW_WORK_DIR` | `<eos_base>/law_work` |
-| exported models | `onnx_base` | `$SPANET_ONNX_DIR` | `<eos_base>/spanet_model` |
-| where they are copied | `onnx_host`, `onnx_remote_dir` | `$SPANET_ONNX_HOST`, `$SPANET_ONNX_REMOTE_DIR` | nowhere: the model is exported and not copied |
+| exported models | `onnx_base` | `$SPANET_ONNX_DIR` | the training directory |
+| where they are copied | `onnx_host`, `onnx_remote_dir` | `$SPANET_ONNX_HOST`, `$SPANET_ONNX_REMOTE_DIR` | nowhere: both have to be set, or the model is only exported |
 | container | `apptainer_image`, `apptainer_binds` | `$SPANET_APPTAINER_IMAGE`, `$SPANET_APPTAINER_BINDS` | cmsml image; `/afs`, `/cvmfs`, the EOS home of `$USER` and all directories above |
 | shared areas | `extra_binds` | `$SPANET_APPTAINER_EXTRA_BINDS` | bound on top of those, in the tasks and in the training jobs |
 | conversion | `conversion_python` | `$SPANET_CONVERSION_PYTHON` | `python3` |

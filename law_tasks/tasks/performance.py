@@ -90,11 +90,17 @@ class Performance(ExportParameters, ModelTask):
                 else:
                     made[task.plot_name] = task.target_dir
 
-        onnx, onnx_copy = None, None
+        onnx, onnx_copy, onnx_not_copied = None, None, None
         if "export" in self.input():
             export = self.input()["export"]
             if isinstance(export, dict):  # hh4b.ExportModel, nowhere to copy to
                 onnx = export["onnx"].path
+                onnx_not_copied = (
+                    "no destination: set 'onnx_host' and 'onnx_remote_dir' in "
+                    "law.cfg (or $SPANET_ONNX_HOST / $SPANET_ONNX_REMOTE_DIR, "
+                    "or --onnx-host / --onnx-remote-dir) to copy it to the "
+                    "machine the analysis runs on"
+                )
             else:  # hh4b.TransferModel, the marker of the copy
                 with open(export.path) as fobj:
                     transfer = json.load(fobj)
@@ -114,6 +120,7 @@ class Performance(ExportParameters, ModelTask):
             training_plots=metrics.get("plot_dir"),
             onnx_file=onnx,
             onnx_copy=onnx_copy,
+            onnx_not_copied=onnx_not_copied,
             efficiency_plots=efficiency,
             roc_plots=roc,
             skipped_plots=skipped,
@@ -135,6 +142,8 @@ class Performance(ExportParameters, ModelTask):
             self.publish_message("onnx model:       {}".format(onnx))
         if onnx_copy:
             self.publish_message("copied to:        {}".format(onnx_copy))
+        if onnx_not_copied:
+            self.publish_message("not copied:       {}".format(onnx_not_copied))
         for name, path in sorted(efficiency.items()):
             self.publish_message("efficiency plots: {}".format(path))
         for name, path in sorted(roc.items()):

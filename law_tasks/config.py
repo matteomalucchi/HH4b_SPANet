@@ -346,12 +346,13 @@ class Settings(object):
 
     @property
     def onnx_base(self):
-        """Directory ``spanet.export`` writes the ONNX models into."""
-        return cfg_get(
-            "onnx_base",
-            "SPANET_ONNX_DIR",
-            os.path.join(self.eos_base, "spanet_model"),
-        )
+        """Shared directory for the exported models; empty: the training one.
+
+        The ONNX file belongs to the training it was exported from, so it is
+        written next to it; set this to collect the models of every training
+        in one directory instead.
+        """
+        return cfg_get("onnx_base", "SPANET_ONNX_DIR", "")
 
     @property
     def onnx_host(self):

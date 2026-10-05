@@ -6,7 +6,7 @@ backwards::
 
     lxplus                                analysis machine
     ------                                ----------------
-    hh4b.ExportModel  --- rsync --->      /work/<me>/spanet_vbf_models/
+    <training dir>/<model>.onnx --- rsync --->  /work/<me>/spanet_vbf_models/
 
 Both steps run on lxplus, where the training is: the copy is a push made from
 here, not a pull made on the other side.  By hand that is
@@ -37,8 +37,9 @@ class ExportParameters(object):
 
     onnx_dir = luigi.Parameter(
         default="",
-        description="directory the ONNX model is written to; default: from "
-        "law.cfg / $SPANET_ONNX_DIR, i.e. <eos_base>/spanet_model",
+        description="directory the ONNX model is written to; default: the "
+        "training directory, or 'onnx_base' of law.cfg / $SPANET_ONNX_DIR "
+        "when that is set",
     )
     onnx_file = luigi.Parameter(
         default="",
@@ -66,8 +67,12 @@ class ExportParameters(object):
 
     @property
     def onnx_path(self):
-        """Where ``spanet.export`` writes the ONNX model."""
-        directory = self.onnx_dir or self.cfg.onnx_base
+        """Where ``spanet.export`` writes the ONNX model.
+
+        The training directory, so that the model is found next to the
+        checkpoints it was exported from, the prediction and the plots.
+        """
+        directory = self.onnx_dir or self.cfg.onnx_base or self.run_dir
         return os.path.join(os.path.abspath(self.cfg.expand(directory)), self.onnx_name)
 
     @property
