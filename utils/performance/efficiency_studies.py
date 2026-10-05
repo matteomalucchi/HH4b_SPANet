@@ -10,6 +10,11 @@ import sys
 from pathlib import Path
 
 from efficiency_functions import (
+    CLASS_PROCESS_DICT,
+    DEFAULT_PROCESS,
+    MISSING_SAMPLES_EXIT,
+    MISSING_SAMPLES_MESSAGE,
+    MissingSamples,
     best_reco_higgs,
     calculate_diff_efficiencies,
     calculate_efficiencies,
@@ -20,6 +25,7 @@ from efficiency_functions import (
     plot_histos_1d,
     plot_mhh,
     separate_klambda,
+    split_by_klambda,
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -93,7 +99,20 @@ parser.add_argument(
     help="Plot the Higgs mass histograms",
 )
 parser.add_argument(
-    "-c", "--class-label", default=None, help="Consider only the class specified"
+    "-c",
+    "--class-label",
+    default=None,
+    nargs="+",
+    help="Consider only the class(es) specified. If more than one is passed, they are merged (kept without distinction)",
+)
+parser.add_argument(
+    "-pk",
+    "--process-k",
+    default=False,
+    action="store_true",
+    help="pair the Run 2 candidates with the k of the process of each event "
+    "(HH, ZZ, ZH/HZ, see CLASS_PROCESS_DICT); by default every event is "
+    "paired with the k of HH, 1.04",
 )
 parser.add_argument(
     "-conf",
@@ -123,7 +142,7 @@ cv_c2v_kl_values_dict = {
     "1.94": "$\\kappa_{V}$=-1.21 \n$\\kappa_{2V}$=1.94 \n$\\kappa_{\\lambda}$=-0.94",
     "2.72": "$\\kappa_{V}$=-1.6 \n$\\kappa_{2V}$=2.72 \n$\\kappa_{\\lambda}$=-1.36",
     "3.57": "$\\kappa_{V}$=-1.83 \n$\\kappa_{2V}$=3.57 \n$\\kappa_{\\lambda}$=-3.39",
-    "3.87": "$\\kappa_{V}$=-2.12 \n$\\kappa_{2V}$=3.87 \n$\\kappa_{\\lambda}$=-5.96",
+    "3.87": "$\\kappa_{V}$=$\pm$2.12 \n$\\kappa_{2V}$=3.87 \n$\\kappa_{\\lambda}$=-5.96",
     "0.0": "$\\kappa_{V}$=1\n$\\kappa_{2V}$=0\n$\\kappa_{\\lambda}$=1",
     "1.0": "$\\kappa_{V}$=1\n$\\kappa_{2V}$=1 \n$\\kappa_{\\lambda}$=1",
 }
@@ -193,6 +212,20 @@ def main():
             if (args.vbf and "vbf" in file_dict.keys() and file_dict["vbf"])
             else False
         )
+        do_higgs_pairing = (
+            True
+            if (
+                not args.ignore_higgs
+                and ("higgs" in file_dict.keys() and file_dict["higgs"])
+            )
+            else False
+        )
+        
+        if not do_higgs_pairing and not do_vbf_pairing:
+            logger.warning(
+                f"Model {model_name} has no pairing to evaluate. Skipping."
+            )
+            continue
 
         true_entry = true_dict[file_dict["true"]]
         n_higgs_jets = true_entry.get("n_higgs_jets", 4)
@@ -222,6 +255,8 @@ def main():
             n_higgs_jets=n_higgs_jets,
         )
         assert all(mask_region_spanet == mask_region_true)
+        
+        logger.info(f"Fraction of events in the region {args.region}: {ak.sum(mask_region_true) / len(mask_region_true)}")
 
         # define the class mask
         # take the one for the true file because
@@ -230,6 +265,8 @@ def main():
         mask_class_true = helpers.get_class_mask(
             args.class_label, truefile, jet_coll=jet_coll_higgs
         )
+        
+        logger.info(f"Fraction of events in the class {args.class_label}: {ak.sum(mask_class_true) / len(mask_class_true)}")
 
         if args.num_events:
             mask_num_events = helpers.get_region_mask(
@@ -244,11 +281,21 @@ def main():
         else:
             mask_num_events = ak.ones_like(truefile["INPUTS"][jet_coll_higgs]["MASK"][:, 0])
 
+        logger.info(f"Number of events after the masks : {ak.sum(mask_region_true & mask_class_true & mask_num_events)}")
+
         mask_spanet = mask_region_spanet & mask_class_true & mask_num_events
         mask_true = mask_region_true & mask_class_true & mask_num_events
 
         logger.info(f"Number of events after the masks : {ak.sum(mask_true)}")
+        logger.info(f"Fraction of events after the masks : {ak.sum(mask_true) / len(mask_true)}")
 
+        if ak.sum(mask_true) == 0:
+            logger.warning(
+                f"No events left after applying the masks for model {model_name}. Skipping."
+            )
+            continue
+        
+        
         if jet_coll_vbf is not None:
             jet_higgs = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll_higgs)
             jet_vbf = helpers.get_jet_4vec(truefile, mask_true, jet_coll=jet_coll_vbf)
@@ -262,14 +309,14 @@ def main():
         idx_true = load_jets_and_pairing(
             truefile,
             "true",
-            higgs=not args.ignore_higgs,
+            higgs=do_higgs_pairing,
             vbf=do_vbf_pairing,
             resonances=resonances,
         )[mask_true]
         idx_spanet_pred = load_jets_and_pairing(
             spanetfile,
             "spanet",
-            higgs=not args.ignore_higgs,
+            higgs=do_higgs_pairing,
             vbf=do_vbf_pairing,
             resonances=resonances,
         )[mask_spanet]
@@ -333,6 +380,7 @@ def main():
             # Performing the matching
             (
                 frac_fully_matched,
+                unc_frac_fully_matched,
                 efficiencies_fully_matched,
                 total_efficiencies_fully_matched,
                 unc_eff_fully_matched,
@@ -346,7 +394,7 @@ def main():
                 kl_values,
                 all_name_list,
                 "fully matched",
-                higgs=not args.ignore_higgs,
+                higgs=do_higgs_pairing,
                 vbf=do_vbf_pairing,
                 offset_jet_idx_higgs=offset_jet_idx_higgs,
                 offset_jet_idx_vbf=offset_jet_idx_vbf,
@@ -376,12 +424,12 @@ def main():
         jet_fully_matched = [j[m] for j, m in zip(alljet, mask_fully_matched)]
         # Reconstruction of the Higgs boson candidates with the predicted/true pairings
         spanet_higgs_fully_matched = [
-            best_reco_higgs(j, spanet_idx, higgs=not args.ignore_higgs)
+            best_reco_higgs(j, spanet_idx, higgs=do_higgs_pairing)
             for j, spanet_idx in zip(jet_fully_matched, allspanet_idx_fully_matched)
         ]
         if not args.data:
             true_higgs_fully_matched = [
-                best_reco_higgs(j, idx, higgs=not args.ignore_higgs)
+                best_reco_higgs(j, idx, higgs=do_higgs_pairing)
                 for j, idx in zip(jet_fully_matched, alltrue_idx_fully_matched)
             ]
             true_hh_fully_matched = [
@@ -401,7 +449,7 @@ def main():
                 "total_diff_eff_spanet": [],
                 "total_unc_diff_eff_spanet": [],
             }
-            if not args.ignore_higgs:
+            if do_higgs_pairing:
                 for true_hh, matched_spanet, mask_matched in zip(
                     true_hh_fully_matched, matching_eval_spanet, mask_fully_matched
                 ):
@@ -453,6 +501,8 @@ def main():
         }
         if not args.data:
             df_collection[model_name] = df_collection[model_name] | {
+                "frac_fully_matched": frac_fully_matched,
+                "unc_frac_fully_matched": unc_frac_fully_matched,
                 "efficiencies_fully_matched": efficiencies_fully_matched,
                 "unc_efficiencies_fully_matched": unc_eff_fully_matched,
                 "total_efficiencies_fully_matched": total_efficiencies_fully_matched,
@@ -464,6 +514,12 @@ def main():
                 "true_hh_fully_matched": true_hh_fully_matched,
                 "true_higgs_fully_matched": true_higgs_fully_matched,
             }
+
+    if not df_collection:
+        raise MissingSamples(
+            "no model has an event left: the file holds none of the classes "
+            "{} in the region '{}'".format(args.class_label, args.region)
+        )
 
     # -- Loading Run2 model
     truefile = h5py.File(true_dict[run2_dataset]["name"], "r")
@@ -477,6 +533,17 @@ def main():
             and true_dict[run2_dataset]["vbf"]
         )
         else False
+    )
+    do_higgs_pairing = (
+        False
+        if (
+            args.ignore_higgs
+            and not (
+                "higgs" in true_dict[run2_dataset].keys()
+                and true_dict[run2_dataset]["higgs"]
+            )
+        )
+        else True
     )
 
     run2_true_entry = true_dict[run2_dataset]
@@ -504,6 +571,14 @@ def main():
     )
     mask_true = mask_region_true & mask_class_true
 
+    if ak.sum(mask_true) == 0:
+        raise MissingSamples(
+            "the true file of the Run 2 method, {}, holds no event of the "
+            "classes {} in the region '{}'".format(
+                run2_dataset, args.class_label, args.region
+            )
+        )
+
     if jet_coll_vbf is not None:
         jet_higgs_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll_higgs)
         jet_vbf_only_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll_vbf)
@@ -530,13 +605,31 @@ def main():
         "true_run2",
         allowed_idx_higgs=[0, 1, 2, 3],
         allowed_idx_vbf=allowed_idx_vbf_run2,
-        higgs=not args.ignore_higgs,
+        higgs=do_higgs_pairing,
         vbf=do_vbf_pairing,
         resonances=run2_true_entry.get("resonances"),
     )[mask_true]
 
     # keep only the correct jets
     jet = jet_for_idx[0][mask_true]
+
+    # the process of every event decides the k the Run 2 pairing uses, but
+    # only when it is asked for: by default everything is paired as HH
+    class_array = helpers.get_class_array(truefile) if args.process_k else None
+    if class_array is None:
+        all_processes = None
+        logger.info(
+            f"Pairing every event of the Run 2 method as {DEFAULT_PROCESS}"
+            + ("" if args.process_k else " (pass --process-k for the k of each process)")
+        )
+    else:
+        processes = np.array(
+            [
+                CLASS_PROCESS_DICT.get(int(c), DEFAULT_PROCESS)
+                for c in class_array[mask_true]
+            ]
+        )
+        all_processes = [processes]
 
     # These lists are to be expanded. Didn't think of a better way than to copy them here already
     # if not klambda, the two lists stay equal.
@@ -560,6 +653,11 @@ def main():
         alltrue_idx.extend(true_kl_idx_list)
         alljet.extend(jet_separate_klambda)
         all_name_list.extend(kl_values)
+        if all_processes is not None:
+            # split the processes the same way, so that they stay aligned
+            all_processes.extend(
+                split_by_klambda(all_processes[0], truefile, mask_true)
+            )
 
     # Fully matched events
     mask_fully_matched = [
@@ -581,15 +679,17 @@ def main():
     allrun2_idx_fully_matched = run2_algorithm(
         alljet,
         mask_fully_matched,
-        higgs=not args.ignore_higgs,
+        higgs=do_higgs_pairing,
         vbf=do_vbf_pairing,
         n_higgs_jets=n_higgs_jets,
+        processes=all_processes,
     )
 
     if not args.data:
         # compute efficiencies for fully matched events for Run 2 pairing
         (
-            frac_fully_matched,
+            frac_fully_matched_run2,
+            unc_frac_fully_matched_run2,
             efficiencies_run2,
             total_efficiencies_run2,
             unc_efficiencies_run2,
@@ -603,7 +703,7 @@ def main():
             kl_values,
             all_name_list,
             "run2",
-            higgs=not args.ignore_higgs,
+            higgs=do_higgs_pairing,
             vbf=do_vbf_pairing,
         )
 
@@ -612,12 +712,12 @@ def main():
     # and the run2 pairings
     jet_fully_matched = [j[m] for j, m in zip(alljet, mask_fully_matched)]
     run2_higgs_fully_matched = [
-        best_reco_higgs(j, idx, higgs=not args.ignore_higgs)
+        best_reco_higgs(j, idx, higgs=do_higgs_pairing)
         for j, idx in zip(jet_fully_matched, allrun2_idx_fully_matched)
     ]
     if not args.data:
         true_higgs_fully_matched = [
-            best_reco_higgs(j, idx, higgs=not args.ignore_higgs)
+            best_reco_higgs(j, idx, higgs=do_higgs_pairing)
             for j, idx in zip(jet_fully_matched, alltrue_idx_fully_matched)
         ]
         true_hh_fully_matched = [
@@ -637,7 +737,7 @@ def main():
             "total_diff_eff_run2": [],
             "total_unc_diff_eff_run2": [],
         }
-        if not args.ignore_higgs:
+        if do_higgs_pairing:
             for true_hh, matched_run2, mask_matched in zip(
                 true_hh_fully_matched, matching_eval_run2, mask_fully_matched
             ):
@@ -681,6 +781,8 @@ def main():
     }
     if not args.data:
         r2_model = r2_model | {
+            "frac_fully_matched_run2": frac_fully_matched_run2,
+            "unc_frac_fully_matched_run2": unc_frac_fully_matched_run2,
             "efficiencies_fully_matched_run2": efficiencies_run2,
             "unc_efficiencies_fully_matched_run2": unc_efficiencies_run2,
             "total_efficiencies_fully_matched_run2": total_efficiencies_run2,
@@ -695,6 +797,21 @@ def main():
         }
 
     # Plotting begins here
+    run2_label = (
+        r"Leading $m_{jj}$"
+        if (args.vbf and args.ignore_higgs)
+        else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"
+    )
+    labels = [model["file_dict"]["label"] for model in df_collection.values()] + [
+        run2_label
+    ]
+    colors = [model["file_dict"]["color"] for model in df_collection.values()] + [
+        "yellowgreen"
+    ]
+    all_kl_values = [model["kl_values"] for model in df_collection.values()] + [
+        r2_model["kl_values"]
+    ]
+
     if not args.data:
         if args.klambda:
             logger.info("\n")
@@ -713,12 +830,9 @@ def main():
                     for model in df_collection.values()
                 ]
                 + [r2_model["unc_efficiencies_fully_matched_run2"][1:]],
-                [model["kl_values"] for model in df_collection.values()]
-                + [r2_model["kl_values"]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                all_kl_values,
+                labels,
+                colors,
                 "eff_fully_matched_allklambda",
                 plot_dir,
                 xlabels=(
@@ -726,6 +840,29 @@ def main():
                 ),
                 cmstext=args.cmstext,
                 region=args.region,
+            )
+            logger.info(
+                "Plotting the fraction of fully matched events for all klambda values"
+            )
+            plot_diff_eff_klambda(
+                [model["frac_fully_matched"][1:] for model in df_collection.values()]
+                + [r2_model["frac_fully_matched_run2"][1:]],
+                [
+                    model["unc_frac_fully_matched"][1:]
+                    for model in df_collection.values()
+                ]
+                + [r2_model["unc_frac_fully_matched_run2"][1:]],
+                all_kl_values,
+                labels,
+                colors,
+                "frac_fully_matched_allklambda",
+                plot_dir,
+                xlabels=(
+                    cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None
+                ),
+                cmstext=args.cmstext,
+                region=args.region,
+                ylabel="Fraction of fully matched events",
             )
             plot_diff_eff_klambda(
                 [
@@ -738,12 +875,9 @@ def main():
                     for model in df_collection.values()
                 ]
                 + [r2_model["unc_total_efficiencies_fully_matched_run2"][1:]],
-                [model["kl_values"] for model in df_collection.values()]
-                + [r2_model["kl_values"]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                all_kl_values,
+                labels,
+                colors,
                 "tot_eff_fully_matched_allklambda",
                 plot_dir,
                 xlabels=(
@@ -760,10 +894,8 @@ def main():
                 + [r2_model["diff_eff_run2"][0]],
                 [model["unc_diff_eff_spanet"][0] for model in df_collection.values()]
                 + [r2_model["unc_diff_eff_run2"][0]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                labels,
+                colors,
                 plot_dir,
                 "diff_eff_spanet",
                 cmstext=args.cmstext,
@@ -778,10 +910,8 @@ def main():
                     for model in df_collection.values()
                 ]
                 + [r2_model["total_unc_diff_eff_run2"][0]],
-                [model["file_dict"]["label"] for model in df_collection.values()]
-                + [r"Leading $m_{jj}$" if (args.vbf and args.ignore_higgs) else r"$D_{HH}$-method + Leading $m_{jj}$" if args.vbf else r"$D_{HH}$-method"],
-                [model["file_dict"]["color"] for model in df_collection.values()]
-                + ["yellowgreen"],
+                labels,
+                colors,
                 plot_dir,
                 "total_diff_eff_spanet",
                 cmstext=args.cmstext,
@@ -858,5 +988,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except MissingSamples as error:
+        # not a failure of the script: the samples this plot needs are simply
+        # not in the file, which is the normal case for most trainings
+        logger.error(f"{MISSING_SAMPLES_MESSAGE}: {error}")
+        logger.error(
+            "The script was NOT successful: it made no plot, because the "
+            "samples it needs are missing."
+        )
+        sys.exit(MISSING_SAMPLES_EXIT)
+
     logger.info(f"Plots saved in {args.plot_dir}")

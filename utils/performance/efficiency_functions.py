@@ -17,6 +17,50 @@ logger = logging.getLogger(__name__)
 vector.register_awkward()
 vector.register_numba()
 
+#: a plot that asks for events the file does not hold is not an error: most
+#: trainings have no ZZ/ZH sample, for instance.  The script says so with this
+#: marker and exits with MISSING_SAMPLES_EXIT, which the law task
+#: hh4b.EfficiencyPlot recognises and reports as a plot it did not make
+#: (law_tasks/tasks/plots.py has the same two values).
+MISSING_SAMPLES_MESSAGE = "MISSING SAMPLES"
+MISSING_SAMPLES_EXIT = 3
+
+
+class MissingSamples(Exception):
+    """The file holds no event of what was asked for."""
+
+
+#: k of the Run 2 pairing distance, |m1 - k * m2| / sqrt(1 + k^2), for every
+#: pair of resonances.  The two candidates are ordered by pt, so 'HZ' is the
+#: event whose LEADING pt candidate is the heavier one (the Higgs) and 'ZH'
+#: the one whose SUBLEADING pt candidate is the heavier one.
+RUN2_K_VALUES = {
+    "HH": 1.04,
+    "ZZ": 1.02,
+    "ZH": 0.76,
+    "HZ": 1.40,
+}
+
+#: processes made of two different resonances, which are therefore split per
+#: event: (k when the leading pt candidate is the heavier one, k otherwise).
+RUN2_MIXED_PROCESSES = {
+    "ZH": ("HZ", "ZH"),
+}
+
+#: the process every class label of the h5 file stands for, i.e. which k the
+#: Run 2 algorithm pairs its events with.  By default 0 is ggF HH, 1 is VBF
+#: HH, 2 is ZZ and 3 is ZH; a class that is not in here, and a file without a
+#: class at all, is paired as HH, the way it always was.
+CLASS_PROCESS_DICT = {
+    0: "HH",  # ggF HH
+    1: "HH",  # VBF HH
+    2: "ZZ",
+    3: "ZH",
+}
+
+#: the process of an event whose class is not in CLASS_PROCESS_DICT
+DEFAULT_PROCESS = "HH"
+
 RESONANCES_DICT = {
     "OLD_RESONANCES": {
         "h1": (1, ("b1", "b2")),
@@ -189,6 +233,9 @@ def calculate_efficiencies(
     ]
     logger.info(f"matching_{label}_model: {[len(c) for c in matching_eval_model]}")
     fraction = [ak.sum(m) / len(m) for m in mask]
+    unc_fraction = [
+        sqrt(frac * (1 - frac) / len(m)) for frac, m in zip(fraction, mask)
+    ]
     total_model_eff = [eff * frac for frac, eff in zip(fraction, model_eff)]
     unc_model_eff = [
         sqrt(eff * (1 - eff) / len(matching_eval_ds))
@@ -219,6 +266,7 @@ def calculate_efficiencies(
 
     return (
         fraction,
+        unc_fraction,
         model_eff,
         total_model_eff,
         unc_model_eff,
@@ -227,12 +275,54 @@ def calculate_efficiencies(
     )
 
 
+def run2_k(higgs_pair, processes=None):
+    """The k of every event and every candidate pair, from its process.
+
+    ``processes`` is the process of each event, a key of RUN2_K_VALUES; None
+    (a file without a class) pairs everything as HH, the way it always was.
+    A process of two different resonances is decided per candidate pair: the
+    one whose leading pt candidate is the heavier one is 'HZ', the other 'ZH'.
+    """
+    if processes is None:
+        return RUN2_K_VALUES[DEFAULT_PROCESS]
+
+    processes = np.asarray(processes)
+    # a candidate of an event with too few jets is masked; it is dropped by
+    # the fully matched mask anyway, so any k does for it
+    heavier_first = np.asarray(
+        ak.fill_none(higgs_pair[:, :, 0].mass > higgs_pair[:, :, 1].mass, True)
+    )
+
+    k = np.full(heavier_first.shape, RUN2_K_VALUES[DEFAULT_PROCESS], dtype=float)
+    for process in np.unique(processes):
+        events = processes == process
+        if process in RUN2_MIXED_PROCESSES:
+            first, second = RUN2_MIXED_PROCESSES[process]
+            k[events] = np.where(
+                heavier_first[events], RUN2_K_VALUES[first], RUN2_K_VALUES[second]
+            )
+        elif process in RUN2_K_VALUES:
+            k[events] = RUN2_K_VALUES[process]
+        else:
+            logger.warning(
+                f"Unknown process {process}, pairing its events as "
+                f"{DEFAULT_PROCESS}"
+            )
+        logger.info(
+            f"Run 2 pairing of {np.sum(events)} {process} events with "
+            f"k={np.unique(k[events])}"
+        )
+    return ak.Array(k)
+
+
 def distance_pt_func(higgs_pair, k):
     if len(higgs_pair[0, 0]) == 0:
         return np.array([])
     higgs1 = higgs_pair[:, :, 0]
     higgs2 = higgs_pair[:, :, 1]
-    dist = abs(higgs1.mass - higgs2.mass * k) / sqrt(1 + k**2)
+    # k is a number for one process, one per event and candidate pair when the
+    # events are of several processes
+    dist = abs(higgs1.mass - higgs2.mass * k) / np.sqrt(1 + k**2)
     max_pt = np.maximum(higgs1.pt, higgs2.pt)
     return dist, max_pt
 
@@ -349,22 +439,36 @@ def best_reco_higgs(jet_collection, idx_collection, higgs=True):
     return higgs_candidates_unflatten_order
 
 
-def run2_algorithm(jet, mask_fully_matched, higgs=True, vbf=False, n_higgs_jets=4):
+def run2_algorithm(
+    jet, mask_fully_matched, higgs=True, vbf=False, n_higgs_jets=4, processes=None
+):
+    """Pair the jets the way the Run 2 analysis does.
+
+    ``processes`` is, for each element of ``jet``, the process of every event
+    (see CLASS_PROCESS_DICT), which decides the k of the distance; None pairs
+    everything as HH.
+    """
     logger.info("Running Run 2 algorithm...")
+    if processes is None:
+        processes = [None] * len(jet)
+
     comb_idx_min_list = []
     if higgs:
         # implement the Run 2 pairing algorithm
         comb_idx = [[(0, 1), (2, 3)], [(0, 2), (1, 3)], [(0, 3), (1, 2)]]
 
+        # the first resonance in the pair is the one with the highest pt, 
+        # so we order the higgs candidates by pt
         higgs_candidates_unflatten_order = [reco_higgs(j, comb_idx) for j in jet]
-        distance = [
-            distance_pt_func(higgs, 1.04)[0]
-            for higgs in higgs_candidates_unflatten_order
+        k_values = [
+            run2_k(higgs, p)
+            for higgs, p in zip(higgs_candidates_unflatten_order, processes)
         ]
-        max_pt = [
-            distance_pt_func(higgs, 1.04)[1]
-            for higgs in higgs_candidates_unflatten_order
-        ]
+        distance, max_pt = [], []
+        for higgs, k in zip(higgs_candidates_unflatten_order, k_values):
+            d, pt = distance_pt_func(higgs, k)
+            distance.append(d)
+            max_pt.append(pt)
 
         dist_order_idx = [ak.argsort(d, axis=1, ascending=True) for d in distance]
         dist_order = [ak.sort(d, axis=1, ascending=True) for d in distance]
@@ -419,15 +523,26 @@ def calculate_diff_efficiencies(matched, mask, mask_matched):
     return eff, unc_eff, total_eff, unc_total_eff
 
 
+def klambda_values(df, mask_region):
+    """The kl of every event of the region, written under 'Event' or 'EVENT'."""
+    try:
+        return df["INPUTS"]["Event"]["kl"][()][mask_region]
+    except KeyError:
+        logger.info("Did not find Event/kl, will try EVENT/kl")
+        return df["INPUTS"]["EVENT"]["kl"][()][mask_region]
+
+
+def split_by_klambda(array, df_true, mask_region):
+    """Split a per event array the way separate_klambda splits the jets."""
+    kl_array = klambda_values(df_true, mask_region)
+    return [array[kl_array == kl] for kl in np.unique(kl_array)]
+
+
 def separate_klambda(
     jet, df_true, df_spanet_pred, idx_true, idx_spanet_pred, mask_region
 ):
     logger.info(f"jet {len(jet)}, {len(jet[0])}")
-    try:
-        kl_array_true = df_true["INPUTS"]["Event"]["kl"][()][mask_region]
-    except KeyError:
-        logger.info("Did not find Event/kl in kl_array_true, will try EVENT/kl")
-        kl_array_true = df_true["INPUTS"]["EVENT"]["kl"][()][mask_region]
+    kl_array_true = klambda_values(df_true, mask_region)
 
     logger.info(f"kl_arrays {kl_array_true}")
 
@@ -454,11 +569,7 @@ def separate_klambda(
         jet_separate_klambda.append(jet[mask])
 
     if df_spanet_pred is not None and idx_spanet_pred is not None:
-        try:
-            kl_array_spanet = df_spanet_pred["INPUTS"]["Event"]["kl"][()][mask_region]
-        except KeyError:
-            logger.info("Did not find Event/kl in kl_array_spanet, will try EVENT/kl")
-            kl_array_spanet = df_spanet_pred["INPUTS"]["EVENT"]["kl"][()][mask_region]
+        kl_array_spanet = klambda_values(df_spanet_pred, mask_region)
 
         kl_unique_spanet = np.unique(kl_array_spanet)
         spanet_kl_idx_list = []
@@ -749,6 +860,11 @@ def plot_histos_2d(mh_bins, higgs, label, name, plot_dir="plots", cmstext="Priva
     )
 
 
+def default_ylabel(name):
+    """The efficiency label the plots used so far, total or not."""
+    return "$\\varepsilon^{tot}$" if "tot" in name else "$\\varepsilon$"
+
+
 def plot_diff_eff(
     mhh_bins,
     efficiency,
@@ -759,6 +875,7 @@ def plot_diff_eff(
     file_name,
     cmstext="Private",
     region=None,
+    ylabel=None,
 ):
 
     # ---------------------------------------------------------
@@ -795,7 +912,7 @@ def plot_diff_eff(
         .set_output(f"{plot_dir}/{file_name}")
         .set_labels(
             xlabel=r"$m_{HH}$ [GeV]",
-            ylabel="$\\varepsilon^{tot}$" if "tot" in file_name else "$\\varepsilon$",
+            ylabel=ylabel or default_ylabel(file_name),
         )
         .set_data(series_dict, plot_type="graph")
         .set_options(
@@ -824,6 +941,7 @@ def plot_diff_eff_klambda(
     xlabels=None,  # dict: {kl_value: "label"}
     cmstext="Private",
     region=None,
+    ylabel=None,
 ):
     """
     Parameters
@@ -893,7 +1011,7 @@ def plot_diff_eff_klambda(
         .set_output(f"{plot_dir}/{name}")
         .set_labels(
             xlabel=xlabel,
-            ylabel="$\\varepsilon^{tot}$" if "tot" in name else "$\\varepsilon$",
+            ylabel=ylabel or default_ylabel(name),
             xticklabels=tick_labels,
             label_pos=positions,
             xtick_fontsize=11,

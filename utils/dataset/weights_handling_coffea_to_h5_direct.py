@@ -152,11 +152,11 @@ def process_weights(w, region, payload, sum_genweights, dataset, weight_norm_map
         else:
             print(f"Dividing by sum_genweights = {norm:.3f}")
         print(f"weights before norm, sum = {np.sum(w):.3f}, mean = {np.mean(w):.3f}, std = {np.std(w):.3f}")
-        print(f"actual weight sample: {list(w[:10])}")
+        print(f"actual weight sample (first 10 elements): {list(w[:10])}")
         w = w / norm
         print(f"weights after norm, sum = {np.sum(w):.8f}, mean = {np.mean(w):.20f}, std = {np.std(w):.20f}")
         print(f"weights after norm selected, sum = {np.sum(w[weight_mask]):.8f}, mean = {np.mean(w[weight_mask]):.20f}, std = {np.std(w[weight_mask]):.20f}")
-        print(f"actual weight sample: {list(w[:10])}")
+        print(f"actual weight sample (first 10 elements): {list(w[:10])}")
         print()
         print("number of events", N)
     elif args.balance_weights != "none":
@@ -166,11 +166,11 @@ def process_weights(w, region, payload, sum_genweights, dataset, weight_norm_map
         norm = weight_norm_map[(skey, dataset)]
         print(f"normalization divisor for this sample = {norm:.6f}")
         print(f"weights before norm, sum = {np.sum(w):.3f}, mean = {np.mean(w):.3f}, std = {np.std(w):.3f}")
-        print(f"actual weight sample: {list(w[:10])}")
+        print(f"actual weight sample (first 10 elements): {list(w[:10])}")
         w = w / norm
         print(f"weights after norm, sum = {np.sum(w):.8f}, mean = {np.mean(w):.20f}, std = {np.std(w):.20f}")
         print(f"weights after norm selected, sum = {np.sum(w[weight_mask]):.8f}, mean = {np.mean(w[weight_mask]):.20f}, std = {np.std(w[weight_mask]):.20f}")
-        print(f"actual weight sample: {list(w[:10])}")
+        print(f"actual weight sample (first 10 elements): {list(w[:10])}")
         print()
         print("number of events", N)
     else:
@@ -179,6 +179,6 @@ def process_weights(w, region, payload, sum_genweights, dataset, weight_norm_map
         print("number of events", N)
         print(f"weights, sum = {np.sum(w):.3f}, mean = {np.mean(w):.3f}, std = {np.std(w):.3f}")
         print(f"weights selected, sum = {np.sum(w[weight_mask]):.3f}, mean = {np.mean(w[weight_mask]):.3f}, std = {np.std(w[weight_mask]):.3f}")
-        print(f"actual weight sample: {list(w[:10])}")
+        print(f"actual weight sample (first 10 elements): {list(w[:10])}")
 
     return w, weight_mask, apply_weight_filter
