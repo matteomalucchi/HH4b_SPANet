@@ -32,7 +32,7 @@ At the end, for each jet collection group, a table is printed with the number of
 | `-i`, `--input` | *(required)* | Input `.coffea` file path |
 | `-o`, `--output` | *(required)* | Output HDF5 path prefix (e.g. `path/to/file/prefix_`) |
 | `-r`, `--regions` | `2b_signal_region_postW 4b_signal_region` | Regions to use, one per class label (positional correspondence) |
-| `-cl`, `--class-labels` | `DATA GluGlu` | Class labels for classification, one per region |
+| `-cl`, `--class-labels` | `DATA GluGlu` | Class labels for classification, one per region. When reading from parquet, only the datasets matching one of the class labels are loaded. If passed with no values (`-cl`), all datasets are saved without the `CLASSIFICATIONS` group and exactly one region must be given with `-r` (error otherwise) |
 | `-j`, `--jets` | `JetTotalSPANetPtFlattenPadded JetTotalSPANetPadded` | Jet collections to process (see [Collection configuration](#collection-configuration)) |
 | `-g`, `--global-vars` | `all` | Global (event-level) variables to save, or `all` (see [Global variables](#global-variables)) |
 | `-jg`, `--jet-like-global-vars` | *(none)* | Jet-like collections unpacked into 1-D global variables (`Jet_1`, `Jet_2`, …), or the name of a `jet_like_global_collections_dict` group |
@@ -42,7 +42,7 @@ At the end, for each jet collection group, a table is printed with the number of
 | `-tf`, `--train-frac` | `0.8` | Fraction of events used for training |
 | `-ns`, `--no-shuffle` | off | Disable random shuffling of events |
 | `--novars` | off | Expect the old save format without variations (no `nominal` key) |
-| `--downscale_training` | off | Downscale the training fraction of the background by 33398/1629245 (mixed vs. 2b) |
+| `--downscale_training` | off | Downscale the training fraction of the background by 33398/1629245 (mixed vs. 2b). Ignored when no class labels are given |
 
 Weights are written **as they come out of coffea** unless one of these is
 given:
@@ -200,7 +200,7 @@ train.h5 / test.h5
 │   └── vbf/ q1, q2
 ├── WEIGHTS/
 │   └── weight
-└── CLASSIFICATIONS/
+└── CLASSIFICATIONS/        # only written if class labels are given
     └── EVENT/
         └── class
 ```

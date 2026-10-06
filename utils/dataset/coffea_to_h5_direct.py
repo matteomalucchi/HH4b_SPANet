@@ -82,9 +82,12 @@ p.add_argument(
 p.add_argument(
     "-cl",
     "--class-labels",
-    nargs="+",
+    nargs="*",
     default=["DATA", "GluGlu"],
-    help="Class labels to use for classification",
+    help="Class labels to use for classification. When reading from parquet, only the "
+    "datasets matching one of the class labels are loaded. If passed with no values "
+    "(`-cl`), all the datasets are saved without the CLASSIFICATIONS group and exactly "
+    "one region has to be given with --regions.",
 )
 p.add_argument(
     "-rd",
@@ -365,7 +368,18 @@ def infer_collection_and_var(name):
     return "Event", name
 
 
+def dataset_matches_class_labels(dataset_key, class_labels):
+    """True if the dataset key matches any class label (always True if no class labels)."""
+    if not class_labels:
+        return True
+    key = dataset_key.lower()
+    return any(lbl.lower() in key for lbl in class_labels)
+
+
 def dataset_to_class_index(dataset_key, class_labels):
+    # without class labels every dataset belongs to the same (single) class
+    if not class_labels:
+        return 0
     key = dataset_key.lower()
     for idx, lbl in enumerate(class_labels):
         if lbl.lower() in key:
@@ -549,6 +563,16 @@ def coffea_to_h5(
     weight_name="weight",
 ):
     """Convert the columns from coffea to h5 format to use as SPANet inputs."""
+    # without class labels all the datasets are saved in a single region
+    # and no CLASSIFICATIONS group is written
+    save_classification = bool(class_labels)
+    if not save_classification and len(regions) != 1:
+        raise ValueError(
+            f"No class labels given but {len(regions)} regions were given ({regions}): "
+            "without class labels all the datasets are saved from a single region, "
+            "so exactly one region has to be passed with --regions."
+        )
+
     accumulator = coffea.util.load(coffea_path)
     cols = accumulator[columns_key]
     sum_genweights = accumulator["sum_genweights"]
@@ -557,6 +581,14 @@ def coffea_to_h5(
         rootdir = get_parquet_save_directory(coffea_path)
         print("Empty columns, trying to read from parquet files from:", rootdir)
         datasets, categories = get_datasets_and_categories(accumulator)
+        # load only the datasets matching the class labels
+        datasets = {
+            d for d in datasets if dataset_matches_class_labels(d, class_labels)
+        }
+        if not datasets:
+            raise ValueError(
+                f"No dataset in the coffea file matches the class labels {class_labels}"
+            )
         print("Loading only datasets:", sorted(datasets))
         print("Loading only categories:", sorted(categories))
         cols = load_cols_parquet(rootdir, datasets, categories)
@@ -643,7 +675,11 @@ def coffea_to_h5(
                 return (
                     f.create_group("INPUTS"),
                     f.create_group("WEIGHTS"),
-                    f.create_group("CLASSIFICATIONS"),
+                    (
+                        f.create_group("CLASSIFICATIONS")
+                        if save_classification
+                        else None
+                    ),
                     f.create_group("TARGETS"),
                 )
 
@@ -696,7 +732,11 @@ def coffea_to_h5(
                         args,
                     )
 
-                    if class_idx == 0 and args.downscale_training:
+                    if (
+                        save_classification
+                        and class_idx == 0
+                        and args.downscale_training
+                    ):
                         train_frac_sample = train_frac * 33398 / 1629245
                     else:
                         train_frac_sample = train_frac
@@ -733,16 +773,17 @@ def coffea_to_h5(
                         shuffle,
                     )
 
-                    cls = np.full(N, class_idx, dtype=np.int64)
-                    write_block_split(
-                        tr_c,
-                        te_c,
-                        ["EVENT", "class"],
-                        cls,
-                        train_mask,
-                        test_mask,
-                        shuffle,
-                    )
+                    if save_classification:
+                        cls = np.full(N, class_idx, dtype=np.int64)
+                        write_block_split(
+                            tr_c,
+                            te_c,
+                            ["EVENT", "class"],
+                            cls,
+                            train_mask,
+                            test_mask,
+                            shuffle,
+                        )
                     for jet_i, (jet_coll, jet_info_dict) in enumerate(
                         jet_coll_group.items()
                     ):
