@@ -50,7 +50,7 @@ parser.add_argument(
     "--no-weights",
     action="store_true",
     default=False,
-    help="Compute the ROC with weights",
+    help="Compute the ROC without weights",
 )
 parser.add_argument(
     "-r",
@@ -357,6 +357,7 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
         sig_scores = spanet_class[~mask_background]
 
         if no_weights:
+            logger.info("Computing the histogram without weights")
             cut = np.quantile(sig_scores, 1 - args.sig_efficiency)
             mask_signal_cut = sig_scores > cut
             mask_bkg_cut = bkg_scores <= cut
@@ -367,6 +368,7 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
             n_sig_pass_err = np.sqrt(n_sig_pass)
             n_bkg_pass_err = np.sqrt(n_bkg_pass)
         else:
+            logger.info("Computing the histogram with weights")
             cut = float(weighted_quantile(sig_scores, 1 - args.sig_efficiency, weights=weights_sig))
 
             mask_signal_cut = sig_scores > cut
@@ -391,7 +393,7 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
             s_sqrtb_err = float("nan")
 
         logger.info("=============")
-        logger.info(f"For model {model_name} with kl={kl_string}:")
+        logger.info(f"For model {model_name} with signal kl = {kl_string} and background kl = {kl_bkg_string}:")
         logger.info(f"Found score cut at: {cut:.4f} for target signal efficiency of {args.sig_efficiency*100:.4g}%")
         logger.info(f"Signal efficiency at this point is: {sig_eff * 100:.2f}% ")
         logger.info(f"Background rejection at this point is: {bkg_rej * 100:.2f}% ")
@@ -548,6 +550,7 @@ def main():
         spanet_class = spanetfile["CLASSIFICATIONS"]["EVENT"]["class"][:, 1][()][mask_region_spanet]
         true_class = truefile["CLASSIFICATIONS"]["EVENT"]["class"][()][mask_region_spanet]
         weights = truefile["WEIGHTS"]["weight"][()][mask_region_spanet]
+        logger.info(f"Weights array shape: {weights.shape}, sum: {weights.sum():.2f}, mean: {weights.mean():.2e}")
 
         try:
             kls = spanetfile["INPUTS"]["Event"]["kl"][()][mask_region_spanet]
@@ -647,3 +650,5 @@ if __name__ == "__main__":
     logger.debug(spanet_dict)
     logger.debug(true_dict)
     main()
+    
+    logger.info("ROC curves, precision-recall curves and score histograms saved in {}".format(args.plot_dir))
