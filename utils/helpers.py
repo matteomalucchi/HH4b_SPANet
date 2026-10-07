@@ -61,49 +61,79 @@ def get_region_mask(region, column_file, do_vbf_pairing, jet_coll_higgs="Jet", j
         logger.error(f"Key 'btagPNetB' not found in column_file['INPUTS'][{jet_coll_higgs}]. Trying 'btagB' instead.")
         jet_btag = column_file["INPUTS"][jet_coll_higgs]["btagB"]
 
-    if region == "4b" or region == "4M":
-        mask = (
-            (jet_btag[:, 0] > 0.2605)
-            & (jet_btag[:, 1] > 0.2605)
-            & (jet_btag[:, 2] > 0.2605)
-            & (jet_btag[:, 3] > 0.2605)
+    def btag_mask(*conditions):
+        # conditions: one (low, high) btag window per jet, None = no bound
+        mask = ak.ones_like(jet_btag[:, 0], dtype=bool)
+        for i, (low, high) in enumerate(conditions):
+            if low is not None:
+                mask = mask & (jet_btag[:, i] > low)
+            if high is not None:
+                mask = mask & (jet_btag[:, i] < high)
+        return mask
+
+    def vbf_mask(mjj_cut, deta_cut):
+        if not do_vbf_pairing:
+            raise ValueError(f"Region {region} requires do_vbf_pairing=True!")
+        return get_mask_vbf_region(column_file, mjj_cut, deta_cut, jet_coll=jet_coll_vbf if jet_coll_vbf else jet_coll_higgs, n_higgs_jets=n_higgs_jets)
+
+    def signal_region_mask():
+        higgs_lead_mass = column_file["INPUTS"]["HiggsLeading"]["mass"][()]
+        higgs_sublead_mass = column_file["INPUTS"]["HiggsSubLeading"]["mass"][()]
+        return get_mask_RHH_region(higgs_lead_mass, higgs_sublead_mass)
+
+    M, T, L = 0.2605, 0.6915, 0.0499
+    region_masks = {
+        "4b": lambda: btag_mask((M, None), (M, None), (M, None), (M, None)),
+        "4M": lambda: btag_mask((M, None), (M, None), (M, None), (M, None)),
+        "3M": lambda: btag_mask((M, None), (M, None), (M, None), (None, M)),
+        "2M": lambda: btag_mask((M, None), (M, None), (None, M), (None, M)),
+        "3T1M": lambda: btag_mask((T, None), (T, None), (T, None), (M, None)),
+        "3T1L": lambda: btag_mask((T, None), (T, None), (T, None), (L, M)),
+        "vbf_presel": lambda: vbf_mask(400, 3.5),
+        "vbf_no_kin_cuts": lambda: vbf_mask(0, 0),
+        "signal_region": signal_region_mask,
+    }
+
+    # Split a combined region (e.g. "signal_region_vbf_presel") into its
+    # known sub-regions, matching the longest name first
+    sub_regions = []
+    remaining = region
+    while remaining:
+        match = next(
+            (
+                name
+                for name in sorted(region_masks, key=len, reverse=True)
+                if remaining == name or remaining.startswith(name + "_")
+            ),
+            None,
         )
-    elif region == "3M":
-        mask = (
-            (jet_btag[:, 0] > 0.2605)
-            & (jet_btag[:, 1] > 0.2605)
-            & (jet_btag[:, 2] > 0.2605)
-            & (jet_btag[:, 3] < 0.2605)
-        )
-    elif region == "2M":
-        mask = (
-            (jet_btag[:, 0] > 0.2605)
-            & (jet_btag[:, 1] > 0.2605)
-            & (jet_btag[:, 2] < 0.2605)
-            & (jet_btag[:, 3] < 0.2605)
-        )
-    elif region == "3T1M":
-        mask = (
-            (jet_btag[:, 0] > 0.6915)
-            & (jet_btag[:, 1] > 0.6915)
-            & (jet_btag[:, 2] > 0.6915)
-            & (jet_btag[:, 3] > 0.2605)
-        )
-    elif region == "3T1L":
-        mask = (
-            (jet_btag[:, 0] > 0.6915)
-            & (jet_btag[:, 1] > 0.6915)
-            & (jet_btag[:, 2] > 0.6915)
-            & (jet_btag[:, 3] > 0.0499)
-            & (jet_btag[:, 3] < 0.2605)
-        )
-    elif region == "vbf_presel" and do_vbf_pairing:
-        mask = get_mask_vbf_region(column_file, 400, 3.5, jet_coll=jet_coll_vbf if jet_coll_vbf else jet_coll_higgs, n_higgs_jets=n_higgs_jets)
-    elif region == "vbf_no_kin_cuts" and do_vbf_pairing:
-        mask = get_mask_vbf_region(column_file, 0, 0, jet_coll=jet_coll_vbf if jet_coll_vbf else jet_coll_higgs, n_higgs_jets=n_higgs_jets)
-    else:
-        raise ValueError(f"Undefined region {region}!")
+        if match is None:
+            raise ValueError(f"Undefined region {region}!")
+        sub_regions.append(match)
+        remaining = remaining[len(match) + 1:]
+
+    mask = region_masks[sub_regions[0]]()
+    for name in sub_regions[1:]:
+        mask = mask & region_masks[name]()
     return mask
+
+def get_mask_RHH_region(
+    higgs_lead_mass,
+    higgs_sublead_mass,
+    radius_min=0,
+    radius_max=30,
+    higgs_lead_center=125,
+    higgs_sublead_center=120,
+):
+    
+    Rhh = np.sqrt(
+        (higgs_lead_mass - higgs_lead_center) ** 2
+        + (higgs_sublead_mass - higgs_sublead_center) ** 2
+    )
+    mask = (Rhh >= radius_min) & (Rhh < radius_max)
+
+    # Pad None values with False
+    return ak.where(ak.is_none(mask), False, mask)
 
 
 def get_mask_vbf_region(column_file, mjj_cut, delta_eta_cut, jet_coll="Jet", n_higgs_jets=4):
