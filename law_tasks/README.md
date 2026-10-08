@@ -575,15 +575,33 @@ the arguments of its entry in `law.cfg` -- `-r <region>`, what
 VBFEff_vbf_no_kin_cuts: --vbf -c 1 -ih -r vbf_no_kin_cuts -k
 VBFEff_vbf_presel:      --vbf -c 1 -ih -r vbf_presel -k
 HiggsEff:               -c 0 -k                       # no -r: inclusive
+HiggsEff_VBF:           -c 1 -vl -k                   # Higgs pairing, VBF events
 ZZ_ZH_Eff:              -c 2 3 -k                     # ZZ and ZH events
 
 [roc_plots]
-vbf_no_kin_cuts: -r vbf_no_kin_cuts -klb 1 all -s 0.8
-vbf_presel:      -r vbf_presel -klb 1 all -s 0.8
+vbf_no_kin_cuts:               -r vbf_no_kin_cuts -klb 1 all -s 0.8
+vbf_presel:                    -r vbf_presel -klb 1 all -s 0.8
+signal_region_vbf_no_kin_cuts: -r signal_region_vbf_no_kin_cuts -klb 1 all -s 0.8
+signal_region_vbf_presel:      -r signal_region_vbf_presel -klb 1 all -s 0.8
 ```
 
 So `hh4b.Performance` makes every plot listed there, each in its own region
 and its own subdirectory, and a new combination is an entry more.
+
+`HiggsEff` and `HiggsEff_VBF` are the same Higgs pairing efficiency, the
+first on the ggF events (class 0) and the second on the VBF ones (class 1),
+both without any selection.  `-vl` gives the points of `HiggsEff_VBF` the
+couplings of the VBF samples as labels, since the `kl` stored for them is
+really $\kappa_{2V}$ -- what `--vbf` does for the `VBFEff_*` plots.  A model
+whose event file defines no Higgs resonance does not make it (`not made:
+HiggsEff_VBF (... defines no Higgs resonance)`), like `HiggsEff`.
+
+The `signal_region_*` ROC curves are the `vbf_no_kin_cuts` and `vbf_presel`
+ones restricted to the signal region as well: both Higgs candidates within
+$R_{HH} = \sqrt{(m_{H_1} - 125)^2 + (m_{H_2} - 120)^2} < 30$ GeV.  The masses
+are read from `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubLeading/mass` of
+the files, so the files of every model of the ROC configuration have to hold
+those two collections; a file without them stops the plot with a `KeyError`.
 
 To change the region without touching `law.cfg`, `--region` replaces the one
 of every entry for that run:
@@ -601,7 +619,9 @@ law run hh4b.EfficiencyPlot --options-file <options> \
 ```
 
 The regions are the ones `utils/helpers.py` knows: `inclusive`,
-`vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`.
+`vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`,
+`signal_region`, and any of them joined with `_`, which asks for all of them
+at once, e.g. `signal_region_vbf_presel`.
 
 The plots of a region given this way are kept apart from the configured ones,
 so nothing is overwritten and the two can be compared:

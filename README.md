@@ -547,8 +547,9 @@ python utils/performance/efficiency_studies.py -pd <plot_dir> --vbf -c 1 -ih -r 
 # run Higgs pairing (without VBF pairing) on ggF events
 python utils/performance/efficiency_studies.py -pd <plot_dir>  -c 0 -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
 
-# run Higgs pairing (without VBF pairing) on VBF events
-python utils/performance/efficiency_studies.py -pd <plot_dir>  -c 1 -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
+# run Higgs pairing (without VBF pairing) on VBF events (-vl labels the points
+# with the couplings of the VBF samples, as --vbf does)
+python utils/performance/efficiency_studies.py -pd <plot_dir>  -c 1 -vl -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
 
 # run Higgs pairing (without VBF pairing) on ggF+VBF events
 python utils/performance/efficiency_studies.py -pd <plot_dir>  -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
@@ -632,7 +633,15 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 
 # e.g. for VBF
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r vbf_no_kin_cuts
+
+# the same in the signal region (RHH < 30 GeV) as well; needs INPUTS/HiggsLeading
+# and INPUTS/HiggsSubLeading in the files
+python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r signal_region_vbf_no_kin_cuts
+python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r signal_region_vbf_presel
 ```
+
+Regions can be combined by joining them with `_`: `signal_region_vbf_presel`
+is the VBF preselection *and* the signal region.
 
 ## Automated pipeline with law
 
