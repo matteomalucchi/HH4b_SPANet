@@ -574,9 +574,9 @@ the arguments of its entry in `law.cfg` -- `-r <region>`, what
 [efficiency_plots]                                    # -> subdirectory
 VBFEff_vbf_no_kin_cuts: --vbf -c 1 -ih -r vbf_no_kin_cuts -k
 VBFEff_vbf_presel:      --vbf -c 1 -ih -r vbf_presel -k
-HiggsEff:               -c 0 -k                       # no -r: inclusive
-HiggsEff_VBF:           -c 1 -vl -k                   # Higgs pairing, VBF events
-ZZ_ZH_Eff:              -c 2 3 -k                     # ZZ and ZH events
+HiggsEff_ggF_inclusive:   -c 0 -r inclusive -k        # Higgs pairing, ggF events
+HiggsEff_VBF_inclusive:   -c 1 -r inclusive -vl -k    # Higgs pairing, VBF events
+HiggsEff_ZZ_ZH_inclusive: -c 2 3 -r inclusive -k      # ZZ and ZH events
 
 [roc_plots]
 vbf_no_kin_cuts:               -r vbf_no_kin_cuts -klb 1 all -s 0.8
@@ -586,15 +586,18 @@ signal_region_vbf_presel:      -r signal_region_vbf_presel -klb 1 all -s 0.8
 ```
 
 So `hh4b.Performance` makes every plot listed there, each in its own region
-and its own subdirectory, and a new combination is an entry more.
+and its own subdirectory, and a new combination is an entry more.  The name
+of every efficiency entry is what it measures followed by its region,
+`<what>_<region>`, and it is the name of the subdirectory as well.
 
-`HiggsEff` and `HiggsEff_VBF` are the same Higgs pairing efficiency, the
-first on the ggF events (class 0) and the second on the VBF ones (class 1),
-both without any selection.  `-vl` gives the points of `HiggsEff_VBF` the
-couplings of the VBF samples as labels, since the `kl` stored for them is
-really $\kappa_{2V}$ -- what `--vbf` does for the `VBFEff_*` plots.  A model
-whose event file defines no Higgs resonance does not make it (`not made:
-HiggsEff_VBF (... defines no Higgs resonance)`), like `HiggsEff`.
+`HiggsEff_ggF_inclusive` and `HiggsEff_VBF_inclusive` are the same Higgs
+pairing efficiency, the first on the ggF events (class 0) and the second on
+the VBF ones (class 1), both without any selection.  `-vl` gives the points
+of `HiggsEff_VBF_inclusive` the couplings of the VBF samples as labels, since
+the `kl` stored for them is really $\kappa_{2V}$ -- what `--vbf` does for the
+`VBFEff_*` plots.  A model whose event file defines no Higgs resonance does
+not make it (`not made: HiggsEff_VBF_inclusive (... defines no Higgs
+resonance)`), like `HiggsEff_ggF_inclusive`.
 
 The `signal_region_*` ROC curves are the `vbf_no_kin_cuts` and `vbf_presel`
 ones restricted to the signal region as well: both Higgs candidates within
@@ -1000,7 +1003,7 @@ the resonances of hh4b_..._JetHiggsGlobal.yaml give: -c 1 -r vbf_presel -k --vbf
 A plot with nothing left to compute is not made at all:
 
 ```
-not made:         HiggsEff (hh4b_..._JetVBF_DNNVars_JetHiggsGlobal.yaml defines no Higgs resonance)
+not made:         HiggsEff_ggF_inclusive (hh4b_..._JetVBF_DNNVars_JetHiggsGlobal.yaml defines no Higgs resonance)
 ```
 
 Those are listed at the end of `hh4b.Performance` and kept in its summary
@@ -1020,12 +1023,12 @@ runs, and is not made when its model has nothing to show:
 
 | what the plot asks for | looked for | example |
 |---|---|---|
-| the classes of `-c` (efficiency plots) | at least one event of one of them in the test file | `VBFEff_*` and `HiggsEff_VBF` need class 1, `ZZ_ZH_Eff` class 2 or 3 |
+| the classes of `-c` (efficiency plots) | at least one event of one of them in the test file | `VBFEff_*` and `HiggsEff_VBF_*` need class 1, `HiggsEff_ZZ_ZH_*` class 2 or 3 |
 | a region with `signal_region` in it | `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubLeading/mass`, in the test file and in the prediction | `signal_region_vbf_no_kin_cuts`, `signal_region_vbf_presel`, or `--region signal_region_...` |
 
 ```
 not made:         VBFEff_vbf_presel (..._test.h5 holds no event of class 1)
-not made:         ZZ_ZH_Eff (..._test.h5 holds no event of class 2 or 3)
+not made:         HiggsEff_ZZ_ZH_inclusive (..._test.h5 holds no event of class 2 or 3)
 not made:         signal_region_vbf_presel (predict_..._test.h5 has no INPUTS/HiggsLeading/mass or INPUTS/HiggsSubLeading/mass, which the region 'signal_region_vbf_presel' needs)
 ```
 
@@ -1035,7 +1038,8 @@ region is left out of the plot with a warning in the log, and the Run 2
 reference of the efficiency plots without them stops the plot as below.
 
 The events of the other models are not looked for in advance either:
-`ZZ_ZH_Eff` asks for the classes 2 and 3, which only a few test files hold.
+`HiggsEff_ZZ_ZH_inclusive` asks for the classes 2 and 3, which only a few
+test files hold.
 When the files of no model have any of those events the script stops with
 
 ```
@@ -1054,7 +1058,7 @@ run) to use the k of each process instead -- 1.02 for ZZ, and 0.76 or 1.40 for
 a Z and a Higgs, depending on which of the two is the leading one in pt.
 
 ```
-not made:         ZZ_ZH_Eff (the samples or inputs it needs are missing from the test file)
+not made:         HiggsEff_ZZ_ZH_inclusive (the samples or inputs it needs are missing from the test file)
 ```
 
 The marker of that plot holds `"skipped"` instead of a plot directory, and the
