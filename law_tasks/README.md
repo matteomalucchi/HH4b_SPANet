@@ -600,8 +600,9 @@ The `signal_region_*` ROC curves are the `vbf_no_kin_cuts` and `vbf_presel`
 ones restricted to the signal region as well: both Higgs candidates within
 $R_{HH} = \sqrt{(m_{H_1} - 125)^2 + (m_{H_2} - 120)^2} < 30$ GeV.  The masses
 are read from `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubLeading/mass` of
-the files, so the files of every model of the ROC configuration have to hold
-those two collections; a file without them stops the plot with a `KeyError`.
+the files.  A plot whose model has no such inputs is not made, and the other
+models of the configuration that lack them are left out of the curves (see
+[And which samples a plot needs](#and-which-samples-a-plot-needs)).
 
 To change the region without touching `law.cfg`, `--region` replaces the one
 of every entry for that run:
@@ -1013,9 +1014,29 @@ efficiency at all.
 ### And which samples a plot needs
 
 Whether the *resonances* allow a plot is known from the event file, before
-anything runs.  Whether the *events* are there is not: `ZZ_ZH_Eff` asks for
-the classes 2 and 3, which only a few test files hold.  That plot is tried
-anyway, and when the file has none of those events the script stops with
+anything runs.  Whether the *events* and the *inputs* are there is known from
+the files, once the prediction exists; each plot looks at them before it
+runs, and is not made when its model has nothing to show:
+
+| what the plot asks for | looked for | example |
+|---|---|---|
+| the classes of `-c` (efficiency plots) | at least one event of one of them in the test file | `VBFEff_*` and `HiggsEff_VBF` need class 1, `ZZ_ZH_Eff` class 2 or 3 |
+| a region with `signal_region` in it | `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubLeading/mass`, in the test file and in the prediction | `signal_region_vbf_no_kin_cuts`, `signal_region_vbf_presel`, or `--region signal_region_...` |
+
+```
+not made:         VBFEff_vbf_presel (..._test.h5 holds no event of class 1)
+not made:         ZZ_ZH_Eff (..._test.h5 holds no event of class 2 or 3)
+not made:         signal_region_vbf_presel (predict_..._test.h5 has no INPUTS/HiggsLeading/mass or INPUTS/HiggsSubLeading/mass, which the region 'signal_region_vbf_presel' needs)
+```
+
+The other models of the configuration are drawn from files of their own, so
+the scripts look at those too: a model whose files lack the inputs of the
+region is left out of the plot with a warning in the log, and the Run 2
+reference of the efficiency plots without them stops the plot as below.
+
+The events of the other models are not looked for in advance either:
+`ZZ_ZH_Eff` asks for the classes 2 and 3, which only a few test files hold.
+When the files of no model have any of those events the script stops with
 
 ```
 MISSING SAMPLES: no model has an event left: the file holds none of the
@@ -1033,7 +1054,7 @@ run) to use the k of each process instead -- 1.02 for ZZ, and 0.76 or 1.40 for
 a Z and a Higgs, depending on which of the two is the leading one in pt.
 
 ```
-not made:         ZZ_ZH_Eff (the samples it needs are missing from the test file)
+not made:         ZZ_ZH_Eff (the samples or inputs it needs are missing from the test file)
 ```
 
 The marker of that plot holds `"skipped"` instead of a plot directory, and the
@@ -1041,9 +1062,12 @@ log of the command (`<run>/configs/journal/latest/NNN_EfficiencyPlot.log`) has
 the full output of the attempt.  Any *other* failure of the script still stops
 the pipeline, as it should: only the message above is tolerated.
 
+`ROC_plots.py` stops the same way, and is tolerated the same way, when no
+model of the configuration has the inputs its region needs.
+
 A file that has no class array at all is a different matter -- nothing can be
 selected, so `-c` is ignored and every event is used, which is what it always
-did.
+did; such a file is not skipped for its classes.
 
 ### And which ROC curves
 

@@ -634,8 +634,8 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 # e.g. for VBF
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r vbf_no_kin_cuts
 
-# the same in the signal region (RHH < 30 GeV) as well; needs INPUTS/HiggsLeading
-# and INPUTS/HiggsSubLeading in the files
+# the same in the signal region (RHH < 30 GeV) as well; reads INPUTS/HiggsLeading
+# and INPUTS/HiggsSubLeading, and leaves out the models whose files lack them
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r signal_region_vbf_no_kin_cuts
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r signal_region_vbf_presel
 ```
