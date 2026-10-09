@@ -574,16 +574,38 @@ the arguments of its entry in `law.cfg` -- `-r <region>`, what
 [efficiency_plots]                                    # -> subdirectory
 VBFEff_vbf_no_kin_cuts: --vbf -c 1 -ih -r vbf_no_kin_cuts -k
 VBFEff_vbf_presel:      --vbf -c 1 -ih -r vbf_presel -k
-HiggsEff:               -c 0 -k                       # no -r: inclusive
-ZZ_ZH_Eff:              -c 2 3 -k                     # ZZ and ZH events
+HiggsEff_ggF_inclusive:   -c 0 -r inclusive -k        # Higgs pairing, ggF events
+HiggsEff_VBF_inclusive:   -c 1 -r inclusive -vl -k    # Higgs pairing, VBF events
+HiggsEff_ZZ_ZH_inclusive: -c 2 3 -r inclusive -k      # ZZ and ZH events
 
 [roc_plots]
-vbf_no_kin_cuts: -r vbf_no_kin_cuts -klb 1 all -s 0.8
-vbf_presel:      -r vbf_presel -klb 1 all -s 0.8
+vbf_no_kin_cuts:               -r vbf_no_kin_cuts -klb 1 all -s 0.8
+vbf_presel:                    -r vbf_presel -klb 1 all -s 0.8
+signal_region_vbf_no_kin_cuts: -r signal_region_vbf_no_kin_cuts -klb 1 all -s 0.8
+signal_region_vbf_presel:      -r signal_region_vbf_presel -klb 1 all -s 0.8
 ```
 
 So `hh4b.Performance` makes every plot listed there, each in its own region
-and its own subdirectory, and a new combination is an entry more.
+and its own subdirectory, and a new combination is an entry more.  The name
+of every efficiency entry is what it measures followed by its region,
+`<what>_<region>`, and it is the name of the subdirectory as well.
+
+`HiggsEff_ggF_inclusive` and `HiggsEff_VBF_inclusive` are the same Higgs
+pairing efficiency, the first on the ggF events (class 0) and the second on
+the VBF ones (class 1), both without any selection.  `-vl` gives the points
+of `HiggsEff_VBF_inclusive` the couplings of the VBF samples as labels, since
+the `kl` stored for them is really $\kappa_{2V}$ -- what `--vbf` does for the
+`VBFEff_*` plots.  A model whose event file defines no Higgs resonance does
+not make it (`not made: HiggsEff_VBF_inclusive (... defines no Higgs
+resonance)`), like `HiggsEff_ggF_inclusive`.
+
+The `signal_region_*` ROC curves are the `vbf_no_kin_cuts` and `vbf_presel`
+ones restricted to the signal region as well: both Higgs candidates within
+$R_{HH} = \sqrt{(m_{H_1} - 125)^2 + (m_{H_2} - 120)^2} < 30$ GeV.  The masses
+are read from `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubLeading/mass` of
+the files.  A plot whose model has no such inputs is not made, and the other
+models of the configuration that lack them are left out of the curves (see
+[And which samples a plot needs](#and-which-samples-a-plot-needs)).
 
 To change the region without touching `law.cfg`, `--region` replaces the one
 of every entry for that run:
@@ -601,7 +623,9 @@ law run hh4b.EfficiencyPlot --options-file <options> \
 ```
 
 The regions are the ones `utils/helpers.py` knows: `inclusive`,
-`vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`.
+`vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`,
+`signal_region`, and any of them joined with `_`, which asks for all of them
+at once, e.g. `signal_region_vbf_presel`.
 
 The plots of a region given this way are kept apart from the configured ones,
 so nothing is overwritten and the two can be compared:
@@ -979,7 +1003,7 @@ the resonances of hh4b_..._JetHiggsGlobal.yaml give: -c 1 -r vbf_presel -k --vbf
 A plot with nothing left to compute is not made at all:
 
 ```
-not made:         HiggsEff (hh4b_..._JetVBF_DNNVars_JetHiggsGlobal.yaml defines no Higgs resonance)
+not made:         HiggsEff_ggF_inclusive (hh4b_..._JetVBF_DNNVars_JetHiggsGlobal.yaml defines no Higgs resonance)
 ```
 
 Those are listed at the end of `hh4b.Performance` and kept in its summary
@@ -993,9 +1017,30 @@ efficiency at all.
 ### And which samples a plot needs
 
 Whether the *resonances* allow a plot is known from the event file, before
-anything runs.  Whether the *events* are there is not: `ZZ_ZH_Eff` asks for
-the classes 2 and 3, which only a few test files hold.  That plot is tried
-anyway, and when the file has none of those events the script stops with
+anything runs.  Whether the *events* and the *inputs* are there is known from
+the files, once the prediction exists; each plot looks at them before it
+runs, and is not made when its model has nothing to show:
+
+| what the plot asks for | looked for | example |
+|---|---|---|
+| the classes of `-c` (efficiency plots) | at least one event of one of them in the test file | `VBFEff_*` and `HiggsEff_VBF_*` need class 1, `HiggsEff_ZZ_ZH_*` class 2 or 3 |
+| a region with `signal_region` in it | `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubLeading/mass`, in the test file and in the prediction | `signal_region_vbf_no_kin_cuts`, `signal_region_vbf_presel`, or `--region signal_region_...` |
+
+```
+not made:         VBFEff_vbf_presel (..._test.h5 holds no event of class 1)
+not made:         HiggsEff_ZZ_ZH_inclusive (..._test.h5 holds no event of class 2 or 3)
+not made:         signal_region_vbf_presel (predict_..._test.h5 has no INPUTS/HiggsLeading/mass or INPUTS/HiggsSubLeading/mass, which the region 'signal_region_vbf_presel' needs)
+```
+
+The other models of the configuration are drawn from files of their own, so
+the scripts look at those too: a model whose files lack the inputs of the
+region is left out of the plot with a warning in the log, and the Run 2
+reference of the efficiency plots without them stops the plot as below.
+
+The events of the other models are not looked for in advance either:
+`HiggsEff_ZZ_ZH_inclusive` asks for the classes 2 and 3, which only a few
+test files hold.
+When the files of no model have any of those events the script stops with
 
 ```
 MISSING SAMPLES: no model has an event left: the file holds none of the
@@ -1013,7 +1058,7 @@ run) to use the k of each process instead -- 1.02 for ZZ, and 0.76 or 1.40 for
 a Z and a Higgs, depending on which of the two is the leading one in pt.
 
 ```
-not made:         ZZ_ZH_Eff (the samples it needs are missing from the test file)
+not made:         HiggsEff_ZZ_ZH_inclusive (the samples or inputs it needs are missing from the test file)
 ```
 
 The marker of that plot holds `"skipped"` instead of a plot directory, and the
@@ -1021,9 +1066,12 @@ log of the command (`<run>/configs/journal/latest/NNN_EfficiencyPlot.log`) has
 the full output of the attempt.  Any *other* failure of the script still stops
 the pipeline, as it should: only the message above is tolerated.
 
+`ROC_plots.py` stops the same way, and is tolerated the same way, when no
+model of the configuration has the inputs its region needs.
+
 A file that has no class array at all is a different matter -- nothing can be
 selected, so `-c` is ignored and every event is used, which is what it always
-did.
+did; such a file is not skipped for its classes.
 
 ### And which ROC curves
 

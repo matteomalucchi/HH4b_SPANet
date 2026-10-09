@@ -117,6 +117,26 @@ def get_region_mask(region, column_file, do_vbf_pairing, jet_coll_higgs="Jet", j
         mask = mask & region_masks[name]()
     return mask
 
+#: the INPUTS a region reads besides the jets: the signal region cuts on the
+#: masses of the two Higgs candidates (law_tasks/eventinfo.py holds the same)
+REGION_INPUTS = {
+    "signal_region": [("HiggsLeading", "mass"), ("HiggsSubLeading", "mass")],
+}
+
+
+def missing_region_inputs(region, column_file):
+    """``INPUTS/<collection>/<variable>`` the region needs and the file lacks."""
+    missing = []
+    for name, inputs in REGION_INPUTS.items():
+        if name not in region:
+            continue
+        for collection, variable in inputs:
+            group = column_file["INPUTS"]
+            if collection not in group or variable not in group[collection]:
+                missing.append(f"INPUTS/{collection}/{variable}")
+    return missing
+
+
 def get_mask_RHH_region(
     higgs_lead_mass,
     higgs_sublead_mass,
