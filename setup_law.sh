@@ -48,8 +48,8 @@ _law_setup() {
 
     law index --quiet || return 1
 
-    # the efficiency configuration the generated one extends has no default:
-    # say it now rather than after a training
+    # the efficiency and ROC configurations the generated ones extend have no
+    # default: say it now rather than after a training
     local eff_config="${SPANET_EFF_BASE_CONFIG}"
     if [ -z "${eff_config}" ] && \
        grep -qE "^[[:space:]]*eff_base_config[[:space:]]*:" "${LAW_CONFIG_FILE}" 2>/dev/null; then
@@ -62,12 +62,25 @@ _law_setup() {
         echo "  export SPANET_EFF_BASE_CONFIG=utils/performance/efficiency_configuration_vbf_ggf.py"
     fi
 
+    local roc_config="${SPANET_ROC_BASE_CONFIG}"
+    if [ -z "${roc_config}" ] && \
+       grep -qE "^[[:space:]]*roc_base_config[[:space:]]*:" "${LAW_CONFIG_FILE}" 2>/dev/null; then
+        roc_config="$( grep -E "^[[:space:]]*roc_base_config[[:space:]]*:" "${LAW_CONFIG_FILE}" | head -1 | cut -d: -f2- )"
+    fi
+    if [ -z "${roc_config}" ]; then
+        echo "setup_law.sh: SPANET_ROC_BASE_CONFIG is not set."
+        echo "  The ROC configuration the generated one extends has no"
+        echo "  default; hh4b.RegisterModel stops without it, e.g."
+        echo "  export SPANET_ROC_BASE_CONFIG=utils/roccurves/roc_configuration_vbf_ggf.py"
+    fi
+
     echo "law is set up:"
     echo "  repository:  ${repo_dir}"
     echo "  environment: ${SPANET_ENV_DIR:-${VIRTUAL_ENV:-system python}}"
     echo "  config:      ${LAW_CONFIG_FILE}"
     echo "  law home:    ${LAW_HOME}"
     echo "  efficiency:  ${eff_config:-<unset>}"
+    echo "  roc:         ${roc_config:-<unset>}"
 }
 
 _law_setup "$@"

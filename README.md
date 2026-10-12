@@ -762,15 +762,15 @@ The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
 
-Which one is extended has to be said, there is no default for it:
+Which ones are extended has to be said, there is no default for them:
 
 ```bash
 export SPANET_EFF_BASE_CONFIG="utils/performance/efficiency_configuration_vbf_ggf.py"
+export SPANET_ROC_BASE_CONFIG="utils/roccurves/roc_configuration_vbf_ggf.py"
 ```
 
-(or `eff_base_config` in `law.cfg`; a relative path is read from the
-repository). The ROC one, `roc_base_config` / `$SPANET_ROC_BASE_CONFIG`, does
-default to the configuration tracked here.
+(or `eff_base_config` / `roc_base_config` in `law.cfg`; a relative path is
+read from the repository).
 
 The `event_info_file` of the model fills those entries in -- the jet
 collections, the index offsets, the resonance set and whether the prediction

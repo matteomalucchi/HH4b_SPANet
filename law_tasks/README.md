@@ -35,17 +35,18 @@ export SPANET_MAIN_DIR="/afs/cern.ch/user/${USER:0:1}/${USER}"                  
 export SPANET_ENV_DIR="/eos/user/${USER:0:1}/${USER}/spanet_infos/spanet_env_test_eos"  # virtual environment
 export EOS_SPANET="/eos/user/${USER:0:1}/${USER}/php-plots/SPANet_studies/training_outputs"  # where the trainings go
 export SPANET_EFF_BASE_CONFIG="utils/performance/efficiency_configuration_vbf_ggf.py"  # the efficiency configuration to extend
+export spanet_roc_base_config="utils/roccurves/roc_configuration_vbf_ggf.py"         # the ROC configuration to extend
 
 # in every session, from the repository root
 cd $SPANET_MAIN_DIR/HH4b_SPANet
 source setup_law.sh
 ```
 
-`$SPANET_EFF_BASE_CONFIG` is the one setting with no default: it names the
-efficiency configuration the generated one extends, i.e. which models a new
-one is drawn next to.  `eff_base_config` in `law.cfg` does the same; without
-either, `hh4b.RegisterModel` stops and says what to set.  A relative path is
-read from the repository.
+`$SPANET_EFF_BASE_CONFIG` and `$SPANET_ROC_BASE_CONFIG` are the settings with
+no default: they name the efficiency and ROC configurations the generated ones
+extend, i.e. which models a new one is drawn next to.  `eff_base_config` and
+`roc_base_config` in `law.cfg` do the same; without either, `hh4b.RegisterModel`
+stops and says what to set.  A relative path is read from the repository.
 
 `setup_law.sh` says so at the end of its output, so an unset one is seen right
 away and not after a training.
@@ -601,7 +602,14 @@ law run hh4b.EfficiencyPlot --options-file <options> \
 ```
 
 The regions are the ones `utils/helpers.py` knows: `inclusive`,
-`vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`.
+`vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`,
+`signal_region`.
+
+`signal_region` is the HH signal region of the analysis
+(`hh4b_signal_region` in `AnalysisConfigs/configs/HH4b_common/custom_cuts_common.py`):
+`Rhh = sqrt((m_H1 - 125)^2 + (m_H2 - 120)^2) < 30` GeV, with the masses read
+from `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubleading/mass` of the file,
+which must therefore contain them.
 
 The plots of a region given this way are kept apart from the configured ones,
 so nothing is overwritten and the two can be compared:
@@ -1062,9 +1070,8 @@ i.e. inside the training directory they describe, next to the plots they are
 used for.
 
 Which configuration is extended is `eff_base_config` / `$SPANET_EFF_BASE_CONFIG`
-for the efficiency -- required, there is no default -- and `roc_base_config` /
-`$SPANET_ROC_BASE_CONFIG` for the ROC curves, which does default to the one
-tracked in the repository.  A path that is set but does not exist is reported
+for the efficiency and `roc_base_config` / `$SPANET_ROC_BASE_CONFIG` for the
+ROC curves -- both required, there is no default.  A path that is set but does not exist is reported
 as such instead of failing later inside the plotting script.
 
 The Run 2 method is evaluated on **this model's** true file, the very file the
@@ -1174,7 +1181,7 @@ derived from `$USER`:
 | conversion | `conversion_python` | `$SPANET_CONVERSION_PYTHON` | `python3` |
 | conversion scripts | `converter_script`, `collections_module` | *(none)* | `utils/dataset/coffea_to_h5_direct.py` and its `collections_coffea_to_h5_direct.py` |
 | efficiency configuration to extend | `eff_base_config` | `$SPANET_EFF_BASE_CONFIG` | **none, it has to be set** |
-| ROC configuration to extend | `roc_base_config` | `$SPANET_ROC_BASE_CONFIG` | `utils/roccurves/roc_configuration_vbf_ggf.py` |
+| ROC configuration to extend | `roc_base_config` | `$SPANET_ROC_BASE_CONFIG` | **none, it has to be set** |
 | transfer | `rsync_options` | `$SPANET_RSYNC_OPTIONS` | `-avh --partial` |
 
 The `[efficiency_plots]` and `[roc_plots]` sections define which plots are

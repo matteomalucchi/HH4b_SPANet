@@ -295,14 +295,20 @@ class Settings(object):
     def roc_base_config(self):
         """The ROC configuration the generated one extends.
 
-        This one keeps a default, the configuration tracked in the repository;
-        law.cfg and $SPANET_ROC_BASE_CONFIG replace it.
+        Like the efficiency one there is no default: which models a new one is
+        drawn next to is a choice.  It has to be named, in law.cfg or in the
+        environment.
         """
-        default = os.path.join(
-            self.repo_dir, "utils", "roccurves", "roc_configuration_vbf_ggf.py"
-        )
         return self._base_config(
-            "roc_base_config", "SPANET_ROC_BASE_CONFIG", "ROC", default, default=default
+            "roc_base_config",
+            "SPANET_ROC_BASE_CONFIG",
+            "ROC",
+            os.path.join(
+                self.repo_dir,
+                "utils",
+                "roccurves",
+                "roc_configuration_vbf_ggf.py",
+            ),
         )
 
     # -- dataset conversion and transfer -----------------------------------
