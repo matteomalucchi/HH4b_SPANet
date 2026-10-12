@@ -249,8 +249,11 @@ number of events and the sum of weights per class and kl is printed at the start
 python3 utils/dataset/plot_h5_inputs_per_kl.py -i <file.h5> -o <output_dir> \
     [--class-names 0:ggF 1:VBF] [--param-names 0:kl 1:C2V] [--weighted] \
     [--vars <regex> ...] [--skip <regex> ...] [--padding-values 9999 -999] \
-    [--max-objects N] [--flatten-sequential] [--max-events N] [--bins 50] [--log] [--pdf]
+    [--max-objects N] [--flatten-sequential] [--max-events N] [--bins 50] [--log] [--pdf] [-j N]
 ```
+
+The histograms are filled in the main process while a pool of `-j` processes
+draws the plots (by default one per CPU).
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -268,3 +271,4 @@ python3 utils/dataset/plot_h5_inputs_per_kl.py -i <file.h5> -o <output_dir> \
 | `--bins` | `50` | Number of bins |
 | `--log` | off | Logarithmic y axis |
 | `--pdf` | off | Also save pdf files |
+| `-j`, `--workers` | `0` (all CPUs) | Number of processes drawing the plots |
