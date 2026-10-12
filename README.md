@@ -634,6 +634,14 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r vbf_no_kin_cuts
 ```
 
+#### AUC per signal sample
+
+`utils/roccurves/auc_per_sample.py` prints the AUC of each signal sample (one per value of `INPUTS/Event/kl`; for VBF this is C2V) against the background with a given kl (default SM ggF, kl=1), for one or more prediction files of the same test file, side by side. Useful to see whether a model is biased towards the samples that dominate the training weights.
+
+```bash
+python3 utils/roccurves/auc_per_sample.py -t <test.h5> -p <predict_A.h5> <predict_B.h5> -l modelA modelB [--bkg-kl 1|all] [--weighted]
+```
+
 ## Automated pipeline with law
 
 All the steps above -- converting the coffea files into SPANet inputs and
