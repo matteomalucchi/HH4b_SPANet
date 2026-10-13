@@ -11,6 +11,7 @@ import h5py
 # dataset/group to a different parent group entirely (intermediate groups are
 # created automatically), so this covers both INPUTS/... and TARGETS/... vars.
 RENAME_MAP = {
+    # rename the INPUTS/Jet/btagB datasets to btagPNetB, which is the new name
     "INPUTS/Jet/btagB": "INPUTS/Jet/btagPNetB",
     "INPUTS/Jet/btagB_3wp": "INPUTS/Jet/btagPNetB_3wp",
     "INPUTS/Jet/btagB_5wp": "INPUTS/Jet/btagPNetB_5wp",
@@ -32,6 +33,9 @@ RENAME_MAP = {
     "INPUTS/JetGoodProvHiggsPadded_3/btagB": "INPUTS/JetGoodProvHiggsPadded_3/btagPNetB",
     "INPUTS/JetGoodProvHiggsPadded_3/btagB_3wp": "INPUTS/JetGoodProvHiggsPadded_3/btagPNetB_3wp",
     "INPUTS/JetGoodProvHiggsPadded_3/btagB_5wp": "INPUTS/JetGoodProvHiggsPadded_3/btagPNetB_5wp",
+    # rename the TARGETS/h2/b1 and b2 datasets to b3 and b4, respectively, so that
+    "TARGETS/h2/b1": "TARGETS/h2/b3",
+    "TARGETS/h2/b2": "TARGETS/h2/b4"
 }
 
 

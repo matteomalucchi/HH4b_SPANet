@@ -643,6 +643,16 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 Regions can be combined by joining them with `_`: `signal_region_vbf_presel`
 is the VBF preselection *and* the signal region.
 
+#### AUC per signal sample
+
+`utils/roccurves/auc_per_sample.py` prints the AUC of each signal sample (one per value of `INPUTS/Event/kl`; for VBF this is C2V) against the background with a given kl (default SM ggF, kl=1), for one or more prediction files of the same test file, side by side. Useful to see whether a model is biased towards the samples that dominate the training weights.
+The prediction files must have the same events as the test file: the number of events is always checked, and the event numbers (`INPUTS/Event/event`) are compared when present.
+With `--plot-dir`, the per-sample AUCs are also plotted with `HEPPlotter` as a function of the signal kl (C2V), one graph per prediction file.
+
+```bash
+python3 utils/roccurves/auc_per_sample.py -t <test.h5> -p <predict_A.h5> <predict_B.h5> -l modelA modelB [--bkg-kl 1|all] [--weighted] [--plot-dir <dir>]
+```
+
 ## Automated pipeline with law
 
 All the steps above -- converting the coffea files into SPANet inputs and
