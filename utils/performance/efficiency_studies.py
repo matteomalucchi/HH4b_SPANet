@@ -237,6 +237,17 @@ def main():
         )
         offset_jet_idx_vbf = file_dict.get("offset_jet_idx_vbf", 0)
 
+        missing = sorted(
+            set(helpers.missing_region_inputs(args.region, spanetfile))
+            | set(helpers.missing_region_inputs(args.region, truefile))
+        )
+        if missing:
+            logger.warning(
+                f"Model {model_name} is left out: the region {args.region} "
+                f"needs {', '.join(missing)}, which its files do not hold"
+            )
+            continue
+
         # define region mask
         mask_region_spanet = helpers.get_region_mask(
             args.region,
@@ -550,6 +561,13 @@ def main():
     n_higgs_jets = run2_true_entry.get("n_higgs_jets", 4)
     jet_coll_higgs = run2_true_entry.get("jet_coll_higgs", "Jet")
     jet_coll_vbf = run2_true_entry.get("jet_coll_vbf", None)
+
+    missing = helpers.missing_region_inputs(args.region, truefile)
+    if missing:
+        raise MissingSamples(
+            "the true file of the Run 2 method, {}, has no {}, which the "
+            "region '{}' needs".format(run2_dataset, ", ".join(missing), args.region)
+        )
 
     # define region mask
     mask_region_true = helpers.get_region_mask(

@@ -25,6 +25,12 @@ import helpers
 from utils_configs.plot.HEPPlotter import HEPPlotter
 from utils_configs.plot.weighted_quantile import weighted_quantile
 
+#: what the script prints, and the code it exits with, when no model has the
+#: inputs the region needs; the law task hh4b.RocPlot reports the plot as not
+#: made (utils/performance/efficiency_functions.py holds the same two values)
+MISSING_SAMPLES_MESSAGE = "MISSING SAMPLES"
+MISSING_SAMPLES_EXIT = 3
+
 # CMS colour palette of mplhep: the first colour is used for the background
 # and the second one for the signal, consistently in all the plotting scripts
 CMS_COLORS = [cycle["color"] for cycle in hep.style.CMS["axes.prop_cycle"]]
@@ -545,6 +551,14 @@ def main():
         model_dict.pop("file")
         model_dict.pop("true")
 
+        missing = helpers.missing_region_inputs(args.region, spanetfile)
+        if missing:
+            logger.warning(
+                f"Model {model_name} is left out: the region {args.region} needs "
+                f"{', '.join(missing)}, which {spanetfile.filename} does not hold"
+            )
+            continue
+
         mask_region_spanet = helpers.get_region_mask(args.region, spanetfile, True, jet_coll_higgs=jet_coll_higgs, jet_coll_vbf=jet_coll_vbf, n_higgs_jets=n_higgs_jets)
 
         spanet_class = spanetfile["CLASSIFICATIONS"]["EVENT"]["class"][:, 1][()][mask_region_spanet]
@@ -563,6 +577,13 @@ def main():
             "weights": weights,
             "kls": kls,
         } | model_dict
+
+    if not class_dict:
+        logger.error(
+            f"{MISSING_SAMPLES_MESSAGE}: no model has the inputs the region "
+            f"'{args.region}' needs"
+        )
+        sys.exit(MISSING_SAMPLES_EXIT)
 
     for model_name, model_dict in roc_dict.items():
         logger.info(f"Loading new file {model_name}")
