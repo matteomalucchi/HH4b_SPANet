@@ -110,8 +110,8 @@ def _user():
 
 def _default_eos_base():
     """``<eos home>/spanet_infos`` when on lxplus, ``$HOME/spanet_infos`` otherwise."""
-    if os.environ.get("EOS_SPANET"):
-        return os.path.dirname(os.path.expandvars(os.environ["EOS_SPANET"]).rstrip("/"))
+    if os.environ.get("SPANET_OUT_DIR"):
+        return os.path.dirname(os.path.expandvars(os.environ["SPANET_OUT_DIR"]).rstrip("/"))
 
     user = _user()
     if user:
@@ -182,7 +182,7 @@ class Settings(object):
         """
         return cfg_get(
             "output_base",
-            "EOS_SPANET",
+            "SPANET_OUT_DIR",
             os.path.join(self.web_base, "training_outputs"),
         )
 
@@ -221,7 +221,7 @@ class Settings(object):
             expanded = string.Template(expanded).safe_substitute(
                 SPANET_MAIN_DIR=self.spanet_main_dir,
                 SPANET_ENV_DIR=self.spanet_env_dir,
-                EOS_SPANET=self.output_base,
+                SPANET_OUT_DIR=self.output_base,
             )
         return expanded
 

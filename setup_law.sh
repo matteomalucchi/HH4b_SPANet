@@ -7,7 +7,7 @@
 # at law.cfg, makes the law_tasks package importable and builds the task index.
 # All paths are derived from $USER / the location of this file, so the script
 # works for every user; export SPANET_ENV_DIR (and optionally SPANET_MAIN_DIR,
-# EOS_SPANET) in your .bashrc to pin your own setup.
+# SPANET_OUT_DIR) in your .bashrc to pin your own setup.
 #
 # On the machine that only converts the coffea files, SPANET_ENV_DIR does not
 # have to be set: the current environment is kept, and the dataset tasks

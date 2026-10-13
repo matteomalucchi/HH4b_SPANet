@@ -735,7 +735,7 @@ that it can be read in a browser:
     law/                  the markers law reads
 ```
 
-`web_base` and `output_base` in `law.cfg` (`$SPANET_WEB_BASE`, `$EOS_SPANET`)
+`web_base` and `output_base` in `law.cfg` (`$SPANET_WEB_BASE`, `$SPANET_OUT_DIR`)
 move that base; a training that is already there keeps its own date, whatever
 today is, and the layouts used before are still found. See
 [Everything of a training in one directory](law_tasks/README.md#everything-of-a-training-in-one-directory).
@@ -802,7 +802,7 @@ The EOS areas shared inside the group are `extra_binds` in `law.cfg`, bound
 both in the container of the tasks and in the one of the training jobs.
 
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
-`SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
+`SPANET_ENV_DIR`, `SPANET_OUT_DIR`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
 `SPANET_REMOTE_INPUT_DIR`, `SPANET_WEB_BASE`, `SPANET_ONNX_DIR`, ...) or, as a last resort, from generic `$USER`
 based defaults, so no path has to be edited to use the pipeline.
 

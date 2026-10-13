@@ -56,7 +56,7 @@ arg_parser.add_argument(
     "--output_folder",
     type=str,
     required=False,
-    default="$EOS_SPANET",
+    default="$SPANET_OUT_DIR",
     help="directory in which out_spanet_outputs is saved",
 )
 arg_parser.add_argument("--interactive", action="store_true")

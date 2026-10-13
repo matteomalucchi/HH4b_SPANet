@@ -33,7 +33,7 @@ container themselves whenever a payload needs it.
 # once, e.g. in the .bashrc
 export SPANET_MAIN_DIR="/afs/cern.ch/user/${USER:0:1}/${USER}"                       # SPANet + HH4b_SPANet checkouts
 export SPANET_ENV_DIR="/eos/user/${USER:0:1}/${USER}/spanet_infos/spanet_env_test_eos"  # virtual environment
-export EOS_SPANET="/eos/user/${USER:0:1}/${USER}/php-plots/SPANet_studies/training_outputs"  # where the trainings go
+export SPANET_OUT_DIR="/eos/user/${USER:0:1}/${USER}/php-plots/SPANet_studies/training_outputs"  # where the trainings go
 export SPANET_EFF_BASE_CONFIG="utils/performance/efficiency_configuration_vbf_ggf.py"  # the efficiency configuration to extend
 export spanet_roc_base_config="utils/roccurves/roc_configuration_vbf_ggf.py"         # the ROC configuration to extend
 
@@ -353,7 +353,7 @@ law run hh4b.Performance \
 This is the equivalent of the manual chain
 
 ```bash
-python3 jobs/submit_jobs_seed.py -c jobs/config/training_1gpu_1d.yaml -s 100:100 -o <options> -out $EOS_SPANET
+python3 jobs/submit_jobs_seed.py -c jobs/config/training_1gpu_1d.yaml -s 100:100 -o <options> -out $SPANET_OUT_DIR
 # ... wait for the job, then, inside the container:
 python -m spanet.predict ./ predict_<test>.h5 -tf <test file> --gpu
 python scripts/plot_training_metrics.py -d <version dir>
@@ -429,7 +429,7 @@ looked at in a browser:
 ```
 
 Both halves are configurable, `web_base` and `output_base` in `law.cfg`
-(`$SPANET_WEB_BASE`, `$EOS_SPANET`), and `--output-base` for a single run.
+(`$SPANET_WEB_BASE`, `$SPANET_OUT_DIR`), and `--output-base` for a single run.
 
 The date is the day the directory is created, and it is read back afterwards,
 never guessed: a model whose training is already there keeps writing into the
@@ -1216,7 +1216,7 @@ derived from `$USER`:
 | virtual env | `spanet_env_dir` | `$SPANET_ENV_DIR` | `$VIRTUAL_ENV` |
 | output base | `eos_base` | `$SPANET_EOS_BASE` | `/eos/user/${USER:0:1}/$USER/spanet_infos` |
 | website area | `web_base` | `$SPANET_WEB_BASE` | `/eos/user/${USER:0:1}/$USER/php-plots/SPANet_studies` |
-| trainings | `output_base` | `$EOS_SPANET` | `<web_base>/training_outputs` |
+| trainings | `output_base` | `$SPANET_OUT_DIR` | `<web_base>/training_outputs` |
 | efficiency plots | `eff_plot_base` | `$SPANET_EFF_PLOT_DIR` | the training directory |
 | ROC plots | `roc_plot_base` | `$SPANET_ROC_PLOT_DIR` | the training directory |
 | journal of a task without a training | `work_dir` | `$SPANET_LAW_WORK_DIR` | `<eos_base>/law_work` |
