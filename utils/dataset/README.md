@@ -236,30 +236,39 @@ python utils/dataset/coffea_to_h5_direct.py \
 
 Plots every input variable of a SPANet h5 file (everything under `INPUTS/`)
 separately for each sample, identified by the event variable `INPUTS/Event/kl`
-(for the VBF samples this field holds C2V), with one panel per class
-(`CLASSIFICATIONS/EVENT/class`, by default `0:ggF 1:VBF`).  Histograms are
-normalized to unit area to compare the shapes.  Sequential inputs (e.g.
-`JetVBF/pt`) give one plot per object index, padded entries are removed with the
-`MASK` of the collection.  A table with the number of events and the sum of
-weights per class and kl is printed at the start.
+(for the VBF samples this field holds C2V), with one plot per class
+(`CLASSIFICATIONS/EVENT/class`, by default `0:ggF 1:VBF`). The plots are made
+with `HEPPlotter`. Histograms are normalized to unit area to compare the shapes,
+and under/overflows are added to the first/last bin. Sequential inputs (e.g.
+`JetVBF/pt`) give one plot per object index, and padded entries are removed with
+the `MASK` of the collection. Entries equal to the padding values of the h5
+conversion (`9999`, `-999`) are dropped for all the variables. A table with the
+number of events and the sum of weights per class and kl is printed at the start.
 
 ```bash
 python3 utils/dataset/plot_h5_inputs_per_kl.py -i <file.h5> -o <output_dir> \
-    [--class-names 0:ggF 1:VBF] [--weighted] [--vars <regex> ...] [--skip <regex> ...] \
-    [--max-objects N] [--flatten-sequential] [--max-events N] [--bins 50] [--log] [--pdf]
+    [--class-names 0:ggF 1:VBF] [--param-names 0:kl 1:C2V] [--weighted] \
+    [--vars <regex> ...] [--skip <regex> ...] [--padding-values 9999 -999] \
+    [--max-objects N] [--flatten-sequential] [--max-events N] [--bins 50] [--log] [--pdf] [-j N]
 ```
+
+The histograms are filled in the main process while a pool of `-j` processes
+draws the plots (by default one per CPU).
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `-i`, `--input` | *(required)* | Input SPANet h5 file |
-| `-o`, `--output-dir` | *(required)* | Output directory, plots saved as `<group>/<variable>[_<index>].png` |
+| `-o`, `--output-dir` | *(required)* | Output directory, plots saved as `<class>/<group>/<variable>[_<index>].png` |
 | `--class-names` | `0:ggF 1:VBF` | Mapping class index → name |
+| `--param-names` | `0:kl 1:C2V` | Mapping class index → name of the coupling stored in `INPUTS/Event/kl`, used in the legend |
 | `--weighted` | off | Fill the histograms with `WEIGHTS/weight` |
 | `--vars` | all | Only plot variables whose `<group>/<name>` matches one of these regexes |
 | `--skip` | `MASK`, `kl`, `event`, `era`, `year` | Regexes of variables to skip |
+| `--padding-values` | `9999 -999` | Values treated as padding and dropped |
 | `--max-objects` | all | Maximum number of objects plotted per sequential collection |
 | `--flatten-sequential` | off | One histogram with all the objects of a sequential collection |
 | `--max-events` | all | Read only the first N events |
 | `--bins` | `50` | Number of bins |
 | `--log` | off | Logarithmic y axis |
 | `--pdf` | off | Also save pdf files |
+| `-j`, `--workers` | `0` (all CPUs) | Number of processes drawing the plots |

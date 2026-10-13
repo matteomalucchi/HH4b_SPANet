@@ -7,17 +7,41 @@ import shlex
 import law
 import luigi
 
-from law_tasks import naming
+from law_tasks import eventinfo, naming
 from law_tasks.base import ModelTask
 from law_tasks.tasks.register import RegisterModel
 from law_tasks.tasks.training import Training
 
-#: what efficiency_studies.py prints when the file holds no event of what the
-#: plot asks for -- a ZZ/ZH efficiency of a training without those samples,
-#: for instance.  That is not a failure: the plot is reported as not made and
-#: the pipeline carries on (utils/performance/efficiency_functions.py holds
-#: the same string).
+#: what efficiency_studies.py and ROC_plots.py print when the files hold no
+#: event of what the plot asks for -- a ZZ/ZH efficiency of a training without
+#: those samples, or a signal region ROC of files without the Higgs masses.
+#: That is not a failure: the plot is reported as not made and the pipeline
+#: carries on (utils/performance/efficiency_functions.py holds the same
+#: string).
 MISSING_SAMPLES = "MISSING SAMPLES"
+
+
+#: the reason recorded for a plot whose script stopped with MISSING_SAMPLES
+MISSING_SAMPLES_REASON = "the samples or inputs it needs are missing from the test file"
+
+
+def option_values(arguments, *names):
+    """Values of the last of ``names`` in ``arguments``, or ``None``.
+
+    ``-c 2 3 -k`` gives ``['2', '3']`` for ``-c``: an option takes every token
+    up to the next option, the way argparse reads ``nargs="+"``.
+    """
+    tokens = shlex.split(arguments or "")
+    values = None
+    for index, token in enumerate(tokens):
+        if token not in names:
+            continue
+        values = []
+        for value in tokens[index + 1:]:
+            if value.startswith("-") and not value.lstrip("-").replace(".", "").isdigit():
+                break
+            values.append(value)
+    return values
 
 
 class TrainingMetrics(ModelTask):
@@ -210,6 +234,57 @@ class PlotTask(ModelTask):
             return None
         return self.event_info.unsupported(self.configured_arguments)
 
+    @property
+    def full_arguments(self):
+        """Everything the script is given, ``--plot-args`` included."""
+        return " ".join(a for a in (self.plot_arguments, self.plot_args) if a)
+
+    def missing_data(self, registration):
+        """Why the files of this model hold nothing to plot, or ``None``.
+
+        Checked when the plot runs, since the prediction exists only then:
+
+        * the classes of ``-c`` (efficiency plots): a test file without any
+          event of them -- class 1 for the VBF efficiencies, 2 and 3 for
+          ZZ/ZH -- has no efficiency to show;
+        * the inputs the region reads, e.g. ``INPUTS/HiggsLeading/mass`` and
+          ``INPUTS/HiggsSubLeading/mass`` for the ``signal_region`` ones, in
+          the test file and in the prediction.
+        """
+        test_file = registration["test_file"]
+        prediction = registration["prediction_file"]
+        arguments = self.full_arguments
+
+        classes = option_values(arguments, "-c", "--class-label")
+        if self.kind == "efficiency" and classes and os.path.exists(test_file):
+            present = eventinfo.file_classes(test_file)
+            if present is not None and not {int(c) for c in classes} & present:
+                return "{} holds no event of class {}".format(
+                    os.path.basename(test_file), " or ".join(classes)
+                )
+
+        region = (option_values(arguments, "-r", "--region") or ["inclusive"])[-1]
+        needed = eventinfo.region_inputs(region)
+        for path in (test_file, prediction):
+            if not needed or not os.path.exists(path):
+                continue
+            missing = eventinfo.missing_inputs(path, needed)
+            if missing:
+                return "{} has no {}, which the region '{}' needs".format(
+                    os.path.basename(path), " or ".join(missing), region
+                )
+        return None
+
+    def skip(self, reason, configuration, arguments):
+        """Record that the plot was not made, and why."""
+        self.publish_message("{} was not made: {}".format(self.plot_name, reason))
+        self.write_marker(
+            self.output(),
+            skipped=reason,
+            configuration=configuration,
+            arguments=arguments,
+        )
+
     def check_target_dir(self):
         """Refuse to silently write into a directory that already holds plots."""
         if self.force_overwrite or not os.path.isdir(self.target_dir):
@@ -253,11 +328,19 @@ class PlotTask(ModelTask):
                 )
             )
 
+        configuration = self.input()[self.kind].path
+        arguments = self.plot_arguments
+
+        with open(self.input()["summary"].path) as fobj:
+            registration = json.load(fobj)
+        reason = self.missing_data(registration)
+        if reason:
+            self.skip(reason, configuration, arguments)
+            return
+
         self.check_target_dir()
         os.makedirs(os.path.join(self.plot_base, self.main_dir), exist_ok=True)
 
-        configuration = self.input()[self.kind].path
-        arguments = self.plot_arguments
         if arguments != self.configured_arguments:
             self.publish_message(
                 "the resonances of {} give: {}".format(
@@ -276,21 +359,11 @@ class PlotTask(ModelTask):
 
         code = self.run_command(command, tolerate=MISSING_SAMPLES)
         if code != 0:
-            # the samples this plot asks for are not in the file, which is
-            # what most trainings look like: the plot is not made, and that
-            # is the end of it
-            reason = "the samples it needs are missing from the test file"
-            self.publish_message(
-                "{} was not made: {} (see {})".format(
-                    self.plot_name, reason, self.last_command_log
-                )
-            )
-            self.write_marker(
-                self.output(),
-                skipped=reason,
-                configuration=configuration,
-                arguments=arguments,
-            )
+            # the samples (or the inputs of the region) this plot asks for are
+            # not in the files of any model, which is what most trainings look
+            # like: the plot is not made, and that is the end of it
+            self.publish_message("its output is in {}".format(self.last_command_log))
+            self.skip(MISSING_SAMPLES_REASON, configuration, arguments)
             return
 
         self.write_marker(

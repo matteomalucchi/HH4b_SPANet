@@ -299,3 +299,54 @@ def input_slots(h5_path, names):
                     "match".format(h5_path, name)
                 )
     return slots
+
+
+# -- what the files hold ---------------------------------------------------
+
+#: the INPUTS a region reads besides the jets: the signal region cuts on the
+#: masses of the two Higgs candidates (utils/helpers.py holds the same)
+REGION_INPUTS = {
+    "signal_region": [("HiggsLeading", "mass"), ("HiggsSubLeading", "mass")],
+}
+
+
+def region_inputs(region):
+    """``INPUTS/<collection>/<variable>`` paths the region reads."""
+    return [
+        "INPUTS/{}/{}".format(collection, variable)
+        for name, inputs in REGION_INPUTS.items()
+        if name in (region or "")
+        for collection, variable in inputs
+    ]
+
+
+def _h5py():
+    try:
+        import h5py
+    except ImportError:  # pragma: no cover
+        raise ImportError("checking what the h5 files hold needs h5py")
+    return h5py
+
+
+def missing_inputs(h5_path, paths):
+    """The ones of ``paths`` the file does not hold."""
+    if not paths:
+        return []
+    with _h5py().File(h5_path, "r") as fobj:
+        return [path for path in paths if path not in fobj]
+
+
+def file_classes(h5_path):
+    """The classes of the events of a file, or ``None`` when it has none.
+
+    The same arrays ``get_class_array`` of utils/helpers.py reads; a file
+    without them gives every event to every class, so nothing can be said.
+    """
+    import numpy as np
+
+    with _h5py().File(h5_path, "r") as fobj:
+        for group in ("EVENT", "Event"):
+            path = "CLASSIFICATIONS/{}/class".format(group)
+            if path in fobj:
+                return {int(value) for value in np.unique(fobj[path][()])}
+    return None

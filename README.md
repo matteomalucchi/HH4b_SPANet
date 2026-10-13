@@ -547,8 +547,9 @@ python utils/performance/efficiency_studies.py -pd <plot_dir> --vbf -c 1 -ih -r 
 # run Higgs pairing (without VBF pairing) on ggF events
 python utils/performance/efficiency_studies.py -pd <plot_dir>  -c 0 -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
 
-# run Higgs pairing (without VBF pairing) on VBF events
-python utils/performance/efficiency_studies.py -pd <plot_dir>  -c 1 -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
+# run Higgs pairing (without VBF pairing) on VBF events (-vl labels the points
+# with the couplings of the VBF samples, as --vbf does)
+python utils/performance/efficiency_studies.py -pd <plot_dir>  -c 1 -vl -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
 
 # run Higgs pairing (without VBF pairing) on ggF+VBF events
 python utils/performance/efficiency_studies.py -pd <plot_dir>  -conf utils/performance/efficiency_configuration_vbf_ggf.py --histo-mass  -k
@@ -558,10 +559,10 @@ python utils/performance/efficiency_studies.py -pd <plot_dir>  -conf utils/perfo
 # the efficiency on the ZZ and ZH events, the classes 2 and 3 (only a few test
 # files hold them; the script stops with 'MISSING SAMPLES' when they are not
 # there, which is the expected answer for most trainings)
-python3 utils/performance/efficiency_studies.py -pd <plot_dir>/ZZ_ZH_Eff -conf <configuration> -c 2 3 -k
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZZ_ZH_inclusive -conf <configuration> -c 2 3 -r inclusive -k
 
 # ... and with the k of each process in the Run 2 pairing
-python3 utils/performance/efficiency_studies.py -pd <plot_dir>/ZZ_ZH_Eff -conf <configuration> -c 2 3 -k --process-k
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZZ_ZH_inclusive -conf <configuration> -c 2 3 -r inclusive -k --process-k
 
 ```
 
@@ -632,14 +633,24 @@ python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_c
 
 # e.g. for VBF
 python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r vbf_no_kin_cuts
+
+# the same in the signal region (RHH < 30 GeV) as well; reads INPUTS/HiggsLeading
+# and INPUTS/HiggsSubLeading, and leaves out the models whose files lack them
+python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r signal_region_vbf_no_kin_cuts
+python3 utils/roccurves/ROC_plots.py -pd <plot_dir> -conf  utils/roccurves/roc_configuration_vbfggf.py -r signal_region_vbf_presel
 ```
+
+Regions can be combined by joining them with `_`: `signal_region_vbf_presel`
+is the VBF preselection *and* the signal region.
 
 #### AUC per signal sample
 
 `utils/roccurves/auc_per_sample.py` prints the AUC of each signal sample (one per value of `INPUTS/Event/kl`; for VBF this is C2V) against the background with a given kl (default SM ggF, kl=1), for one or more prediction files of the same test file, side by side. Useful to see whether a model is biased towards the samples that dominate the training weights.
+The prediction files must have the same events as the test file: the number of events is always checked, and the event numbers (`INPUTS/Event/event`) are compared when present.
+With `--plot-dir`, the per-sample AUCs are also plotted with `HEPPlotter` as a function of the signal kl (C2V), one graph per prediction file.
 
 ```bash
-python3 utils/roccurves/auc_per_sample.py -t <test.h5> -p <predict_A.h5> <predict_B.h5> -l modelA modelB [--bkg-kl 1|all] [--weighted]
+python3 utils/roccurves/auc_per_sample.py -t <test.h5> -p <predict_A.h5> <predict_B.h5> -l modelA modelB [--bkg-kl 1|all] [--weighted] [--plot-dir <dir>]
 ```
 
 ## Automated pipeline with law
