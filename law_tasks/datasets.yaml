@@ -60,6 +60,12 @@ defaults:
   # the EVENT section of the event file
   # the model is trained with
 
+  # global_mask: true                 # write INPUTS/<collection>/MASK for
+  # every global collection (jet-like
+  # ones included): False in the events
+  # where all of its variables are the
+  # pad value; off by default
+
   # -- anything else for coffea_to_h5_direct.py --------------------------
   # convert_args: "-n"                # the weights are NOT normalized unless
   # this is used: `-n` divides them by
