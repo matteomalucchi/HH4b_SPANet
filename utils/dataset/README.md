@@ -39,6 +39,7 @@ At the end, for each jet collection group, a table is printed with the number of
 | `-m`, `--max-jets` | `5 5` | Maximum number of jets to keep, one value per jet collection |
 | `-rs`, `--resonances` | `DEFAULT_RESONANCES` | Set the `TARGETS` are written with, i.e. how the daughters are named: `h2: b1, b2` with `DEFAULT_RESONANCES`, `h2: b3, b4` with `OLD_RESONANCES`.  It has to match the `EVENT` section of the event file the model is trained with (see [Resonances](#resonances)) |
 | `-rd`, `--resonance-list` | `h1 h2 vbf add` | Which resonances are written, out of the chosen set |
+| `-gm`, `--global-mask` | off | Write `INPUTS/<collection>/MASK` for every global collection, jet-like ones (`Jet_1`, …) and `Event` (with `kl`) included. An event is `False` for a collection when **all** its variables are the pad value, so SPANet drops that global vector in that event instead of reading the pad value as a real input. Without it SPANet treats every global vector as real. The same mask has to be fed to the `<collection>_mask` input of the exported ONNX model. Set `global_mask: true` in the dataset YAML of the law tasks |
 | `-tf`, `--train-frac` | `0.8` | Fraction of events used for training |
 | `-ns`, `--no-shuffle` | off | Disable random shuffling of events |
 | `--novars` | off | Expect the old save format without variations (no `nominal` key) |
