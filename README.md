@@ -735,7 +735,7 @@ that it can be read in a browser:
     law/                  the markers law reads
 ```
 
-`web_base` and `output_base` in `law.cfg` (`$SPANET_WEB_BASE`, `$EOS_SPANET`)
+`web_base` and `output_base` in `law.cfg` (`$SPANET_WEB_BASE`, `$SPANET_OUT_DIR`)
 move that base; a training that is already there keeps its own date, whatever
 today is, and the layouts used before are still found. See
 [Everything of a training in one directory](law_tasks/README.md#everything-of-a-training-in-one-directory).
@@ -773,15 +773,15 @@ The performance configurations tracked in git are not modified: a
 configuration importing them and adding the new model is generated per model
 (add `--update-base-config` to also append the entries to the tracked files).
 
-Which one is extended has to be said, there is no default for it:
+Which ones are extended has to be said, there is no default for them:
 
 ```bash
 export SPANET_EFF_BASE_CONFIG="utils/performance/efficiency_configuration_vbf_ggf.py"
+export SPANET_ROC_BASE_CONFIG="utils/roccurves/roc_configuration_vbf_ggf.py"
 ```
 
-(or `eff_base_config` in `law.cfg`; a relative path is read from the
-repository). The ROC one, `roc_base_config` / `$SPANET_ROC_BASE_CONFIG`, does
-default to the configuration tracked here.
+(or `eff_base_config` / `roc_base_config` in `law.cfg`; a relative path is
+read from the repository).
 
 The `event_info_file` of the model fills those entries in -- the jet
 collections, the index offsets, the resonance set and whether the prediction
@@ -802,7 +802,7 @@ The EOS areas shared inside the group are `extra_binds` in `law.cfg`, bound
 both in the container of the tasks and in the one of the training jobs.
 
 Paths are taken from `law.cfg`, from the environment (`SPANET_MAIN_DIR`,
-`SPANET_ENV_DIR`, `EOS_SPANET`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
+`SPANET_ENV_DIR`, `SPANET_OUT_DIR`, `SPANET_COFFEA_BASE`, `SPANET_REMOTE_HOST`,
 `SPANET_REMOTE_INPUT_DIR`, `SPANET_WEB_BASE`, `SPANET_ONNX_DIR`, ...) or, as a last resort, from generic `$USER`
 based defaults, so no path has to be edited to use the pipeline.
 

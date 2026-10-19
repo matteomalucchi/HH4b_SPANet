@@ -110,8 +110,8 @@ def _user():
 
 def _default_eos_base():
     """``<eos home>/spanet_infos`` when on lxplus, ``$HOME/spanet_infos`` otherwise."""
-    if os.environ.get("EOS_SPANET"):
-        return os.path.dirname(os.path.expandvars(os.environ["EOS_SPANET"]).rstrip("/"))
+    if os.environ.get("SPANET_OUT_DIR"):
+        return os.path.dirname(os.path.expandvars(os.environ["SPANET_OUT_DIR"]).rstrip("/"))
 
     user = _user()
     if user:
@@ -182,7 +182,7 @@ class Settings(object):
         """
         return cfg_get(
             "output_base",
-            "EOS_SPANET",
+            "SPANET_OUT_DIR",
             os.path.join(self.web_base, "training_outputs"),
         )
 
@@ -221,7 +221,7 @@ class Settings(object):
             expanded = string.Template(expanded).safe_substitute(
                 SPANET_MAIN_DIR=self.spanet_main_dir,
                 SPANET_ENV_DIR=self.spanet_env_dir,
-                EOS_SPANET=self.output_base,
+                SPANET_OUT_DIR=self.output_base,
             )
         return expanded
 
@@ -300,14 +300,20 @@ class Settings(object):
     def roc_base_config(self):
         """The ROC configuration the generated one extends.
 
-        This one keeps a default, the configuration tracked in the repository;
-        law.cfg and $SPANET_ROC_BASE_CONFIG replace it.
+        Like the efficiency one there is no default: which models a new one is
+        drawn next to is a choice.  It has to be named, in law.cfg or in the
+        environment.
         """
-        default = os.path.join(
-            self.repo_dir, "utils", "roccurves", "roc_configuration_vbf_ggf.py"
-        )
         return self._base_config(
-            "roc_base_config", "SPANET_ROC_BASE_CONFIG", "ROC", default, default=default
+            "roc_base_config",
+            "SPANET_ROC_BASE_CONFIG",
+            "ROC",
+            os.path.join(
+                self.repo_dir,
+                "utils",
+                "roccurves",
+                "roc_configuration_vbf_ggf.py",
+            ),
         )
 
     # -- dataset conversion and transfer -----------------------------------

@@ -8,6 +8,7 @@ The tracked configuration can additionally be updated in place with
 """
 
 import importlib.util
+import json
 import os
 import pprint
 import re
@@ -39,6 +40,9 @@ def _load_base(path):
 
 _base = _load_base(_BASE_CONFIG)
 
+MODEL_KEY = {key_literal}
+TRUE_KEY = {true_key_literal}
+
 # the Run 2 method is evaluated on the true file of this model, the one the
 # model is compared against, and not on the one of the base configuration
 run2_dataset_MC = {run2_mc}
@@ -48,10 +52,23 @@ roc_dict = dict(getattr(_base, "roc_dict", {{}}))
 spanet_dict = {baseline}
 true_dict = dict(_base.true_dict)
 
-spanet_dict[{key!r}] = {spanet_entry}
+{spanet_entry}
 
-true_dict[{true_key!r}] = {true_entry}
+{true_entry}
+
+
+# ---------------------------------------------------------------------------
+# the new entries, ready to be copied into the base configuration
+# ---------------------------------------------------------------------------
+
+{spanet_comment}
+
+
+{true_comment}
 '''
+
+# line length of the generated modules, the black default
+LINE_LENGTH = 88
 
 
 def load_config_module(path):
@@ -144,12 +161,70 @@ def build_entries(
     return spanet_entry, true_entry
 
 
-def _format(dictionary, indent=0):
-    text = pprint.pformat(dictionary, indent=4, width=100, sort_dicts=False)
-    if indent:
-        pad = " " * indent
-        text = ("\n" + pad).join(text.splitlines())
-    return text
+def _literal(value):
+    """Python source of ``value``, with double quoted strings as black writes them."""
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, (list, tuple, dict)):
+        return pprint.pformat(value, width=LINE_LENGTH, sort_dicts=False).replace(
+            "'", '"'
+        )
+    return repr(value)
+
+
+def _item_lines(name, value, indent):
+    """``"name": value,`` at ``indent``, a long string split at its spaces."""
+    pad = " " * indent
+    head = "{}{}: ".format(pad, _literal(name))
+    line = head + _literal(value) + ","
+    if len(line) <= LINE_LENGTH or not isinstance(value, str) or " " not in value:
+        return [line]
+
+    # implicit concatenation, continued at the indentation of the key
+    chunks, current = [], ""
+    for word in re.findall(r"\S+\s*", value):
+        width = len(head if not chunks else pad) + len(_literal(current + word))
+        if current and width > LINE_LENGTH:
+            chunks.append(current)
+            current = word
+        else:
+            current += word
+    chunks.append(current)
+
+    lines = [head + _literal(chunks[0])]
+    lines += [pad + _literal(chunk) for chunk in chunks[1:]]
+    lines[-1] += ","
+    return lines
+
+
+def _dict_lines(entry, indent):
+    lines = []
+    for name, value in entry.items():
+        lines += _item_lines(name, value, indent)
+    return lines
+
+
+def _assignment(target, entry):
+    """``<target> = {...}`` with one item per line."""
+    return "\n".join(["{} = {{".format(target)] + _dict_lines(entry, 4) + ["}"])
+
+
+def _commented_entry(key, entry):
+    """The ``"key": {...},`` item of a dictionary, commented out."""
+    lines = ["{}: {{".format(_literal(key))] + _dict_lines(entry, 4) + ["},"]
+    return "\n".join("# " + line for line in lines)
+
+
+def format_source(source):
+    """Format with black when it is installed; the source is black style anyway."""
+    try:
+        import black
+    except ImportError:
+        return source
+    try:
+        return black.format_str(source, mode=black.Mode(line_length=LINE_LENGTH))
+    except Exception:  # noqa: BLE001 - keep the unformatted, still valid source
+        return source
 
 
 def render_module(
@@ -175,23 +250,31 @@ def render_module(
     else:
         keep = [m.strip() for m in baseline_models.split(",") if m.strip()]
         baseline = (
-            "{{k: v for k, v in _base.spanet_dict.items() if k in {!r}}}".format(keep)
+            "{{k: v for k, v in _base.spanet_dict.items() if k in {}}}".format(
+                _literal(keep)
+            )
         )
 
     if run2_dataset in ("base", "_base"):
         run2_mc = 'getattr(_base, "run2_dataset_MC", "")'
+    elif not run2_dataset or run2_dataset == true_key:
+        run2_mc = "TRUE_KEY"
     else:
-        run2_mc = repr(run2_dataset or true_key)
+        run2_mc = _literal(run2_dataset)
 
-    return GENERATED_HEADER.format(
+    source = GENERATED_HEADER.format(
         key=key,
         base=os.path.abspath(base_config),
+        key_literal=_literal(key),
+        true_key_literal=_literal(true_key),
         baseline=baseline,
         run2_mc=run2_mc,
-        spanet_entry=_format(spanet_entry),
-        true_key=true_key,
-        true_entry=_format(true_entry),
+        spanet_entry=_assignment("spanet_dict[MODEL_KEY]", spanet_entry),
+        true_entry=_assignment("true_dict[TRUE_KEY]", true_entry),
+        spanet_comment=_commented_entry(key, spanet_entry),
+        true_comment=_commented_entry(true_key, true_entry),
     )
+    return format_source(source)
 
 
 def write_module(path, source):

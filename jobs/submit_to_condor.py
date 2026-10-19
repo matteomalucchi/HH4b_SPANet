@@ -68,7 +68,7 @@ def default_bindings(basedir=None):
     if user:
         bindings.append("/eos/user/{}/{}".format(user[0], user))
 
-    for path in (os.environ.get("EOS_SPANET"), os.environ.get("SPANET_ENV_DIR")):
+    for path in (os.environ.get("SPANET_OUT_DIR"), os.environ.get("SPANET_ENV_DIR")):
         if path:
             bindings.append(path)
 

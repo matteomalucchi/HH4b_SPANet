@@ -234,7 +234,7 @@ class BaseTask(law.Task):
                 "--env",
                 "KRB5CCNAME=FILE:{}/krb5cc".format(os.environ["XDG_RUNTIME_DIR"]),
             ]
-        for variable in ("SPANET_MAIN_DIR", "SPANET_ENV_DIR", "EOS_SPANET"):
+        for variable in ("SPANET_MAIN_DIR", "SPANET_ENV_DIR", "SPANET_OUT_DIR"):
             if os.environ.get(variable):
                 parts += ["--env", "{}={}".format(variable, os.environ[variable])]
 
@@ -408,7 +408,7 @@ class ModelTask(BaseTask):
         default="",
         significant=False,
         description="directory holding the training directories; default: "
-        "from law.cfg / $EOS_SPANET",
+        "from law.cfg / $SPANET_OUT_DIR",
     )
     output_dir = luigi.Parameter(
         default="",

@@ -33,19 +33,20 @@ container themselves whenever a payload needs it.
 # once, e.g. in the .bashrc
 export SPANET_MAIN_DIR="/afs/cern.ch/user/${USER:0:1}/${USER}"                       # SPANet + HH4b_SPANet checkouts
 export SPANET_ENV_DIR="/eos/user/${USER:0:1}/${USER}/spanet_infos/spanet_env_test_eos"  # virtual environment
-export EOS_SPANET="/eos/user/${USER:0:1}/${USER}/php-plots/SPANet_studies/training_outputs"  # where the trainings go
+export SPANET_OUT_DIR="/eos/user/${USER:0:1}/${USER}/php-plots/SPANet_studies/training_outputs"  # where the trainings go
 export SPANET_EFF_BASE_CONFIG="utils/performance/efficiency_configuration_vbf_ggf.py"  # the efficiency configuration to extend
+export spanet_roc_base_config="utils/roccurves/roc_configuration_vbf_ggf.py"         # the ROC configuration to extend
 
 # in every session, from the repository root
 cd $SPANET_MAIN_DIR/HH4b_SPANet
 source setup_law.sh
 ```
 
-`$SPANET_EFF_BASE_CONFIG` is the one setting with no default: it names the
-efficiency configuration the generated one extends, i.e. which models a new
-one is drawn next to.  `eff_base_config` in `law.cfg` does the same; without
-either, `hh4b.RegisterModel` stops and says what to set.  A relative path is
-read from the repository.
+`$SPANET_EFF_BASE_CONFIG` and `$SPANET_ROC_BASE_CONFIG` are the settings with
+no default: they name the efficiency and ROC configurations the generated ones
+extend, i.e. which models a new one is drawn next to.  `eff_base_config` and
+`roc_base_config` in `law.cfg` do the same; without either, `hh4b.RegisterModel`
+stops and says what to set.  A relative path is read from the repository.
 
 `setup_law.sh` says so at the end of its output, so an unset one is seen right
 away and not after a training.
@@ -352,7 +353,7 @@ law run hh4b.Performance \
 This is the equivalent of the manual chain
 
 ```bash
-python3 jobs/submit_jobs_seed.py -c jobs/config/training_1gpu_1d.yaml -s 100:100 -o <options> -out $EOS_SPANET
+python3 jobs/submit_jobs_seed.py -c jobs/config/training_1gpu_1d.yaml -s 100:100 -o <options> -out $SPANET_OUT_DIR
 # ... wait for the job, then, inside the container:
 python -m spanet.predict ./ predict_<test>.h5 -tf <test file> --gpu
 python scripts/plot_training_metrics.py -d <version dir>
@@ -428,7 +429,7 @@ looked at in a browser:
 ```
 
 Both halves are configurable, `web_base` and `output_base` in `law.cfg`
-(`$SPANET_WEB_BASE`, `$EOS_SPANET`), and `--output-base` for a single run.
+(`$SPANET_WEB_BASE`, `$SPANET_OUT_DIR`), and `--output-base` for a single run.
 
 The date is the day the directory is created, and it is read back afterwards,
 never guessed: a model whose training is already there keeps writing into the
@@ -626,6 +627,11 @@ The regions are the ones `utils/helpers.py` knows: `inclusive`,
 `vbf_no_kin_cuts`, `vbf_presel`, `4b`, `4M`, `3M`, `2M`, `3T1M`, `3T1L`,
 `signal_region`, and any of them joined with `_`, which asks for all of them
 at once, e.g. `signal_region_vbf_presel`.
+`signal_region` is the HH signal region of the analysis
+(`hh4b_signal_region` in `AnalysisConfigs/configs/HH4b_common/custom_cuts_common.py`):
+`Rhh = sqrt((m_H1 - 125)^2 + (m_H2 - 120)^2) < 30` GeV, with the masses read
+from `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubleading/mass` of the file,
+which must therefore contain them.
 
 The plots of a region given this way are kept apart from the configured ones,
 so nothing is overwritten and the two can be compared:
@@ -1110,9 +1116,8 @@ i.e. inside the training directory they describe, next to the plots they are
 used for.
 
 Which configuration is extended is `eff_base_config` / `$SPANET_EFF_BASE_CONFIG`
-for the efficiency -- required, there is no default -- and `roc_base_config` /
-`$SPANET_ROC_BASE_CONFIG` for the ROC curves, which does default to the one
-tracked in the repository.  A path that is set but does not exist is reported
+for the efficiency and `roc_base_config` / `$SPANET_ROC_BASE_CONFIG` for the
+ROC curves -- both required, there is no default.  A path that is set but does not exist is reported
 as such instead of failing later inside the plotting script.
 
 The Run 2 method is evaluated on **this model's** true file, the very file the
@@ -1211,7 +1216,7 @@ derived from `$USER`:
 | virtual env | `spanet_env_dir` | `$SPANET_ENV_DIR` | `$VIRTUAL_ENV` |
 | output base | `eos_base` | `$SPANET_EOS_BASE` | `/eos/user/${USER:0:1}/$USER/spanet_infos` |
 | website area | `web_base` | `$SPANET_WEB_BASE` | `/eos/user/${USER:0:1}/$USER/php-plots/SPANet_studies` |
-| trainings | `output_base` | `$EOS_SPANET` | `<web_base>/training_outputs` |
+| trainings | `output_base` | `$SPANET_OUT_DIR` | `<web_base>/training_outputs` |
 | efficiency plots | `eff_plot_base` | `$SPANET_EFF_PLOT_DIR` | the training directory |
 | ROC plots | `roc_plot_base` | `$SPANET_ROC_PLOT_DIR` | the training directory |
 | journal of a task without a training | `work_dir` | `$SPANET_LAW_WORK_DIR` | `<eos_base>/law_work` |
@@ -1222,7 +1227,7 @@ derived from `$USER`:
 | conversion | `conversion_python` | `$SPANET_CONVERSION_PYTHON` | `python3` |
 | conversion scripts | `converter_script`, `collections_module` | *(none)* | `utils/dataset/coffea_to_h5_direct.py` and its `collections_coffea_to_h5_direct.py` |
 | efficiency configuration to extend | `eff_base_config` | `$SPANET_EFF_BASE_CONFIG` | **none, it has to be set** |
-| ROC configuration to extend | `roc_base_config` | `$SPANET_ROC_BASE_CONFIG` | `utils/roccurves/roc_configuration_vbf_ggf.py` |
+| ROC configuration to extend | `roc_base_config` | `$SPANET_ROC_BASE_CONFIG` | **none, it has to be set** |
 | transfer | `rsync_options` | `$SPANET_RSYNC_OPTIONS` | `-avh --partial` |
 
 The `[efficiency_plots]` and `[roc_plots]` sections define which plots are
