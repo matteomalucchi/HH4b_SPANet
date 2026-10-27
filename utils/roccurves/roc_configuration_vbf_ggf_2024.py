@@ -15,13 +15,13 @@ true_dir_nestor = "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/"
 
 spanet_dict = {
     # --- VBF/ggF pairing ---
-    "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7": {
-        "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_ClassLoss7_test.h5",
-        "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut",
-        "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7",
-        "color": "brown",
-        "vbf": True,
-    },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7": {
+    #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7/out_seed_trainings_100/version_0/predict_FixMASK_AllKlambda_VBFggF_VBFPairingAfterHiggsPairing_DNNVars_vbfNoKinCutJetTotalSPANetPadded_ClassLoss7_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut",
+    #     "label": "VBF pair+clas - JetTotal - DNN Vars - VBFNoKinCut Train - ClassLoss7",
+    #     "color": "brown",
+    #     "vbf": True,
+    # },
     # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_FW_mom_0_11": {
     #     "file": f"{new_spanet_dir_matteo}/out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_ClassLoss7_FW_mom_0_11/out_seed_trainings_100/version_0/predict_AllKlambda_DetaMjj_VBFPairingAfterHiggsPairing_AddVBFJetPtOrder_FW_momenta_vbfNoKinCut_JetTotalSPANetPadded_test.h5",
     #     "true": "9jets_all_Klambda_VBFPairing_JetTotal_DNNVars_VBFNoKinCut_FW_mom_0_11",
@@ -55,19 +55,19 @@ spanet_dict = {
         "offset_jet_idx_vbf": -4,
         "resonances": "DEFAULT_RESONANCES",
     },
-    "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairingAfterHiggsPairingWithZSamples_JetHiggsSeparate_DNNVars_VBFNoKinCut_ClassLoss7_2024_NoBtag": {
-        "file": "/eos/user/m/mmalucch/php-plots/SPANet_studies/training_outputs/2026-10-06_out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairingAfterHiggsPairingWithZSamples_JetHiggsSeparate_DNNVars_VBFNoKinCut_ClassLoss7_2024_NoBtag/out_seed_trainings_100/version_0/predict_VBFPairingAfterHiggsPairingWithZSamples_DNNVars_vbfregions_2024SPANetHiggsTraining_parking_presel_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5",
-        "true": "9jets_all_Klambda_VBFPairingAfterHiggsPairingWithZSamples_JetHiggsSeparate_DNNVars_VBFNoKinCut_2024_NoBtag",
-        "label": "VBFPairingAfterHiggsPairingWithZSamples - JetHiggsSeparate - DNN Vars - VBFNoKinCut "
-        "Train - ClassLoss7 - 2024 - NoBtag",
-        "color": "green",
-        "higgs": False,
-        "vbf": True,
-        "jet_coll_higgs": "JetVBF",
-        "n_higgs_jets": 0,
-        "offset_jet_idx_vbf": -4,
-        "resonances": "OLD_RESONANCES",
-    },
+    # "hh4b_pairing_vbf_ggf_all_Klambda_VBFPairingAfterHiggsPairingWithZSamples_JetHiggsSeparate_DNNVars_VBFNoKinCut_ClassLoss7_2024_NoBtag": {
+    #     "file": "/eos/user/m/mmalucch/php-plots/HH4b/SPANet_studies/training_outputs/2026-10-06_out_hh4b_pairing_vbf_ggf_all_Klambda_VBFPairingAfterHiggsPairingWithZSamples_JetHiggsSeparate_DNNVars_VBFNoKinCut_ClassLoss7_2024_NoBtag/out_seed_trainings_100/version_0/predict_VBFPairingAfterHiggsPairingWithZSamples_DNNVars_vbfregions_2024SPANetHiggsTraining_parking_presel_JetGoodVBFMergedProvVBFPadded_JetGoodProvHiggsPadded_test.h5",
+    #     "true": "9jets_all_Klambda_VBFPairingAfterHiggsPairingWithZSamples_JetHiggsSeparate_DNNVars_VBFNoKinCut_2024_NoBtag",
+    #     "label": "VBFPairingAfterHiggsPairingWithZSamples - JetHiggsSeparate - DNN Vars - VBFNoKinCut "
+    #     "Train - ClassLoss7 - 2024 - NoBtag",
+    #     "color": "green",
+    #     "higgs": False,
+    #     "vbf": True,
+    #     "jet_coll_higgs": "JetVBF",
+    #     "n_higgs_jets": 0,
+    #     "offset_jet_idx_vbf": -4,
+    #     "resonances": "OLD_RESONANCES",
+    # },
 }
 
 true_dict = {
