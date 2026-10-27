@@ -37,6 +37,12 @@ CMS_COLORS = [cycle["color"] for cycle in hep.style.CMS["axes.prop_cycle"]]
 BKG_COLOR = CMS_COLORS[0]
 SIG_COLOR = CMS_COLORS[1]
 
+#: if True, the signal efficiency and background rejection of the score cut are
+#: computed wrt the number of events before the region mask (events outside the
+#: region count as not passing); if False, they are computed wrt the events in
+#: the region only
+EFFICIENCY_WRT_PRE_REGION = True
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--title", type=str, default="", help="Title of the plot")
 parser.add_argument(
@@ -362,30 +368,70 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
         bkg_scores = spanet_class[mask_background]
         sig_scores = spanet_class[~mask_background]
 
+        # denominators of the efficiencies: the events in the region, or the
+        # events before the region mask (those outside the region fail)
+        if EFFICIENCY_WRT_PRE_REGION:
+            true_class_pre = sub_dict["pre_region"]["true_class"]
+            weights_pre = sub_dict["pre_region"]["weights"]
+            mask_background_pre = true_class_pre == 0
+            if no_weights:
+                n_sig_tot = np.sum(~mask_background_pre)
+                n_bkg_tot = np.sum(mask_background_pre)
+            else:
+                n_sig_tot = weights_pre[~mask_background_pre].sum()
+                n_bkg_tot = weights_pre[mask_background_pre].sum()
+            logger.info(
+                "Efficiencies computed wrt the events before the region mask "
+                f"(sig: {n_sig_tot:.2f}, bkg: {n_bkg_tot:.2f})"
+            )
+        else:
+            n_sig_tot = len(sig_scores) if no_weights else weights_sig.sum()
+            n_bkg_tot = len(bkg_scores) if no_weights else weights_bkg.sum()
+            logger.info("Efficiencies computed wrt the events in the region")
+
+        # fraction of the region signal the cut must keep to reach the target
+        # signal efficiency wrt the chosen denominator
+        n_sig_region = len(sig_scores) if no_weights else weights_sig.sum()
+        sig_eff_region_target = args.sig_efficiency * n_sig_tot / n_sig_region
+        if sig_eff_region_target > 1:
+            logger.warning(
+                f"Target signal efficiency of {args.sig_efficiency*100:.4g}% is not "
+                f"reachable: the region keeps only {n_sig_region / n_sig_tot * 100:.2f}% "
+                "of the signal. No cut on the score is applied"
+            )
+            sig_eff_region_target = 1
+
         if no_weights:
             logger.info("Computing the histogram without weights")
-            cut = np.quantile(sig_scores, 1 - args.sig_efficiency)
+            if sig_eff_region_target == 1:
+                cut = np.nextafter(sig_scores.min(), -np.inf)
+            else:
+                cut = np.quantile(sig_scores, 1 - sig_eff_region_target)
             mask_signal_cut = sig_scores > cut
             mask_bkg_cut = bkg_scores <= cut
-            sig_eff = np.mean(mask_signal_cut)  # Mean just gives me the ones passing divided by all
-            bkg_rej = np.mean(mask_bkg_cut)
             n_sig_pass = mask_signal_cut.sum()
             n_bkg_pass = mask_bkg_cut.sum()
+            n_bkg_above = np.sum(~mask_bkg_cut)
             n_sig_pass_err = np.sqrt(n_sig_pass)
             n_bkg_pass_err = np.sqrt(n_bkg_pass)
         else:
             logger.info("Computing the histogram with weights")
-            cut = float(weighted_quantile(sig_scores, 1 - args.sig_efficiency, weights=weights_sig))
+            if sig_eff_region_target == 1:
+                cut = float(np.nextafter(sig_scores.min(), -np.inf))
+            else:
+                cut = float(weighted_quantile(sig_scores, 1 - sig_eff_region_target, weights=weights_sig))
 
             mask_signal_cut = sig_scores > cut
-            sig_eff = weights_sig[mask_signal_cut].sum() / weights_sig.sum()
             n_sig_pass = weights_sig[mask_signal_cut].sum()
             n_sig_pass_err = np.sqrt((weights_sig[mask_signal_cut] ** 2).sum())
 
             mask_bkg_cut = bkg_scores <= cut
-            bkg_rej = weights_bkg[mask_bkg_cut].sum() / weights_bkg.sum()
             n_bkg_pass = weights_bkg[mask_bkg_cut].sum()
+            n_bkg_above = weights_bkg[~mask_bkg_cut].sum()
             n_bkg_pass_err = np.sqrt((weights_bkg[mask_bkg_cut] ** 2).sum())
+
+        sig_eff = n_sig_pass / n_sig_tot
+        bkg_rej = 1 - n_bkg_above / n_bkg_tot
 
         # S/sqrt(B) significance metric with propagated statistical uncertainty
         if n_bkg_pass > 0:
@@ -531,6 +577,21 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
             )
 
 
+def get_kl_mask(kls_arr, true_class, kl, kl_bkg):
+    """Mask selecting the signal with the given kl and the background with the
+    given kl_bkg; None if no event has the signal kl."""
+    is_bkg = true_class == 0
+    if kl_bkg == "all":
+        bkg_mask = is_bkg
+    else:
+        bkg_mask = is_bkg & (kls_arr == float(kl_bkg))
+    if kl == "all":
+        return ~is_bkg | bkg_mask
+    if np.any(kls_arr == float(kl)):
+        return (kls_arr == float(kl)) | (kls_arr == 9999.) | bkg_mask
+    return None
+
+
 def main():
     class_dict = {}
     roc_values_dict = {}
@@ -571,11 +632,26 @@ def main():
         except KeyError:
             kls = np.ones_like(weights) * 9999.
 
+        # events before the region mask, to compute the efficiencies of the
+        # score cut wrt them (see EFFICIENCY_WRT_PRE_REGION)
+        true_class_pre = truefile["CLASSIFICATIONS"]["EVENT"]["class"][()]
+        weights_pre = truefile["WEIGHTS"]["weight"][()]
+        try:
+            kls_pre = spanetfile["INPUTS"]["Event"]["kl"][()]
+        except KeyError:
+            kls_pre = np.ones_like(weights_pre) * 9999.
+
         class_dict[model_name] = {
             "spanet_class": spanet_class,
             "true_class": true_class,
             "weights": weights,
             "kls": kls,
+            # a dict, so the kl masking below leaves it untouched
+            "pre_region": {
+                "true_class": true_class_pre,
+                "weights": weights_pre,
+                "kls": kls_pre,
+            },
         } | model_dict
 
     if not class_dict:
@@ -636,21 +712,17 @@ def main():
         for kl in kls_to_plot:
             class_dict_kl = {}
             for model_name, sub_dict in class_dict.items():
-                kls_arr = sub_dict["kls"]
-                is_bkg = sub_dict["true_class"] == 0
-                if kl_bkg == "all":
-                    bkg_mask = is_bkg
-                else:
-                    bkg_mask = is_bkg & (kls_arr == float(kl_bkg))
-                if kl == "all":
-                    mask_kl = ~is_bkg | bkg_mask
-                elif np.any(kls_arr == float(kl)):
-                    mask_kl = (kls_arr == float(kl)) | (kls_arr == 9999.) | bkg_mask
-                else:
+                mask_kl = get_kl_mask(sub_dict["kls"], sub_dict["true_class"], kl, kl_bkg)
+                if mask_kl is None:
                     continue
                 class_dict_kl[model_name] = {
                     k: (v[mask_kl] if isinstance(v, np.ndarray) else v)
                     for k, v in sub_dict.items()
+                }
+                pre = sub_dict["pre_region"]
+                mask_kl_pre = get_kl_mask(pre["kls"], pre["true_class"], kl, kl_bkg)
+                class_dict_kl[model_name]["pre_region"] = {
+                    k: v[mask_kl_pre] for k, v in pre.items()
                 }
 
             roc_curve_compare_weights(
