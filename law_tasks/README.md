@@ -130,7 +130,9 @@ happens without it.
 
 Fields: `coffea_dir`, `coffea_file`, `output_dir` (default: the coffea
 directory), `output_prefix`, `regions`, `class_labels`, `jets`, `global_vars`,
-`jet_like_global_vars`, `max_jets`, `resonances`, `global_mask` (`true` writes
+`jet_like_global_vars`, `max_jets`, `resonances`, `global_regroup` (a
+`global_regroup_dict` group moving single global variables to a group of their
+own, see `--global-regroup` in `utils/dataset/README.md`), `global_mask` (`true` writes
 a `MASK` for every global collection, see `--global-mask` in
 `utils/dataset/README.md`), `convert_args` (anything
 else for the converter, e.g. the weight normalization, see below) and

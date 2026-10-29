@@ -18,6 +18,7 @@ from collections_coffea_to_h5_direct import (
     jet_collections_dict,
     global_collections_dict,
     jet_like_global_collections_dict,
+    global_regroup_dict,
 )
 from weights_handling_coffea_to_h5_direct import (
     compute_weight_norm_map,
@@ -200,6 +201,14 @@ p.add_argument(
     choices=["none", "zero", "abs"],
     default="none",
     help="treatment for negative weights options: ['none', 'zero', 'abs'], default = none.",
+)
+p.add_argument(
+    "-gr",
+    "--global-regroup",
+    default=None,
+    help="Name of a group of global_regroup_dict in collections_coffea_to_h5_direct.py "
+    "(e.g. 'VBF_PAIR_GLOBAL'): the global variables it lists are moved to the group "
+    "it gives them, on top of how they are saved otherwise.",
 )
 p.add_argument(
     "-gm",
@@ -581,6 +590,7 @@ def coffea_to_h5(
     max_jets,
     train_frac,
     do_data_shuffling,
+    global_regroup=None,
     columns_key="columns",
     weight_name="weight",
 ):
@@ -660,6 +670,17 @@ def coffea_to_h5(
         jet_like_global_variables = jet_like_global_collections_dict[
             jet_like_global_variables[0]
         ]
+
+    if global_regroup is None:
+        regroup = {}
+    elif global_regroup in global_regroup_dict:
+        regroup = global_regroup_dict[global_regroup]
+    else:
+        raise ValueError(
+            f"Unknown global regroup '{global_regroup}'; global_regroup_dict holds: "
+            f"{', '.join(sorted(global_regroup_dict)) or 'nothing'}"
+        )
+    regrouped_found = set()
 
     for j, jet_coll_group in enumerate(jet_collections):
 
@@ -808,6 +829,9 @@ def coffea_to_h5(
                         )
                     # {global collection: (N,) bool}, True where the event is real
                     global_masks = {}
+                    # global [collection, variable] written for this dataset, so
+                    # that two columns can not be written to the same place
+                    written_globals = set()
 
                     for jet_i, (jet_coll, jet_info_dict) in enumerate(
                         jet_coll_group.items()
@@ -973,6 +997,25 @@ def coffea_to_h5(
                                 is_global = False
                                 glob_coll = None
                                 glob_var = None
+
+                            if is_global and name in regroup:
+                                regrouped_found.add(name)
+                                glob_coll = regroup[name]["saved_name_coll"]
+                                if regroup[name].get("saved_name_var") is not None:
+                                    glob_var = regroup[name]["saved_name_var"]
+                                print(
+                                    f"Regrouping global {name} -> [{glob_coll}, {glob_var}]"
+                                )
+
+                            if is_global:
+                                if (glob_coll, glob_var) in written_globals:
+                                    raise ValueError(
+                                        f"Global variable {name} would be written to "
+                                        f"[{glob_coll}, {glob_var}], which already holds "
+                                        "another column; check the saved names of "
+                                        "global_collections_dict / global_regroup_dict"
+                                    )
+                                written_globals.add((glob_coll, glob_var))
 
                             if is_jet or is_global:
                                 print(
@@ -1202,6 +1245,14 @@ def coffea_to_h5(
 
         print(f"Wrote: {h5_tr}, {h5_te}")
 
+    if regroup:
+        missing = sorted(set(regroup) - regrouped_found)
+        print(
+            f"\nGlobal regroup '{global_regroup}': moved {len(regrouped_found)} "
+            f"variable(s); not saved as global variables in this file, so not moved: "
+            f"{missing or 'none'}"
+        )
+
 
 def print_event_counts():
     """Print the number of train/test/total events per dataset and in the final files."""
@@ -1233,6 +1284,7 @@ if __name__ == "__main__":
         max_jets=args.max_jets,
         train_frac=args.train_frac,
         do_data_shuffling=not args.no_shuffle,
+        global_regroup=args.global_regroup,
     )
 
     print_event_counts()

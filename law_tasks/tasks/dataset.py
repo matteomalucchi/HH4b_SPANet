@@ -83,6 +83,11 @@ class DatasetTask(BaseTask):
         "the daughters are named: 'DEFAULT_RESONANCES' (h2: b1, b2) or "
         "'OLD_RESONANCES' (h2: b3, b4); default: the one of the converter",
     )
+    global_regroup = luigi.Parameter(
+        default="",
+        description="name of a group of global_regroup_dict moving single global "
+        "variables to a group of their own (e.g. 'VBF_PAIR_GLOBAL')",
+    )
     global_mask = luigi.BoolParameter(
         default=False,
         description="write a MASK for every global collection, False in the "

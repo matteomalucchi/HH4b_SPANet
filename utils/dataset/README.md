@@ -39,6 +39,7 @@ At the end, for each jet collection group, a table is printed with the number of
 | `-m`, `--max-jets` | `5 5` | Maximum number of jets to keep, one value per jet collection |
 | `-rs`, `--resonances` | `DEFAULT_RESONANCES` | Set the `TARGETS` are written with, i.e. how the daughters are named: `h2: b1, b2` with `DEFAULT_RESONANCES`, `h2: b3, b4` with `OLD_RESONANCES`.  It has to match the `EVENT` section of the event file the model is trained with (see [Resonances](#resonances)) |
 | `-rd`, `--resonance-list` | `h1 h2 vbf add` | Which resonances are written, out of the chosen set |
+| `-gr`, `--global-regroup` | *(none)* | Name of a `global_regroup_dict` group: the global variables it lists are moved to a group of their own, on top of how they are saved otherwise (see [Moving global variables to a group of their own](#moving-global-variables-to-a-group-of-their-own)). Set `global_regroup: <NAME>` in the dataset YAML of the law tasks |
 | `-gm`, `--global-mask` | off | Write `INPUTS/<collection>/MASK` for every global collection, jet-like ones (`Jet_1`, …) and `Event` (with `kl`) included. An event is `False` for a collection when **all** its variables are the pad value, so SPANet drops that global vector in that event instead of reading the pad value as a real input. Without it SPANet treats every global vector as real. The same mask has to be fed to the `<collection>_mask` input of the exported ONNX model. Set `global_mask: true` in the dataset YAML of the law tasks |
 | `-tf`, `--train-frac` | `0.8` | Fraction of events used for training |
 | `-ns`, `--no-shuffle` | off | Disable random shuffling of events |
@@ -172,6 +173,42 @@ global_collections_dict = {
     ],
 }
 ```
+
+#### Moving global variables to a group of their own
+
+`--global-mask` writes one `MASK` per global group, and masks a group in an
+event only when **all** its variables are padded.  A variable that is padded
+while the others of its group are not, e.g. `mjj` of the VBF pair in `Event`
+next to `HT`, is never masked: its pad value goes into the network.  Such
+variables have to be in a group of their own.
+
+`global_regroup_dict` lists these special cases, by name, each mapping a coffea
+column to the group (and optionally the name) it is saved with.  It is applied
+on top of `-g all` or of a `global_collections_dict` group, so it works with
+either:
+
+```python
+global_regroup_dict = {
+    "VBF_PAIR_GLOBAL": {
+        "events_mjjJetGoodVBFMergedProvVBFPadded": {
+            "saved_name_coll": "VBFPair",   # INPUTS/VBFPair/
+            "saved_name_var": None,         # keep the name: INPUTS/VBFPair/mjjJetGoodVBFMergedProvVBFPadded
+        },
+        # more variables ...
+    },
+}
+```
+
+```bash
+-gr VBF_PAIR_GLOBAL --global-mask
+```
+
+The columns of a group that are not in the coffea file are skipped (the
+converter prints which ones), so the variants of a variable, e.g. the
+`PtFlatten` ones, can be listed together.  The event file has to list the
+moved variables under their new group, e.g.
+`event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_classification_vbfpairing_JetVBF_DNNVars_JetHiggsGlobal_btag_VBFPairGlobal.yaml`.
+Two columns saved under the same `[group, variable]` stop the conversion.
 
 ### `KEEP_TOGETHER_COLLECTIONS`
 

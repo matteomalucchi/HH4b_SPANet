@@ -30,6 +30,7 @@ FIELDS = {
     "jet_like_global_vars": [],
     "max_jets": [],
     "resonances": "",
+    "global_regroup": "",
     "global_mask": False,
     "convert_args": "",
     "remote_dir": "",
@@ -238,8 +239,22 @@ class Dataset(object):
 
         ``coffea_to_h5_direct.py`` takes the global variables of the *n*-th jet
         collection group from the *n*-th entry of the global group, so a
-        shorter one fails in the middle of the conversion.
+        shorter one fails in the middle of the conversion.  A global regroup
+        that is not in ``global_regroup_dict`` is a typo as well.
         """
+        if self.global_regroup:
+            regroups = getattr(collections_module(), "global_regroup_dict", {})
+            if self.global_regroup not in regroups:
+                raise ValueError(
+                    "unknown global regroup '{}' in dataset '{}'; "
+                    "global_regroup_dict of {} holds: {}".format(
+                        self.global_regroup,
+                        self.name,
+                        settings().collections_module,
+                        ", ".join(sorted(regroups)) or "nothing",
+                    )
+                )
+
         jets = self.jet_collections()
         if len(self.global_vars) != 1 or not self.global_vars[0].isupper():
             return
@@ -332,6 +347,9 @@ class Dataset(object):
 
         if self.resonances:
             parts += ["-rs", self.resonances]
+
+        if self.global_regroup:
+            parts += ["-gr", self.global_regroup]
 
         if self.global_mask:
             parts += ["--global-mask"]
