@@ -597,12 +597,14 @@ def main():
             )
         )
 
+    # with separate collections, the Run 2 VBF jets are searched only among the
+    # JetVBF slots, keeping their index local to JetVBF like the true one
+    n_higgs_jets_run2 = n_higgs_jets
     if jet_coll_vbf is not None:
         jet_higgs_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll_higgs)
         jet_vbf_only_for_idx = helpers.get_jet_4vec(truefile, ak.ones_like(mask_true), jet_coll=jet_coll_vbf)
-        n_higgs_slots = truefile["INPUTS"][jet_coll_higgs]["MASK"].shape[1]
-        jet_vbf_global = ak.with_field(jet_vbf_only_for_idx, jet_vbf_only_for_idx.index + n_higgs_slots, "index")
-        jet_for_idx = [ak.concatenate([jet_higgs_for_idx, jet_vbf_global], axis=1)]
+        n_higgs_jets_run2 = truefile["INPUTS"][jet_coll_higgs]["MASK"].shape[1]
+        jet_for_idx = [ak.concatenate([jet_higgs_for_idx, jet_vbf_only_for_idx], axis=1)]
         jet_vbf_for_idx = [jet_vbf_only_for_idx]
     else:
         jet_for_idx = [
@@ -699,7 +701,7 @@ def main():
         mask_fully_matched,
         higgs=do_higgs_pairing,
         vbf=do_vbf_pairing,
-        n_higgs_jets=n_higgs_jets,
+        n_higgs_jets=n_higgs_jets_run2,
         processes=all_processes,
     )
 
