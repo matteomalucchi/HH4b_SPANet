@@ -29,7 +29,7 @@
 
     "skip_connections": true,
     "initial_embedding_skip_connections": true,
-    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_allKlambda_higgs_vbf_pairing_JetHiggsSeparate_btagB5wpHiggs.yaml",
+    "event_info_file": "${SPANET_MAIN_DIR}/HH4b_SPANet/event_files/HH4b/vbf_ggf/hh4b_vbf_ggf_pairing_allKlambda_higgs_vbf_pairing_JetHiggsSeparate_btagB5wpHiggsVBF.yaml",
     "training_file": "/eos/user/m/mmalucch/spanet_infos/spanet_inputs/vbf/11_08_01_out_ggf_vbf_zz_zh_spanet_input_AllKlambda_X_VBF_Pairing_ggFvsVBF_2024_parking_presel/X_VBF_Pairing_ggFvsVBF_ggF_VBF_ZZ_ZH_ggZHJetGoodProvHiggsPtFlattenPadded_JetGoodVBFMergedProvVBFPtFlattenPadded_train.h5",
 
     "normalize_features": true,
