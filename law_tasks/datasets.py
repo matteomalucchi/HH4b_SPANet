@@ -30,6 +30,8 @@ FIELDS = {
     "jet_like_global_vars": [],
     "max_jets": [],
     "resonances": "",
+    "global_regroup": "",
+    "global_mask": False,
     "convert_args": "",
     "remote_dir": "",
 }
@@ -119,6 +121,20 @@ def load_config(path=None):
     return content.get("defaults") or {}, {config_name(path): entry}, True
 
 
+#: fields holding a yes/no value
+BOOL_FIELDS = ["global_mask"]
+
+
+def _as_bool(value):
+    if isinstance(value, str):
+        if value.strip().lower() in ("", "0", "false", "no", "off"):
+            return False
+        if value.strip().lower() in ("1", "true", "yes", "on"):
+            return True
+        raise ValueError("expected a yes/no value, got '{}'".format(value))
+    return bool(value)
+
+
 def _as_list(value):
     if value is None or value == "":
         return []
@@ -136,7 +152,11 @@ class Dataset(object):
         self.ignored = []
         for field, default in FIELDS.items():
             value = fields.get(field, default)
-            setattr(self, field, _as_list(value) if field in LIST_FIELDS else value)
+            if field in LIST_FIELDS:
+                value = _as_list(value)
+            elif field in BOOL_FIELDS:
+                value = _as_bool(value)
+            setattr(self, field, value)
 
         if not self.output_prefix:
             raise ValueError(
@@ -219,8 +239,22 @@ class Dataset(object):
 
         ``coffea_to_h5_direct.py`` takes the global variables of the *n*-th jet
         collection group from the *n*-th entry of the global group, so a
-        shorter one fails in the middle of the conversion.
+        shorter one fails in the middle of the conversion.  A global regroup
+        that is not in ``global_regroup_dict`` is a typo as well.
         """
+        if self.global_regroup:
+            regroups = getattr(collections_module(), "global_regroup_dict", {})
+            if self.global_regroup not in regroups:
+                raise ValueError(
+                    "unknown global regroup '{}' in dataset '{}'; "
+                    "global_regroup_dict of {} holds: {}".format(
+                        self.global_regroup,
+                        self.name,
+                        settings().collections_module,
+                        ", ".join(sorted(regroups)) or "nothing",
+                    )
+                )
+
         jets = self.jet_collections()
         if len(self.global_vars) != 1 or not self.global_vars[0].isupper():
             return
@@ -313,6 +347,12 @@ class Dataset(object):
 
         if self.resonances:
             parts += ["-rs", self.resonances]
+
+        if self.global_regroup:
+            parts += ["-gr", self.global_regroup]
+
+        if self.global_mask:
+            parts += ["--global-mask"]
 
         command = " ".join(shlex.quote(str(part)) for part in parts)
         if self.convert_args:

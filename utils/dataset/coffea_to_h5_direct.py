@@ -18,6 +18,7 @@ from collections_coffea_to_h5_direct import (
     jet_collections_dict,
     global_collections_dict,
     jet_like_global_collections_dict,
+    global_regroup_dict,
 )
 from weights_handling_coffea_to_h5_direct import (
     compute_weight_norm_map,
@@ -200,6 +201,25 @@ p.add_argument(
     choices=["none", "zero", "abs"],
     default="none",
     help="treatment for negative weights options: ['none', 'zero', 'abs'], default = none.",
+)
+p.add_argument(
+    "-gr",
+    "--global-regroup",
+    default=None,
+    help="Name of a group of global_regroup_dict in collections_coffea_to_h5_direct.py "
+    "(e.g. 'VBF_PAIR_GLOBAL'): the global variables it lists are moved to the group "
+    "it gives them, on top of how they are saved otherwise.",
+)
+p.add_argument(
+    "-gm",
+    "--global-mask",
+    action="store_true",
+    help="Write a MASK for every global collection (INPUTS/<collection>/MASK), "
+    "jet-like global ones included. An event is masked (False) for a collection "
+    "when all the variables of that collection are equal to the pad value, so "
+    "that SPANet ignores the collection in that event instead of reading the pad "
+    "value as a real input.",
+    default=False,
 )
 p.add_argument(
     "--novars",
@@ -486,6 +506,17 @@ def write_block_split(train, test, path, data, train_mask, test_mask, shuffle):
     add_column_to_group(test, path, data[test_mask], shuffle)
 
 
+def update_global_mask(global_masks, coll, values):
+    """Mark as real the events where this variable of the global collection
+    `coll` is not the h5 pad value: an event is real for the collection when
+    at least one of its variables is not padded."""
+    real = np.asarray(values) != H5_PADDING_VALUE
+    if coll in global_masks:
+        global_masks[coll] = global_masks[coll] | real
+    else:
+        global_masks[coll] = real
+
+
 def get_parquet_save_directory(input_parquet):
     config_json_path = os.path.join(os.path.dirname(input_parquet), "config.json")
 
@@ -559,6 +590,7 @@ def coffea_to_h5(
     max_jets,
     train_frac,
     do_data_shuffling,
+    global_regroup=None,
     columns_key="columns",
     weight_name="weight",
 ):
@@ -638,6 +670,17 @@ def coffea_to_h5(
         jet_like_global_variables = jet_like_global_collections_dict[
             jet_like_global_variables[0]
         ]
+
+    if global_regroup is None:
+        regroup = {}
+    elif global_regroup in global_regroup_dict:
+        regroup = global_regroup_dict[global_regroup]
+    else:
+        raise ValueError(
+            f"Unknown global regroup '{global_regroup}'; global_regroup_dict holds: "
+            f"{', '.join(sorted(global_regroup_dict)) or 'nothing'}"
+        )
+    regrouped_found = set()
 
     for j, jet_coll_group in enumerate(jet_collections):
 
@@ -784,6 +827,12 @@ def coffea_to_h5(
                             test_mask,
                             shuffle,
                         )
+                    # {global collection: (N,) bool}, True where the event is real
+                    global_masks = {}
+                    # global [collection, variable] written for this dataset, so
+                    # that two columns can not be written to the same place
+                    written_globals = set()
+
                     for jet_i, (jet_coll, jet_info_dict) in enumerate(
                         jet_coll_group.items()
                     ):
@@ -949,6 +998,25 @@ def coffea_to_h5(
                                 glob_coll = None
                                 glob_var = None
 
+                            if is_global and name in regroup:
+                                regrouped_found.add(name)
+                                glob_coll = regroup[name]["saved_name_coll"]
+                                if regroup[name].get("saved_name_var") is not None:
+                                    glob_var = regroup[name]["saved_name_var"]
+                                print(
+                                    f"Regrouping global {name} -> [{glob_coll}, {glob_var}]"
+                                )
+
+                            if is_global:
+                                if (glob_coll, glob_var) in written_globals:
+                                    raise ValueError(
+                                        f"Global variable {name} would be written to "
+                                        f"[{glob_coll}, {glob_var}], which already holds "
+                                        "another column; check the saved names of "
+                                        "global_collections_dict / global_regroup_dict"
+                                    )
+                                written_globals.add((glob_coll, glob_var))
+
                             if is_jet or is_global:
                                 print(
                                     f"Processing {skey} {dataset} {region} variable {name} with shape {arr_u.shape} (jet: {is_jet}, global: {is_global})"
@@ -1004,11 +1072,13 @@ def coffea_to_h5(
                                     H5_PADDING_VALUE,
                                     arr_u,
                                 )
+                                arr_u = cast_floats32(arr_u)
+                                update_global_mask(global_masks, glob_coll, arr_u)
                                 write_block_split(
                                     tr_in,
                                     te_in,
                                     [glob_coll, glob_var],
-                                    cast_floats32(arr_u),
+                                    arr_u,
                                     train_mask,
                                     test_mask,
                                     shuffle,
@@ -1055,11 +1125,15 @@ def coffea_to_h5(
                                         print(
                                             f"Processing jet-like global {var_name}[{idx}] -> [{out_coll}, {var}]"
                                         )
+                                        per_jet = cast_floats32(per_jet)
+                                        update_global_mask(
+                                            global_masks, out_coll, per_jet
+                                        )
                                         write_block_split(
                                             tr_in,
                                             te_in,
                                             [out_coll, var],
-                                            cast_floats32(per_jet),
+                                            per_jet,
                                             train_mask,
                                             test_mask,
                                             shuffle,
@@ -1089,11 +1163,15 @@ def coffea_to_h5(
                                         print(
                                             f"Processing jet-like global {var_name}[{idx}] -> [{out_coll}, {var}]"
                                         )
+                                        per_jet = cast_floats32(per_jet)
+                                        update_global_mask(
+                                            global_masks, out_coll, per_jet
+                                        )
                                         write_block_split(
                                             tr_in,
                                             te_in,
                                             [out_coll, var],
-                                            cast_floats32(per_jet),
+                                            per_jet,
                                             train_mask,
                                             test_mask,
                                             shuffle,
@@ -1102,12 +1180,15 @@ def coffea_to_h5(
                     # Get the various k-values for each dataset
                     if "GluGlu" in dataset:
                         kl_val = extract_param_value(dataset, "kl")
-                        kl_val_array = kl_val * ak.ones_like(payload[weight_name])
+                        kl_val_array = cast_floats32(
+                            kl_val * ak.ones_like(payload[weight_name])
+                        )
+                        update_global_mask(global_masks, "Event", kl_val_array)
                         write_block_split(
                             tr_in,
                             te_in,
                             ["Event", "kl"],
-                            cast_floats32(kl_val_array),
+                            kl_val_array,
                             train_mask,
                             test_mask,
                             shuffle,
@@ -1116,31 +1197,61 @@ def coffea_to_h5(
                         # Get the C2V and not the k_lambda because the c2v is unique for each dataset of vbf
                         # while the k_lambda is not
                         c2v_val = extract_param_value(dataset, "C2V")
-                        c2v_val_array = c2v_val * ak.ones_like(payload[weight_name])
+                        c2v_val_array = cast_floats32(
+                            c2v_val * ak.ones_like(payload[weight_name])
+                        )
+                        update_global_mask(global_masks, "Event", c2v_val_array)
                         write_block_split(
                             tr_in,
                             te_in,
                             ["Event", "kl"],
-                            cast_floats32(c2v_val_array),
+                            c2v_val_array,
                             train_mask,
                             test_mask,
                             shuffle,
                         )
                     else:
-                        kl_padding = H5_PADDING_VALUE * ak.ones_like(
-                            payload[weight_name]
+                        kl_padding = cast_floats32(
+                            H5_PADDING_VALUE * ak.ones_like(payload[weight_name])
                         )
+                        update_global_mask(global_masks, "Event", kl_padding)
                         write_block_split(
                             tr_in,
                             te_in,
                             ["Event", "kl"],
-                            cast_floats32(kl_padding),
+                            kl_padding,
                             train_mask,
                             test_mask,
                             shuffle,
                         )
 
+                    # One MASK per global collection, written after all of its
+                    # variables so that it covers every one of them
+                    if args.global_mask:
+                        for glob_coll, glob_mask in global_masks.items():
+                            print(
+                                f"Writing global mask [{glob_coll}, MASK]: "
+                                f"{int(np.sum(~glob_mask))}/{N} events masked"
+                            )
+                            write_block_split(
+                                tr_in,
+                                te_in,
+                                [glob_coll, "MASK"],
+                                glob_mask,
+                                train_mask,
+                                test_mask,
+                                shuffle,
+                            )
+
         print(f"Wrote: {h5_tr}, {h5_te}")
+
+    if regroup:
+        missing = sorted(set(regroup) - regrouped_found)
+        print(
+            f"\nGlobal regroup '{global_regroup}': moved {len(regrouped_found)} "
+            f"variable(s); not saved as global variables in this file, so not moved: "
+            f"{missing or 'none'}"
+        )
 
 
 def print_event_counts():
@@ -1173,6 +1284,7 @@ if __name__ == "__main__":
         max_jets=args.max_jets,
         train_frac=args.train_frac,
         do_data_shuffling=not args.no_shuffle,
+        global_regroup=args.global_regroup,
     )
 
     print_event_counts()

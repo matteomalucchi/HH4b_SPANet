@@ -357,3 +357,56 @@ global_collections_dict = {
     ],
     
 }
+
+# Special cases moving single global variables to a group of their own, on top
+# of where they are saved otherwise (by `-g all` or by a `global_collections_dict`
+# group). Chosen with `-gr <NAME>` (`global_regroup: <NAME>` in the dataset YAML).
+#
+# The global MASK (--global-mask) is one per group: a group is masked in an
+# event only when all its variables are padded. Variables that are padded
+# together, e.g. the ones of the VBF pair, which is not always found, have to be
+# in a group of their own to be masked, instead of in `Event` next to variables
+# that are always there.
+#
+# Each entry maps a coffea column name to
+#   "saved_name_coll": the group, i.e. INPUTS/<saved_name_coll>/
+#   "saved_name_var":  the variable name in it; None keeps the name it would
+#                      have had otherwise
+# Columns of an entry that are not in the coffea file are skipped, so the
+# variants of a variable (e.g. the PtFlatten ones) can be listed together.
+global_regroup_dict = {
+    "VBF_PAIR_GLOBAL": {
+        "events_mjjJetGoodVBFMergedProvVBFPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+        "events_detaJetGoodVBFMergedProvVBFPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+        "events_centralityHiggsLeadingJetGoodVBFMergedProvVBFPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+        "events_centralityHiggsSubLeadingJetGoodVBFMergedProvVBFPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+        "events_mjjJetGoodVBFMergedProvVBFPtFlattenPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+        "events_detaJetGoodVBFMergedProvVBFPtFlattenPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+        "events_centralityHiggsLeadingJetGoodVBFMergedProvVBFPtFlattenPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+        "events_centralityHiggsSubLeadingJetGoodVBFMergedProvVBFPtFlattenPadded": {
+            "saved_name_coll": "VBFPair",
+            "saved_name_var": None,
+        },
+    },
+}

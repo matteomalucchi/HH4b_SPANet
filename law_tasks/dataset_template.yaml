@@ -32,6 +32,17 @@ jet_like_global_vars: JET_LIKE_GLOBAL_HIGGS_ORDERED
 #                                     # instead of 'h2: b1, b2'; it has to
 #                                     # match the event file of the training
 
+# global_regroup: VBF_PAIR_GLOBAL     # move single global variables to a
+#                                     # group of their own, as listed in
+#                                     # global_regroup_dict; e.g. the VBF pair
+#                                     # ones to `VBFPair`, so that
+#                                     # global_mask can mask them
+# global_mask: true                   # write INPUTS/<collection>/MASK for
+#                                     # every global collection (jet-like ones
+#                                     # included): False in the events where
+#                                     # all of its variables are the pad value,
+#                                     # so SPANet ignores them; off by default
+
 # -- anything else for coffea_to_h5_direct.py ----------------------------
 convert_args: "-n"                  # the weights are NOT normalized unless
 #                                     # this is used: `-n` divides them by
