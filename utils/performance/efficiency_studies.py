@@ -855,6 +855,34 @@ def main():
         r2_model["kl_values"]
     ]
 
+    # Plots vs mhh are made inclusively and, if the events were split by kl,
+    # also only for kl=1. idx is the position in the per-kl lists of each
+    # model (spanet models first, run2 last): 0 is the inclusive one.
+    mhh_variations = [
+        {
+            "idx": [0] * (len(df_collection) + 1),
+            "suffix": "",
+            "region": args.region or "inclusive",
+        }
+    ]
+    kl1_idx = [
+        kl_one_index(model["kl_values"])
+        for model in list(df_collection.values()) + [r2_model]
+    ]
+    if all(idx is not None for idx in kl1_idx):
+        mhh_variations.append(
+            {
+                "idx": kl1_idx,
+                "suffix": "_kl1",
+                "region": f"{args.region or 'inclusive'}, $\\kappa_{{\\lambda}}$=1",
+            }
+        )
+    else:
+        logger.info(
+            "No kl=1 events separated (run with --klambda on a klambda sample)"
+            ", making the plots vs mhh only inclusively"
+        )
+
     if not args.data:
         if args.klambda:
             logger.info("\n")
@@ -930,61 +958,25 @@ def main():
                 region=args.region,
             )
         if not args.ignore_higgs:
-            logger.info("Plotting differential efficiencies")
-            plot_diff_eff(
-                mhh_bins,
-                [model["diff_eff_spanet"][0] for model in df_collection.values()]
-                + [r2_model["diff_eff_run2"][0]],
-                [model["unc_diff_eff_spanet"][0] for model in df_collection.values()]
-                + [r2_model["unc_diff_eff_run2"][0]],
-                labels,
-                colors,
-                plot_dir,
-                "diff_eff_spanet",
-                cmstext=args.cmstext,
-                region=args.region,
-            )
-            plot_diff_eff(
-                mhh_bins,
-                [model["total_diff_eff_spanet"][0] for model in df_collection.values()]
-                + [r2_model["total_diff_eff_run2"][0]],
-                [
-                    model["total_unc_diff_eff_spanet"][0]
-                    for model in df_collection.values()
-                ]
-                + [r2_model["total_unc_diff_eff_run2"][0]],
-                labels,
-                colors,
-                plot_dir,
-                "total_diff_eff_spanet",
-                cmstext=args.cmstext,
-                region=args.region,
-            )
-
-            # Same differential efficiencies, but only for the kl=1 events.
-            # Index 0 is the inclusive one, index i+1 is kl_values[i].
-            kl1_idx = [
-                kl_one_index(model["kl_values"])
-                for model in list(df_collection.values()) + [r2_model]
-            ]
-            if kl1_idx and all(idx is not None for idx in kl1_idx):
-                logger.info("Plotting differential efficiencies for kl=1")
-                kl1_region = f"{args.region or 'inclusive'}, $\\kappa_{{\\lambda}}$=1"
-                spanet_idx, run2_idx = kl1_idx[:-1], kl1_idx[-1]
+            for variation in mhh_variations:
+                logger.info(
+                    f"Plotting differential efficiencies ({variation['region']})"
+                )
+                spanet_idx, run2_idx = variation["idx"][:-1], variation["idx"][-1]
                 for key_spanet, key_run2, unc_spanet, unc_run2, file_name in [
                     (
                         "diff_eff_spanet",
                         "diff_eff_run2",
                         "unc_diff_eff_spanet",
                         "unc_diff_eff_run2",
-                        "diff_eff_spanet_kl1",
+                        "diff_eff_spanet",
                     ),
                     (
                         "total_diff_eff_spanet",
                         "total_diff_eff_run2",
                         "total_unc_diff_eff_spanet",
                         "total_unc_diff_eff_run2",
-                        "total_diff_eff_spanet_kl1",
+                        "total_diff_eff_spanet",
                     ),
                 ]:
                     plot_diff_eff(
@@ -1002,27 +994,25 @@ def main():
                         labels,
                         colors,
                         plot_dir,
-                        file_name,
+                        f"{file_name}{variation['suffix']}",
                         cmstext=args.cmstext,
-                        region=kl1_region,
+                        region=variation["region"],
                     )
-            else:
-                logger.info(
-                    "No kl=1 events separated (run with --klambda on a klambda sample)"
-                    ", skipping the kl=1 differential efficiencies"
-                )
 
     if not args.ignore_higgs and args.histo_mass:
         if not args.data:
-            logger.info("Plotting mhh")
-            plot_mhh(
-                mhh_bins,
-                list(df_collection.values())[0]["true_hh_fully_matched"][0].mass,
-                plot_dir,
-                "mhh_fully_matched",
-                cmstext=args.cmstext,
-                region=args.region,
-            )
+            for variation in mhh_variations:
+                logger.info(f"Plotting mhh ({variation['region']})")
+                plot_mhh(
+                    mhh_bins,
+                    list(df_collection.values())[0]["true_hh_fully_matched"][
+                        variation["idx"][0]
+                    ].mass,
+                    plot_dir,
+                    f"mhh_fully_matched{variation['suffix']}",
+                    cmstext=args.cmstext,
+                    region=variation["region"],
+                )
 
         logger.info("Plotting higgs 1d all events")
         for bins, name in zip([mh_bins, mh_bins_peak], ["", "_peak"]):
