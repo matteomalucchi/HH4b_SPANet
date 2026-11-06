@@ -556,13 +556,16 @@ python utils/performance/efficiency_studies.py -pd <plot_dir>  -conf utils/perfo
 
 ## ZZ and ZH ##
 
-# the efficiency on the ZZ and ZH events, the classes 2 and 3 (only a few test
-# files hold them; the script stops with 'MISSING SAMPLES' when they are not
-# there, which is the expected answer for most trainings)
-python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZZ_ZH_inclusive -conf <configuration> -c 2 3 -r inclusive -k
+# the efficiency on the ZZ events (class 2) and on the ZH events (class 3),
+# each on its own (only a few test files hold them; the script stops with
+# 'MISSING SAMPLES' when they are not there, which is the expected answer for
+# most trainings)
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZZ_inclusive -conf <configuration> -c 2 -r inclusive -k
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZH_inclusive -conf <configuration> -c 3 -r inclusive -k
 
 # ... and with the k of each process in the Run 2 pairing
-python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZZ_ZH_inclusive -conf <configuration> -c 2 3 -r inclusive -k --process-k
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZZ_inclusive -conf <configuration> -c 2 -r inclusive -k --process-k
+python3 utils/performance/efficiency_studies.py -pd <plot_dir>/HiggsEff_ZH_inclusive -conf <configuration> -c 3 -r inclusive -k --process-k
 
 ```
 

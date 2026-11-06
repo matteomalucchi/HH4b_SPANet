@@ -581,7 +581,8 @@ VBFEff_vbf_no_kin_cuts: --vbf -c 1 -ih -r vbf_no_kin_cuts -k
 VBFEff_vbf_presel:      --vbf -c 1 -ih -r vbf_presel -k
 HiggsEff_ggF_inclusive:   -c 0 -r inclusive -k        # Higgs pairing, ggF events
 HiggsEff_VBF_inclusive:   -c 1 -r inclusive -vl -k    # Higgs pairing, VBF events
-HiggsEff_ZZ_ZH_inclusive: -c 2 3 -r inclusive -k      # ZZ and ZH events
+HiggsEff_ZZ_inclusive:    -c 2 -r inclusive -k        # ZZ events
+HiggsEff_ZH_inclusive:    -c 3 -r inclusive -k        # ZH events
 
 [roc_plots]
 vbf_no_kin_cuts:               -r vbf_no_kin_cuts -klb 1 all -s 0.8
@@ -1033,12 +1034,12 @@ runs, and is not made when its model has nothing to show:
 
 | what the plot asks for | looked for | example |
 |---|---|---|
-| the classes of `-c` (efficiency plots) | at least one event of one of them in the test file | `VBFEff_*` and `HiggsEff_VBF_*` need class 1, `HiggsEff_ZZ_ZH_*` class 2 or 3 |
+| the classes of `-c` (efficiency plots) | at least one event of one of them in the test file | `VBFEff_*` and `HiggsEff_VBF_*` need class 1, `HiggsEff_ZZ_*` class 2, `HiggsEff_ZH_*` class 3 |
 | a region with `signal_region` in it | `INPUTS/HiggsLeading/mass` and `INPUTS/HiggsSubLeading/mass`, in the test file and in the prediction | `signal_region_vbf_no_kin_cuts`, `signal_region_vbf_presel`, or `--region signal_region_...` |
 
 ```
 not made:         VBFEff_vbf_presel (..._test.h5 holds no event of class 1)
-not made:         HiggsEff_ZZ_ZH_inclusive (..._test.h5 holds no event of class 2 or 3)
+not made:         HiggsEff_ZZ_inclusive (..._test.h5 holds no event of class 2)
 not made:         signal_region_vbf_presel (predict_..._test.h5 has no INPUTS/HiggsLeading/mass or INPUTS/HiggsSubLeading/mass, which the region 'signal_region_vbf_presel' needs)
 ```
 
@@ -1048,13 +1049,13 @@ region is left out of the plot with a warning in the log, and the Run 2
 reference of the efficiency plots without them stops the plot as below.
 
 The events of the other models are not looked for in advance either:
-`HiggsEff_ZZ_ZH_inclusive` asks for the classes 2 and 3, which only a few
-test files hold.
+`HiggsEff_ZZ_inclusive` and `HiggsEff_ZH_inclusive` ask for the class 2 and
+3, which only a few test files hold.
 When the files of no model have any of those events the script stops with
 
 ```
 MISSING SAMPLES: no model has an event left: the file holds none of the
-classes ['2', '3'] in the region 'inclusive'
+classes ['2'] in the region 'inclusive'
 The script was NOT successful: it made no plot, because the samples it needs
 are missing.
 ```
@@ -1062,13 +1063,13 @@ are missing.
 which is not a failure of the pipeline: the plot is reported as not made, the
 run carries on and `hh4b.Performance` still finishes successfully.
 
-That entry pairs the Run 2 candidates as HH, like every other plot; add
-`--process-k` to it (in `law.cfg`, or with `--plot-args --process-k` for one
+Those entries pair the Run 2 candidates as HH, like every other plot; add
+`--process-k` to them (in `law.cfg`, or with `--plot-args --process-k` for one
 run) to use the k of each process instead -- 1.02 for ZZ, and 0.76 or 1.40 for
 a Z and a Higgs, depending on which of the two is the leading one in pt.
 
 ```
-not made:         HiggsEff_ZZ_ZH_inclusive (the samples or inputs it needs are missing from the test file)
+not made:         HiggsEff_ZZ_inclusive (the samples or inputs it needs are missing from the test file)
 ```
 
 The marker of that plot holds `"skipped"` instead of a plot directory, and the

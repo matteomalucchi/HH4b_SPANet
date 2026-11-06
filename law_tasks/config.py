@@ -60,8 +60,9 @@ DEFAULT_EFFICIENCY_PLOTS = {
     "HiggsEff_ggF_inclusive": "-c 0 -r inclusive -k",
     # the Higgs pairing on the VBF events; -vl: their 'kl' is really C2V
     "HiggsEff_VBF_inclusive": "-c 1 -r inclusive -vl -k",
-    # classes 2 and 3; only a few test files hold them
-    "HiggsEff_ZZ_ZH_inclusive": "-c 2 3 -r inclusive -k",
+    # ZZ (class 2) and ZH (class 3) apart; only a few test files hold them
+    "HiggsEff_ZZ_inclusive": "-c 2 -r inclusive -k",
+    "HiggsEff_ZH_inclusive": "-c 3 -r inclusive -k",
 }
 
 #: ROC plots produced by ``hh4b.RocPlots``: name -> extra arguments
