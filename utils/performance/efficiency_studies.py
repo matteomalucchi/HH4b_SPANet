@@ -168,6 +168,14 @@ else:
         true_dict,
     )
 
+def kl_one_index(kl_values):
+    """Index of the kl=1 entry in the per-kl lists, which start with the
+    inclusive one, or None if the events were not split by kl or kl=1 is
+    missing."""
+    matches = np.flatnonzero(np.isclose(np.asarray(kl_values, dtype=float), 1.0))
+    return int(matches[0]) + 1 if len(matches) else None
+
+
 def is_data(key, entry):
     """A prediction on data: 'data' in its key, or a 'data' flag in its entry."""
     return "data" in key or bool(entry.get("data", False))
@@ -952,6 +960,57 @@ def main():
                 cmstext=args.cmstext,
                 region=args.region,
             )
+
+            # Same differential efficiencies, but only for the kl=1 events.
+            # Index 0 is the inclusive one, index i+1 is kl_values[i].
+            kl1_idx = [
+                kl_one_index(model["kl_values"])
+                for model in list(df_collection.values()) + [r2_model]
+            ]
+            if kl1_idx and all(idx is not None for idx in kl1_idx):
+                logger.info("Plotting differential efficiencies for kl=1")
+                kl1_region = f"{args.region or 'inclusive'}, $\\kappa_{{\\lambda}}$=1"
+                spanet_idx, run2_idx = kl1_idx[:-1], kl1_idx[-1]
+                for key_spanet, key_run2, unc_spanet, unc_run2, file_name in [
+                    (
+                        "diff_eff_spanet",
+                        "diff_eff_run2",
+                        "unc_diff_eff_spanet",
+                        "unc_diff_eff_run2",
+                        "diff_eff_spanet_kl1",
+                    ),
+                    (
+                        "total_diff_eff_spanet",
+                        "total_diff_eff_run2",
+                        "total_unc_diff_eff_spanet",
+                        "total_unc_diff_eff_run2",
+                        "total_diff_eff_spanet_kl1",
+                    ),
+                ]:
+                    plot_diff_eff(
+                        mhh_bins,
+                        [
+                            model[key_spanet][idx]
+                            for model, idx in zip(df_collection.values(), spanet_idx)
+                        ]
+                        + [r2_model[key_run2][run2_idx]],
+                        [
+                            model[unc_spanet][idx]
+                            for model, idx in zip(df_collection.values(), spanet_idx)
+                        ]
+                        + [r2_model[unc_run2][run2_idx]],
+                        labels,
+                        colors,
+                        plot_dir,
+                        file_name,
+                        cmstext=args.cmstext,
+                        region=kl1_region,
+                    )
+            else:
+                logger.info(
+                    "No kl=1 events separated (run with --klambda on a klambda sample)"
+                    ", skipping the kl=1 differential efficiencies"
+                )
 
     if not args.ignore_higgs and args.histo_mass:
         if not args.data:
