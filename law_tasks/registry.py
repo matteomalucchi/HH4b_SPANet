@@ -46,7 +46,7 @@ TRUE_KEY = {true_key_literal}
 # the Run 2 method is evaluated on the true file of this model, the one the
 # model is compared against, and not on the one of the base configuration
 run2_dataset_MC = {run2_mc}
-run2_dataset_DATA = getattr(_base, "run2_dataset_DATA", "")
+run2_dataset_DATA = {run2_data}
 roc_dict = dict(getattr(_base, "roc_dict", {{}}))
 
 spanet_dict = {baseline}
@@ -133,13 +133,15 @@ def build_entries(
     klambda=None,
     extra_spanet=None,
     extra_true=None,
+    data=False,
 ):
     """Build the ``spanet_dict`` and ``true_dict`` entries of one model.
 
     ``higgs`` and ``vbf`` say which pairings the prediction holds, which is
     what ``efficiency_studies.py`` asks the entry for before computing an
     efficiency; both are written, so the entry says what the file does not
-    have as well.
+    have as well.  ``data`` marks a prediction on collision data, the only
+    entries ``efficiency_studies.py --data`` keeps.
     """
     token_spanet, token_true = naming.extra_entries(key)
 
@@ -151,6 +153,8 @@ def build_entries(
         "higgs": bool(higgs),
         "vbf": bool(vbf),
     }
+    if data:
+        spanet_entry["data"] = True
     spanet_entry.update(token_spanet)
     spanet_entry.update(extra_spanet or {})
 
@@ -235,13 +239,16 @@ def render_module(
     true_entry,
     baseline_models="all",
     run2_dataset="",
+    data=False,
 ):
     """Return the source code of the generated configuration module.
 
     ``run2_dataset`` is the ``true_dict`` key the Run 2 method is evaluated
     on: empty means this model's own true entry, so that both are measured on
     the same file, ``base`` keeps whatever the base configuration points at,
-    and anything else is taken as that key.
+    and anything else is taken as that key.  With ``data`` it is the one of
+    ``run2_dataset_DATA``, what ``efficiency_studies.py --data`` reads, and
+    ``run2_dataset_MC`` keeps the one of the base configuration.
     """
     if baseline_models == "all":
         baseline = "dict(_base.spanet_dict)"
@@ -262,6 +269,10 @@ def render_module(
     else:
         run2_mc = _literal(run2_dataset)
 
+    run2_data = 'getattr(_base, "run2_dataset_DATA", "")'
+    if data:
+        run2_mc, run2_data = 'getattr(_base, "run2_dataset_MC", "")', run2_mc
+
     source = GENERATED_HEADER.format(
         key=key,
         base=os.path.abspath(base_config),
@@ -269,6 +280,7 @@ def render_module(
         true_key_literal=_literal(true_key),
         baseline=baseline,
         run2_mc=run2_mc,
+        run2_data=run2_data,
         spanet_entry=_assignment("spanet_dict[MODEL_KEY]", spanet_entry),
         true_entry=_assignment("true_dict[TRUE_KEY]", true_entry),
         spanet_comment=_commented_entry(key, spanet_entry),

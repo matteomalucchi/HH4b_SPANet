@@ -202,7 +202,14 @@ class PlotTask(ModelTask):
             return arguments
 
         adapted, _ = self.event_info.efficiency_arguments(arguments)
-        return arguments if adapted is None else adapted
+        arguments = arguments if adapted is None else adapted
+        if self.data:
+            # no true pairing in data: what is left are the Higgs masses
+            tokens = set(shlex.split(arguments))
+            for flag, long_flag in (("-d", "--data"), ("-hm", "--histo-mass")):
+                if not {flag, long_flag} & tokens:
+                    arguments += " " + flag
+        return arguments
 
     @property
     def target_dir(self):
@@ -226,6 +233,15 @@ class PlotTask(ModelTask):
 
     def unsupported_reason(self):
         """Why the event file of the model does not allow this plot."""
+        if self.data:
+            if self.kind == "roc":
+                return "the data have no true class to compute a ROC curve of"
+            tokens = shlex.split(self.configured_arguments)
+            if {"-ih", "--ignore-higgs"} & set(tokens):
+                return (
+                    "on data only the Higgs mass histograms are made, and this "
+                    "plot leaves the Higgs pairing out"
+                )
         if self.needs_classification:
             missing = self.event_info.classification_missing()
             if missing:

@@ -435,6 +435,12 @@ class ModelTask(BaseTask):
         "configurations and the plots of a model evaluated on several test "
         "files apart; default: derived from --test-file",
     )
+    data = luigi.BoolParameter(
+        default=False,
+        description="the test file is collision data, without a true pairing: "
+        "the efficiency script runs with --data and only draws the Higgs mass "
+        "histograms, and the ROC plots are not made; default: False",
+    )
 
     # -- paths -------------------------------------------------------------
 

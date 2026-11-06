@@ -197,6 +197,7 @@ class RegisterModel(ModelTask):
             vbf=model_keys.pop("vbf"),
             extra_spanet=model_keys,
             extra_true=true_keys,
+            data=self.data,
         )
 
         for kind, base_config in base_configs.items():
@@ -208,6 +209,7 @@ class RegisterModel(ModelTask):
                 true_entry,
                 baseline_models=self.baseline_models,
                 run2_dataset=self.run2_dataset,
+                data=self.data,
             )
             path = registry.write_module(self.config_path(kind), source)
             self.publish_message("wrote {}".format(path))
@@ -230,6 +232,7 @@ class RegisterModel(ModelTask):
             test_file=evaluation_file,
             event_file=self.event_info_path,
             run2_dataset=self.run2_dataset or true_key,
+            data=self.data,
             spanet_entry=spanet_entry,
             true_entry=true_entry,
         )

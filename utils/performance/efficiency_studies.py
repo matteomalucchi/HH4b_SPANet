@@ -168,13 +168,18 @@ else:
         true_dict,
     )
 
+def is_data(key, entry):
+    """A prediction on data: 'data' in its key, or a 'data' flag in its entry."""
+    return "data" in key or bool(entry.get("data", False))
+
+
 if args.data:
     # remove non data samples
     run2_dataset = run2_dataset_DATA
-    spanet_dict = {k: v for k, v in spanet_dict.items() if "data" in k}
+    spanet_dict = {k: v for k, v in spanet_dict.items() if is_data(k, v)}
 else:
     run2_dataset = run2_dataset_MC
-    spanet_dict = {k: v for k, v in spanet_dict.items() if "data" not in k}
+    spanet_dict = {k: v for k, v in spanet_dict.items() if not is_data(k, v)}
 
 # mh_bins = np.linspace(0, 300, 150)
 mh_bins = np.linspace(0, 300, 61)
@@ -365,9 +370,14 @@ def main():
         else:
             kl_values = np.array([])
 
-        # Fully matched events
+        # Fully matched events; data have no true pairing, so all events are kept
         mask_fully_matched = [
-            ak.all(ak.all(idx >= 0, axis=-1), axis=-1) for idx in alltrue_idx
+            (
+                np.ones(len(idx), dtype=bool)
+                if args.data
+                else ak.all(ak.all(idx >= 0, axis=-1), axis=-1)
+            )
+            for idx in alltrue_idx
         ]
         alltrue_idx_fully_matched = [
             idx[mask] for idx, mask in zip(alltrue_idx, mask_fully_matched)
@@ -679,9 +689,14 @@ def main():
                 split_by_klambda(all_processes[0], truefile, mask_true)
             )
 
-    # Fully matched events
+    # Fully matched events; data have no true pairing, so all events are kept
     mask_fully_matched = [
-        ak.all(ak.all(idx >= 0, axis=-1), axis=-1) for idx in alltrue_idx
+        (
+            np.ones(len(idx), dtype=bool)
+            if args.data
+            else ak.all(ak.all(idx >= 0, axis=-1), axis=-1)
+        )
+        for idx in alltrue_idx
     ]
     alltrue_idx_fully_matched = [
         idx[mask] for idx, mask in zip(alltrue_idx, mask_fully_matched)
@@ -775,10 +790,10 @@ def main():
                         )
                     else:
                         (
-                            eff_spanet,
-                            unc_eff_spanet,
-                            total_eff_spanet,
-                            unc_total_eff_spanet,
+                            eff_run2,
+                            unc_eff_run2,
+                            total_eff_run2,
+                            unc_total_eff_run2,
                         ) = (
                             None,
                             None,
