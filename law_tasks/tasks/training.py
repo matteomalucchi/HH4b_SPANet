@@ -76,18 +76,43 @@ class Training(ModelTask):
         description="give up waiting for the condor job after this many hours; "
         "default: 72",
     )
+    max_query_failures = luigi.IntParameter(
+        default=24,
+        significant=False,
+        description="consecutive failed condor status queries tolerated while "
+        "waiting (the schedd is regularly unreachable for a while); default: "
+        "24, i.e. 2 hours at the default --poll-interval",
+    )
 
     def output(self):
         return self.marker("training.json")
 
     # -- condor helpers ----------------------------------------------------
 
-    def _queued_jobs(self):
-        """Cluster ids of jobs of this training that are still in the queue."""
+    def _query(self, constraint, projection, attempts=5, delay=60):
+        """``schedd.query`` that survives the transient failures of the schedd.
+
+        A query fails now and then with errors like 'SECMAN:2007:Read failure
+        during security negotiation', which say nothing about the job.
+        """
         import htcondor
 
-        schedd = htcondor.Schedd()
-        jobs = schedd.query(
+        for attempt in range(1, attempts + 1):
+            try:
+                return htcondor.Schedd().query(
+                    constraint=constraint, projection=projection
+                )
+            except Exception as error:
+                if attempt == attempts:
+                    raise
+                self.publish_message(
+                    "condor query failed ({}), retrying in {} s".format(error, delay)
+                )
+                time.sleep(delay)
+
+    def _queued_jobs(self):
+        """Cluster ids of jobs of this training that are still in the queue."""
+        jobs = self._query(
             constraint='Owner == "{}"'.format(os.environ.get("USER", "")),
             projection=["ClusterId", "JobStatus", "Out"],
         )
@@ -104,11 +129,10 @@ class Training(ModelTask):
 
     def _job_status(self, cluster_id):
         """Status string of ``cluster_id``, or ``None`` once it left the queue."""
-        import htcondor
-
-        schedd = htcondor.Schedd()
-        jobs = schedd.query(
-            constraint="ClusterId == {}".format(cluster_id), projection=["JobStatus"]
+        jobs = self._query(
+            constraint="ClusterId == {}".format(cluster_id),
+            projection=["JobStatus"],
+            attempts=1,
         )
         if not jobs:
             return None
@@ -117,9 +141,36 @@ class Training(ModelTask):
     def _wait_for(self, cluster_id):
         """Block until ``cluster_id`` left the queue."""
         deadline = time.time() + self.max_wait_hours * 3600
+        failures = 0
 
         while True:
-            status = self._job_status(cluster_id)
+            try:
+                status = self._job_status(cluster_id)
+                failures = 0
+            except Exception as error:
+                # an unreachable schedd does not mean the job is gone: keep
+                # waiting, and only give up when it stays unreachable
+                failures += 1
+                if failures > self.max_query_failures:
+                    raise RuntimeError(
+                        "condor status of job {} could not be queried {} times "
+                        "in a row (last error: {}); the job may still be "
+                        "running, rerun the same command to pick it up "
+                        "again".format(cluster_id, failures, error)
+                    )
+                self.publish_message(
+                    "condor query of job {} failed ({}/{}): {}; checking "
+                    "again in {} s".format(
+                        cluster_id,
+                        failures,
+                        self.max_query_failures,
+                        error,
+                        self.poll_interval,
+                    )
+                )
+                time.sleep(self.poll_interval)
+                continue
+
             if status is None:
                 self.publish_message("job {} left the queue".format(cluster_id))
                 return
@@ -194,6 +245,27 @@ class Training(ModelTask):
                 "version".format(self.model_version)
             )
 
+        # a job of this training still in the queue already wrote checkpoints
+        # into its version_N: wait for it instead of adopting it half-trained
+        waited = None
+        if not self.overwrite and not self.local_training:
+            queued = self._queued_jobs()
+            if queued:
+                cluster_id = queued[-1]
+                self.publish_message(
+                    "a job of this training is still in the queue (cluster {}), "
+                    "waiting for it".format(cluster_id)
+                )
+                if self.no_wait:
+                    raise RuntimeError(
+                        "training job {} still in the queue, --no-wait "
+                        "requested; rerun the pipeline once the job is "
+                        "done".format(cluster_id)
+                    )
+                self._wait_for(cluster_id)
+                self.forget_run_dir()
+                waited = cluster_id
+
         existing = self.existing_versions()
         reusable = (
             self.model_version in existing
@@ -208,22 +280,19 @@ class Training(ModelTask):
             self.publish_message(
                 "reusing the trained model in {}".format(self.version_dir(version))
             )
-            self._write(version, cluster_id=None, reused=True)
+            self._write(version, cluster_id=waited, reused=waited is None)
             return
+        if waited is not None:
+            raise RuntimeError(
+                "condor job {} left the queue without a trained model in {}, "
+                "check the condor log files there".format(waited, self.run_dir)
+            )
 
         cluster_id = None
         if self.local_training:
             self._run_locally()
         else:
-            queued = [] if self.overwrite else self._queued_jobs()
-            if queued:
-                cluster_id = queued[-1]
-                self.publish_message(
-                    "a job of this training is already in the queue "
-                    "(cluster {}), waiting for it".format(cluster_id)
-                )
-            else:
-                cluster_id = self._submit()
+            cluster_id = self._submit()
 
             if self.no_wait:
                 raise RuntimeError(
