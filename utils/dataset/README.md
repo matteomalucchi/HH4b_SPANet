@@ -23,6 +23,14 @@ path/to/output/prefix_name<JetCollectionName>_train.h5
 path/to/output/prefix_name<JetCollectionName>_test.h5
 ```
 
+**Data datasets and MC-only columns.** The pt-flattened collections and
+`random_pt_weights` are not saved for data (dataset key containing `DATA`).
+If any data dataset is in the input, the columns matching
+`MC_ONLY_COLUMN_PATTERNS` (`PtFlatten`, `random_pt_weights`, defined at the
+top of `coffea_to_h5_direct.py`) are dropped for **every** dataset, so that
+all the h5 columns have the same length, and the jet collection groups
+containing a pt-flattened collection are skipped with a warning.
+
 At the end, for each jet collection group, a table is printed with the number of train, test and total (train+test) events written for each dataset, plus a `TOTAL` row with the number of events in the final train and test files combining all datasets. Events removed by the high-weight filter are not counted.
 
 ## All CLI options
