@@ -120,6 +120,33 @@ else:
     )
 
 
+def asimov_significance(s, b, s_err, b_err):
+    """Poisson (Asimov) discovery significance Z = sqrt(2((s+b)ln(1+s/b) - s)),
+    valid also for low counts, with the uncertainty propagated from s and b."""
+    if b <= 0 or s < 0:
+        return float("nan"), float("nan")
+    log_term = np.log1p(s / b)
+    z = np.sqrt(max(2 * ((s + b) * log_term - s), 0.0))
+    if z == 0:
+        return 0.0, float("nan")
+    dz_ds = log_term / z
+    dz_db = (log_term - s / b) / z
+    z_err = np.sqrt((dz_ds * s_err) ** 2 + (dz_db * b_err) ** 2)
+    return z, z_err
+
+
+PM_LATEX = " $\\pm$ "
+
+
+def format_val_err(val, err, sig_digits=2, pm=" +- "):
+    """Format value and uncertainty with the same decimal place, fixed by
+    ``sig_digits`` significant digits on the uncertainty."""
+    if not np.isfinite(err) or err <= 0:
+        return f"{val:.3g}{pm}{err:.3g}"
+    decimals = max(sig_digits - 1 - int(np.floor(np.log10(err))), 0)
+    return f"{val:.{decimals}f}{pm}{err:.{decimals}f}"
+
+
 def my_roc_auc(
     classes: np.ndarray, predictions: np.ndarray, sample_weight: np.ndarray = None
 ) -> float:
@@ -407,11 +434,11 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
                 cut = np.nextafter(sig_scores.min(), -np.inf)
             else:
                 cut = np.quantile(sig_scores, 1 - sig_eff_region_target)
+            # events above the score cut
             mask_signal_cut = sig_scores > cut
-            mask_bkg_cut = bkg_scores <= cut
+            mask_bkg_cut = bkg_scores > cut
             n_sig_pass = mask_signal_cut.sum()
             n_bkg_pass = mask_bkg_cut.sum()
-            n_bkg_above = np.sum(~mask_bkg_cut)
             n_sig_pass_err = np.sqrt(n_sig_pass)
             n_bkg_pass_err = np.sqrt(n_bkg_pass)
         else:
@@ -425,33 +452,24 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
             n_sig_pass = weights_sig[mask_signal_cut].sum()
             n_sig_pass_err = np.sqrt((weights_sig[mask_signal_cut] ** 2).sum())
 
-            mask_bkg_cut = bkg_scores <= cut
+            mask_bkg_cut = bkg_scores > cut
             n_bkg_pass = weights_bkg[mask_bkg_cut].sum()
-            n_bkg_above = weights_bkg[~mask_bkg_cut].sum()
             n_bkg_pass_err = np.sqrt((weights_bkg[mask_bkg_cut] ** 2).sum())
 
         sig_eff = n_sig_pass / n_sig_tot
-        bkg_rej = 1 - n_bkg_above / n_bkg_tot
+        bkg_rej = 1 - n_bkg_pass / n_bkg_tot
 
-        # S/sqrt(B) significance metric with propagated statistical uncertainty
-        if n_bkg_pass > 0:
-            s_sqrtb = n_sig_pass / np.sqrt(n_bkg_pass)
-            s_sqrtb_err = np.sqrt(
-                (n_sig_pass_err / np.sqrt(n_bkg_pass)) ** 2
-                + (n_sig_pass * n_bkg_pass_err / (2 * n_bkg_pass**1.5)) ** 2
-            )
-        else:
-            s_sqrtb = float("nan")
-            s_sqrtb_err = float("nan")
+        # Poisson (Asimov) significance with propagated statistical uncertainty
+        signif, signif_err = asimov_significance(n_sig_pass, n_bkg_pass, n_sig_pass_err, n_bkg_pass_err)
 
         logger.info("=============")
         logger.info(f"For model {model_name} with signal kl = {kl_string} and background kl = {kl_bkg_string}:")
         logger.info(f"Found score cut at: {cut:.4f} for target signal efficiency of {args.sig_efficiency*100:.4g}%")
         logger.info(f"Signal efficiency at this point is: {sig_eff * 100:.2f}% ")
         logger.info(f"Background rejection at this point is: {bkg_rej * 100:.2f}% ")
-        logger.info(f"Number of signal events passing the cut (sum of weights): {n_sig_pass:.2f} +- {n_sig_pass_err:.2f}")
-        logger.info(f"Number of background events passing the cut (sum of weights): {n_bkg_pass:.2f} +- {n_bkg_pass_err:.2f}")
-        logger.info(f"S/sqrt(B) at this point is: {s_sqrtb:.2f} +- {s_sqrtb_err:.2f}")
+        logger.info(f"Number of signal events above the cut (sum of weights): {format_val_err(n_sig_pass, n_sig_pass_err)}")
+        logger.info(f"Number of background events above the cut (sum of weights): {format_val_err(n_bkg_pass, n_bkg_pass_err)}")
+        logger.info(f"Asimov significance sqrt(2((S+B)ln(1+S/B)-S)) at this point is: {format_val_err(signif, signif_err)}")
         logger.info("=============")
 
         hist_bkg = Hist.new.Regular(
@@ -527,9 +545,9 @@ def signal_background_hist(class_dict, plot_dir, no_weights, kl, kl_bkg="all"):
                         f"Sig efficiency = {sig_eff :.2f}\n"
                         f"Bkg rejection = {bkg_rej:.2f}\n"
                         f"SPANet score cut = {cut:.2f}\n"
-                        f"N sig events = {n_sig_pass:.2f} $\\pm$ {n_sig_pass_err:.2f}\n"
-                        f"N bkg events = {n_bkg_pass:.2f} $\\pm$ {n_bkg_pass_err:.2f}\n"
-                        f"S/$\\sqrt{{B}}$ = {s_sqrtb:.2f} $\\pm$ {s_sqrtb_err:.2f}"
+                        f"N sig events = {format_val_err(n_sig_pass, n_sig_pass_err, pm=PM_LATEX)}\n"
+                        f"N bkg events = {format_val_err(n_bkg_pass, n_bkg_pass_err, pm=PM_LATEX)}\n"
+                        f"$Z_{{A}}$ = {format_val_err(signif, signif_err, pm=PM_LATEX)}"
                     ),
                 )  # 0 and 1 should not have a particular effect. its just to have two points on the line
                 histplot.add_annotation(0.6, 0.95, f"Region: {args.region}", ha="left", va="center", fontsize=20)
