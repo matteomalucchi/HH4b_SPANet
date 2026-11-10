@@ -930,6 +930,67 @@ def plot_diff_eff(
     )
 
 
+def fraction_in_signal_region(higgs_candidates):
+    """Fraction of events whose two Higgs candidates (ordered by pt) fall in
+    the signal region, or None if there are no candidates."""
+    if higgs_candidates is None or len(higgs_candidates) == 0:
+        return None
+    mask_sr = helpers.get_mask_RHH_region(
+        higgs_candidates[:, 0].mass, higgs_candidates[:, 1].mass
+    )
+    return float(ak.sum(mask_sr) / len(mask_sr))
+
+
+def plot_sr_fraction(
+    fractions,
+    labels,
+    colors,
+    category,
+    name,
+    plot_dir="plots",
+    cmstext="Private",
+    region=None,
+):
+    """Bar plot of the fraction of events in the signal region for each
+    pairing method (one bar each), for a single dataset ``category``."""
+    series_dict = {}
+    for frac, label, col in zip(fractions, labels, colors):
+        if frac is None:
+            continue
+        series_dict[label] = {
+            "data": {"categories": [category], "values": [frac]},
+            "style": {"color": col, "label": label},
+        }
+    if not series_dict:
+        logger.warning(f"No signal region fraction to plot for {name}")
+        return
+
+    (
+        HEPPlotter("CMS")
+        .set_output(f"{plot_dir}/{name}")
+        .set_labels(
+            xlabel="",
+            ylabel="Fraction of events in the signal region",
+            xtick_fontsize=20,
+        )
+        .set_data(series_dict, plot_type="categorical")
+        .set_options(
+            legend=True,
+            legend_font_size=20,
+            legend_loc="upper right",
+            grid=True,
+            set_ylim=True,
+            ylim_bottom_value=0,
+        )
+        .set_plot_config(
+            lumitext="(13.6 TeV)", cmstext=cmstext,
+            figsize=[13, 13],
+        )
+        .add_annotation(0.05, 0.92, region or "inclusive", fontsize=20, ha="left", va="top")
+        .run()
+    )
+
+
 def plot_diff_eff_klambda(
     effs,
     unc_effs,
