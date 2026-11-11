@@ -55,6 +55,11 @@ RESONANCES_DICT = {
 EXTRA_RESONANCES = {"add": (-1, ("a1",))}
 RESONANCES = dict(DEFAULT_RESONANCES, **EXTRA_RESONANCES)
 MIN_NUM_JETS = 4
+# Columns that only exist for MC (pt-flattening weights and pt-flattened
+# collections). They are not saved in data, so when the file holds data
+# datasets they are dropped for every dataset (to keep the h5 consistent) and
+# the jet collection groups made of pt-flattened collections are skipped
+MC_ONLY_COLUMN_PATTERNS = ["PtFlatten", "random_pt_weights"]
 
 # -----------------------------------------------------------------------------
 # CLI
@@ -388,6 +393,14 @@ def infer_collection_and_var(name):
     return "Event", name
 
 
+def is_data_dataset(dataset_key):
+    return "DATA" in dataset_key
+
+
+def is_mc_only_column(name):
+    return any(pattern in name for pattern in MC_ONLY_COLUMN_PATTERNS)
+
+
 def dataset_matches_class_labels(dataset_key, class_labels):
     """True if the dataset key matches any class label (always True if no class labels)."""
     if not class_labels:
@@ -625,6 +638,13 @@ def coffea_to_h5(
         print("Loading only categories:", sorted(categories))
         cols = load_cols_parquet(rootdir, datasets, categories)
 
+    has_data = any(is_data_dataset(skey) for skey in cols)
+    if has_data:
+        print(
+            f"Data datasets found: dropping the MC-only columns matching "
+            f"{MC_ONLY_COLUMN_PATTERNS} for every dataset"
+        )
+
     weight_norm_map = None
     if args.balance_weights != "none":
         weight_norm_map, class_abs_sum, n_samples_per_class = compute_weight_norm_map(
@@ -701,6 +721,13 @@ def coffea_to_h5(
 
         jet_coll_group_str = "_".join(list(jet_coll_group.keys()))
 
+        if has_data and any(is_mc_only_column(c) for c in jet_coll_group):
+            print(
+                f"\nWARNING: skipping jet collection group {jet_coll_group_str}: "
+                "it contains MC-only (pt-flattened) collections not saved for data"
+            )
+            continue
+
         h5_tr = f"{path_base}{jet_coll_group_str}_train.h5"
         h5_te = f"{path_base}{jet_coll_group_str}_test.h5"
 
@@ -759,6 +786,11 @@ def coffea_to_h5(
                     else:
                         payload = {key: values.value for key, values in payload.items()}
                         payload_columns = list(payload.keys())
+
+                    if has_data:
+                        payload_columns = [
+                            c for c in payload_columns if not is_mc_only_column(c)
+                        ]
 
                     w = payload[weight_name]
                     N = len(w)
