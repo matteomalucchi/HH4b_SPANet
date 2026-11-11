@@ -181,7 +181,7 @@ mh_bins_2d = (
 )
 
 # For differential pairing efficiency by hh mass. (where the pairing efficiency is somehow added cumulative).
-mhh_bins = np.linspace(150, 700, 10)
+mhh_bins = np.linspace(200, 700, 10)
 
 # Create plotting directory
 plot_dir = args.plot_dir
