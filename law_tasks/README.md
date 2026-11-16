@@ -330,6 +330,11 @@ and `_test.h5` pair per jet collection group, and a named group such as
 groups. The tasks expand the group the same way, which is how they know their
 outputs up front.
 
+On data -- a dataset whose `class_labels` hold `DATA` -- the converter skips
+the groups with an MC-only collection (`PtFlatten`, `random_pt_weights`), so
+the tasks drop those groups from their expected outputs as well and only the
+remaining files are checked and transferred.
+
 Everything in the output directory whose name starts with `output_prefix` is
 then copied to the training machine -- the files of every group, and anything
 else the conversion wrote under that prefix, whether or not its name was known

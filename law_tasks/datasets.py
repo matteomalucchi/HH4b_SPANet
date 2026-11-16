@@ -42,6 +42,11 @@ IGNORED_FIELDS = {
     "collections": "every file starting with the output prefix is copied",
 }
 
+#: columns that exist only in MC: on data the converter skips the jet collection
+#: groups holding one of them, so they produce no h5 file.  Keep in sync with
+#: MC_ONLY_COLUMN_PATTERNS of utils/dataset/coffea_to_h5_direct.py
+MC_ONLY_COLUMN_PATTERNS = ["PtFlatten", "random_pt_weights"]
+
 #: fields holding a list of values
 LIST_FIELDS = [
     "regions",
@@ -272,11 +277,31 @@ class Dataset(object):
                 )
             )
 
+    def is_data(self):
+        """True when the converted datasets are data.
+
+        The converter loads only the datasets matching the class labels, and a
+        data dataset is one with ``DATA`` in its name, so a class label holding
+        ``DATA`` selects data.
+        """
+        return any("DATA" in label.upper() for label in self.class_labels)
+
     def collection_names(self):
-        """Name of each produced jet collection group, e.g. ``JetTotalSPANetPadded``."""
+        """Name of each produced jet collection group, e.g. ``JetTotalSPANetPadded``.
+
+        On data the converter skips the groups holding an MC-only collection
+        (see :py:data:`MC_ONLY_COLUMN_PATTERNS`), so they are left out here too.
+        """
         names = []
         for group in self.jet_collections():
-            names.append("_".join(group) if isinstance(group, dict) else str(group))
+            columns = list(group) if isinstance(group, dict) else [str(group)]
+            if self.is_data() and any(
+                pattern in column
+                for column in columns
+                for pattern in MC_ONLY_COLUMN_PATTERNS
+            ):
+                continue
+            names.append("_".join(columns))
         return names
 
     @property
