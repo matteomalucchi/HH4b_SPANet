@@ -148,6 +148,7 @@ else:
         spanet_dict,
         true_dict,
     )
+helpers.wrap_labels(spanet_dict)
 
 def kl_one_index(kl_values):
     """Index of the kl=1 entry in the per-kl lists, which start with the
@@ -437,6 +438,11 @@ def main():
             eff_func.best_reco_higgs(j, spanet_idx, higgs=do_higgs_pairing)
             for j, spanet_idx in zip(jet_fully_matched, allspanet_idx_fully_matched)
         ]
+        # also on all the events (matched or not), for the signal region fraction
+        spanet_higgs_all = [
+            eff_func.best_reco_higgs(j, spanet_idx, higgs=do_higgs_pairing)
+            for j, spanet_idx in zip(alljet, allspanet_idx)
+        ]
         if not args.data:
             true_higgs_fully_matched = [
                 eff_func.best_reco_higgs(j, idx, higgs=do_higgs_pairing)
@@ -505,6 +511,7 @@ def main():
         df_collection[model_name] = {
             "file_dict": file_dict,
             "spanet_higgs_fully_matched": spanet_higgs_fully_matched,
+            "spanet_higgs_all": spanet_higgs_all,
             "do_higgs_pairing": do_higgs_pairing,
         }
         df_collection[model_name] = df_collection[model_name] | {
@@ -545,17 +552,8 @@ def main():
         )
         else False
     )
-    do_higgs_pairing = (
-        False
-        if (
-            args.ignore_higgs
-            and not (
-                "higgs" in true_dict[run2_dataset].keys()
-                and true_dict[run2_dataset]["higgs"]
-            )
-        )
-        else True
-    )
+    # with --ignore-higgs only the VBF pairing is evaluated, like for the models
+    do_higgs_pairing = not args.ignore_higgs
 
     run2_true_entry = true_dict[run2_dataset]
     n_higgs_jets = run2_true_entry.get("n_higgs_jets", 4)
@@ -701,14 +699,19 @@ def main():
         f"sum mask_fully_matched {[ak.sum(mask) for mask in mask_fully_matched]}"
     )
 
-    allrun2_idx_fully_matched = eff_func.run2_algorithm(
+    # pair all the events, then keep the fully matched ones
+    allrun2_idx = eff_func.run2_algorithm(
         alljet,
-        mask_fully_matched,
+        [np.ones(len(m), dtype=bool) for m in mask_fully_matched],
         higgs=do_higgs_pairing,
         vbf=do_vbf_pairing,
         n_higgs_jets=n_higgs_jets_run2,
         processes=all_processes,
     )
+    allrun2_idx_fully_matched = [
+        idx[np.asarray(m, dtype=bool)]
+        for idx, m in zip(allrun2_idx, mask_fully_matched)
+    ]
 
     if not args.data:
         # compute efficiencies for fully matched events for Run 2 pairing
@@ -739,6 +742,10 @@ def main():
     run2_higgs_fully_matched = [
         eff_func.best_reco_higgs(j, idx, higgs=do_higgs_pairing)
         for j, idx in zip(jet_fully_matched, allrun2_idx_fully_matched)
+    ]
+    run2_higgs_all = [
+        eff_func.best_reco_higgs(j, idx, higgs=do_higgs_pairing)
+        for j, idx in zip(alljet, allrun2_idx)
     ]
     if not args.data:
         true_higgs_fully_matched = [
@@ -800,6 +807,7 @@ def main():
     r2_model = {
         "file_dict": file_dict,
         "run2_higgs_fully_matched": run2_higgs_fully_matched,
+        "run2_higgs_all": run2_higgs_all,
     }
     r2_model = r2_model | {
         "kl_values": kl_values,
@@ -996,71 +1004,84 @@ def main():
             ]
             return dict(zip(names, higgs_list))
 
-        sr_methods = [
-            (
-                model["file_dict"]["label"],
-                model["file_dict"]["color"],
-                higgs_by_dataset(
-                    model["spanet_higgs_fully_matched"], model["kl_values"]
-                ),
-            )
-            for model in df_collection.values()
-            if model["do_higgs_pairing"]
-        ]
-        sr_methods.append(
-            (
-                run2_label,
-                "yellowgreen",
-                higgs_by_dataset(
-                    r2_model["run2_higgs_fully_matched"], r2_model["kl_values"]
-                ),
-            )
-        )
+        # Two event selections, as for the pairing efficiency: only the fully
+        # matched events, and all the events of the region. The true pairing
+        # exists only for the fully matched ones; on data the two selections
+        # coincide, so only the one on all events is made.
+        sr_selections = [("all_events", "spanet_higgs_all", "run2_higgs_all", None, "all events")]
         if not args.data:
-            sr_methods.append(
+            sr_selections.insert(
+                0,
                 (
-                    "True pairing",
-                    "black",
-                    higgs_by_dataset(
-                        r2_model["true_higgs_fully_matched"], r2_model["kl_values"]
-                    ),
-                )
+                    "fully_matched",
+                    "spanet_higgs_fully_matched",
+                    "run2_higgs_fully_matched",
+                    "true_higgs_fully_matched",
+                    "fully matched events",
+                ),
             )
-
-        dataset_names = []
-        for _, _, higgs_dict in sr_methods:
-            for ds_name in higgs_dict:
-                if ds_name not in dataset_names:
-                    dataset_names.append(ds_name)
 
         kl_xlabels = cv_c2v_kl_values_dict if (args.vbf or args.vbf_labels) else None
-        for ds_name in dataset_names:
-            fractions = [
-                eff_func.fraction_in_signal_region(higgs_dict.get(ds_name))
-                for _, _, higgs_dict in sr_methods
+        for sel_name, key_spanet, key_run2, key_true, sel_text in sr_selections:
+            sr_methods = [
+                (
+                    model["file_dict"]["label"],
+                    model["file_dict"]["color"],
+                    higgs_by_dataset(model[key_spanet], model["kl_values"]),
+                )
+                for model in df_collection.values()
+                if model["do_higgs_pairing"]
             ]
-            for (label, _, _), frac in zip(sr_methods, fractions):
-                if frac is not None:
-                    logger.info(
-                        f"Fraction in signal region for {label} (kl_eval {ds_name}): {frac:.3f}"
-                    )
-            if ds_name == "all":
-                category = "All datasets"
-            elif kl_xlabels is not None:
-                category = kl_xlabels.get(ds_name, ds_name)
-            else:
-                category = f"$\\kappa_{{\\lambda}}$={ds_name}"
-            eff_func.plot_sr_fraction(
-                fractions,
-                [label for label, _, _ in sr_methods],
-                [color for _, color, _ in sr_methods],
-                category,
-                # '.' -> 'p': HEPPlotter would strip '.5' etc. as an extension
-                f"frac_signal_region_true_run2_kl_eval_{ds_name.replace('.', 'p')}",
-                plot_dir=sr_plot_dir,
-                cmstext=args.cmstext,
-                region=args.region,
+            sr_methods.append(
+                (
+                    run2_label,
+                    "yellowgreen",
+                    higgs_by_dataset(r2_model[key_run2], r2_model["kl_values"]),
+                )
             )
+            if key_true is not None:
+                sr_methods.append(
+                    (
+                        "True pairing",
+                        "black",
+                        higgs_by_dataset(r2_model[key_true], r2_model["kl_values"]),
+                    )
+                )
+
+            dataset_names = []
+            for _, _, higgs_dict in sr_methods:
+                for ds_name in higgs_dict:
+                    if ds_name not in dataset_names:
+                        dataset_names.append(ds_name)
+
+            for ds_name in dataset_names:
+                fractions = [
+                    eff_func.fraction_in_signal_region(higgs_dict.get(ds_name))
+                    for _, _, higgs_dict in sr_methods
+                ]
+                for (label, _, _), frac in zip(sr_methods, fractions):
+                    if frac is not None:
+                        logger.info(
+                            f"Fraction in signal region ({sel_text}) for {label} "
+                            f"(kl_eval {ds_name}): {frac:.3f}"
+                        )
+                if ds_name == "all":
+                    category = "All datasets"
+                elif kl_xlabels is not None:
+                    category = kl_xlabels.get(ds_name, ds_name)
+                else:
+                    category = f"$\\kappa_{{\\lambda}}$={ds_name}"
+                eff_func.plot_sr_fraction(
+                    fractions,
+                    [label for label, _, _ in sr_methods],
+                    [color for _, color, _ in sr_methods],
+                    category,
+                    # '.' -> 'p': HEPPlotter would strip '.5' etc. as an extension
+                    f"frac_signal_region_{sel_name}_kl_eval_{ds_name.replace('.', 'p')}",
+                    plot_dir=sr_plot_dir,
+                    cmstext=args.cmstext,
+                    region=f"{args.region or 'inclusive'}, {sel_text}",
+                )
 
     if not args.ignore_higgs and args.histo_mass:
         if not args.data:
@@ -1079,41 +1100,43 @@ def main():
 
         logger.info("Plotting higgs 1d all events")
         for bins, name in zip([mh_bins, mh_bins_peak], ["", "_peak"]):
-            if args.data:
-                kl_values = np.array(
-                    []
-                )  # This is needed to make sure, that we are only producing one plot.
+            # matched by kl value, as for the signal region: the models may be
+            # split into different kl points, a model is left out of the plots
+            # of the kl points it lacks
+            spanet_by_kl = [
+                higgs_by_dataset(model["spanet_higgs_fully_matched"], model["kl_values"])
+                for model in df_collection.values()
+            ]
+            run2_by_kl = higgs_by_dataset(
+                r2_model["run2_higgs_fully_matched"], r2_model["kl_values"]
+            )
+            true_by_kl = (
+                None
+                if args.data
+                else higgs_by_dataset(
+                    r2_model["true_higgs_fully_matched"], r2_model["kl_values"]
+                )
+            )
+            # on data only one plot is made
             for number in [1, 2]:
-                for kl_variation, kl_name in zip(
-                    range(len(kl_values) + 1), ["all"] + kl_values.tolist()
-                ):
+                for kl_name in ["all"] if args.data else run2_by_kl:
+                    models = [
+                        (model, higgs[kl_name])
+                        for model, higgs in zip(df_collection.values(), spanet_by_kl)
+                        if kl_name in higgs
+                    ]
                     os.makedirs(f"{plot_dir}/kl_{kl_name}_massplot", exist_ok=True)
                     eff_func.plot_histos_1d(
                         bins,
-                        [
-                            model["spanet_higgs_fully_matched"][kl_variation][
-                                :, number - 1
-                            ].mass
-                            for model in df_collection.values()
-                        ],  # spanet values
-                        r2_model["run2_higgs_fully_matched"][kl_variation][
-                            :, number - 1
-                        ].mass,  # run2 values
+                        [higgs[:, number - 1].mass for _, higgs in models],  # spanet values
+                        run2_by_kl[kl_name][:, number - 1].mass,  # run2 values
                         (
-                            r2_model["true_higgs_fully_matched"][kl_variation][
-                                :, number - 1
-                            ].mass
+                            true_by_kl[kl_name][:, number - 1].mass
                             if not args.data
                             else None
                         ),  # true values
-                        [
-                            model["file_dict"]["label"]
-                            for model in df_collection.values()
-                        ],
-                        [
-                            model["file_dict"]["color"]
-                            for model in df_collection.values()
-                        ],
+                        [model["file_dict"]["label"] for model, _ in models],
+                        [model["file_dict"]["color"] for model, _ in models],
                         number,
                         name=f"{name}_true_run2_kl_eval_{kl_name}",
                         plot_dir=f"{plot_dir}/kl_{kl_name}_massplot",

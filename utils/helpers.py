@@ -24,6 +24,28 @@ def import_module_from_path(module_path):
     return module
 
 
+def wrap_label(label, width=40):
+    """Split a long legend label into lines of at most ~width characters,
+    breaking at the ' - ' separators of the model labels (or at '_'), so that
+    a long label does not squeeze the axes of the plot."""
+    sep = " - " if " - " in label else "_"
+    lines = [""]
+    for token in label.split(sep):
+        if lines[-1] and len(lines[-1]) + len(sep) + len(token) > width:
+            lines[-1] += sep.rstrip()
+            lines.append(token)
+        else:
+            lines[-1] = f"{lines[-1]}{sep}{token}" if lines[-1] else token
+    return "\n".join(lines)
+
+
+def wrap_labels(spanet_dict, width=40):
+    """Wrap the 'label' of every model of a configuration, in place."""
+    for entry in spanet_dict.values():
+        if "label" in entry:
+            entry["label"] = wrap_label(entry["label"], width)
+
+
 def setup_logging(logpath):
     """Create logger for nicer logger.infoing."""
     logging.basicConfig(

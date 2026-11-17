@@ -728,7 +728,7 @@ def plot_histos_1d(
         .set_data(series_dict, plot_type="1d")
         .set_options(
             legend_loc="upper right",
-            legend_font_size=23,
+            legend_font_size=14,
             grid=True,
             set_xlim=True,
             set_ylim_ratio=1,

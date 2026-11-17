@@ -118,6 +118,7 @@ else:
         spanet_dict,
         true_dict,
     )
+helpers.wrap_labels(spanet_dict)
 
 
 def asimov_significance(s, b, s_err, b_err):
