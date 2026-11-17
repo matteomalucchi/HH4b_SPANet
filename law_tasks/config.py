@@ -57,12 +57,12 @@ DEFAULT_PALETTE = [
 DEFAULT_EFFICIENCY_PLOTS = {
     "VBFEff_vbf_no_kin_cuts": "--vbf -c 1 -ih -r vbf_no_kin_cuts -k",
     "VBFEff_vbf_presel": "--vbf -c 1 -ih -r vbf_presel -k",
-    "HiggsEff_ggF_inclusive": "-c 0 -r inclusive -k",
+    "HiggsEff_ggF_inclusive": "-c 0 -r inclusive -k --histo-mass",
     # the Higgs pairing on the VBF events; -vl: their 'kl' is really C2V
-    "HiggsEff_VBF_inclusive": "-c 1 -r inclusive -vl -k",
+    "HiggsEff_VBF_inclusive": "-c 1 -r inclusive -vl -k --histo-mass",
     # ZZ (class 2) and ZH (class 3) apart; only a few test files hold them
-    "HiggsEff_ZZ_inclusive": "-c 2 -r inclusive -k",
-    "HiggsEff_ZH_inclusive": "-c 3 -r inclusive -k",
+    "HiggsEff_ZZ_inclusive": "-c 2 -r inclusive -k --histo-mass",
+    "HiggsEff_ZH_inclusive": "-c 3 -r inclusive -k --histo-mass",
 }
 
 #: ROC plots produced by ``hh4b.RocPlots``: name -> extra arguments

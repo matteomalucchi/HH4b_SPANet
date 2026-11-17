@@ -584,10 +584,10 @@ the arguments of its entry in `law.cfg` -- `-r <region>`, what
 [efficiency_plots]                                    # -> subdirectory
 VBFEff_vbf_no_kin_cuts: --vbf -c 1 -ih -r vbf_no_kin_cuts -k
 VBFEff_vbf_presel:      --vbf -c 1 -ih -r vbf_presel -k
-HiggsEff_ggF_inclusive:   -c 0 -r inclusive -k        # Higgs pairing, ggF events
-HiggsEff_VBF_inclusive:   -c 1 -r inclusive -vl -k    # Higgs pairing, VBF events
-HiggsEff_ZZ_inclusive:    -c 2 -r inclusive -k        # ZZ events
-HiggsEff_ZH_inclusive:    -c 3 -r inclusive -k        # ZH events
+HiggsEff_ggF_inclusive:   -c 0 -r inclusive -k --histo-mass      # Higgs pairing, ggF events
+HiggsEff_VBF_inclusive:   -c 1 -r inclusive -vl -k --histo-mass  # Higgs pairing, VBF events
+HiggsEff_ZZ_inclusive:    -c 2 -r inclusive -k --histo-mass      # ZZ events
+HiggsEff_ZH_inclusive:    -c 3 -r inclusive -k --histo-mass      # ZH events
 
 [roc_plots]
 vbf_no_kin_cuts:               -r vbf_no_kin_cuts -klb 1 all -s 0.8
