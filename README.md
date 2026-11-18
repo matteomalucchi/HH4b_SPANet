@@ -616,6 +616,12 @@ there, and a file with no class at all, is paired as HH with k = 1.04, which
 is also what every event gets without `--process-k`. The k values themselves
 are `RUN2_K_VALUES` in the same file.
 
+When the two smallest distances differ by less than 30 GeV, the one of these
+two pairings with the highest candidate pt is chosen instead. Which pt is set by
+`RUN2_PT_IN_HH_FRAME` in the same file: `False` (default) the highest lab-frame
+pt of the two candidates, `True` the pt of the candidates in the HH rest frame
+(as in HIG-20-005).
+
 > [!TIP]
 > To pass the configuration with the input files for the efficiency computation through the argument `-conf`, use the relative path from where you are executing the script.
 >

@@ -41,6 +41,12 @@ RUN2_K_VALUES = {
     "HZ": 1.40,
 }
 
+#: pt used by the Run 2 tie-break, when the two smallest distances differ by
+#: less than 30 GeV and the pairing with the highest pt between these two is
+#: chosen: False takes the highest lab-frame pt of the two candidates, True the
+#: pt of the candidates in the HH rest frame (as in HIG-20-005).
+RUN2_PT_IN_HH_FRAME = False
+
 #: processes made of two different resonances, which are therefore split per
 #: event: (k when the leading pt candidate is the heavier one, k otherwise).
 RUN2_MIXED_PROCESSES = {
@@ -323,7 +329,11 @@ def distance_pt_func(higgs_pair, k):
     # k is a number for one process, one per event and candidate pair when the
     # events are of several processes
     dist = abs(higgs1.mass - higgs2.mass * k) / np.sqrt(1 + k**2)
-    max_pt = np.maximum(higgs1.pt, higgs2.pt)
+    if RUN2_PT_IN_HH_FRAME:
+        # the two candidates are back-to-back in the HH rest frame, same pt
+        max_pt = higgs1.boostCM_of_p4(higgs1 + higgs2).pt
+    else:
+        max_pt = np.maximum(higgs1.pt, higgs2.pt)
     return dist, max_pt
 
 
@@ -473,11 +483,17 @@ def run2_algorithm(
         dist_order_idx = [ak.argsort(d, axis=1, ascending=True) for d in distance]
         dist_order = [ak.sort(d, axis=1, ascending=True) for d in distance]
 
-        pt_order_idx = [ak.argsort(pt, axis=1, ascending=False) for pt in max_pt]
-        # if the distance between the two best candidates is less than 30, we do not consider the event
+        # the pairing with the highest pt between the two with the smallest distance
+        pt_choice_idx = []
+        for pt, d_idx in zip(max_pt, dist_order_idx):
+            pt_by_dist = pt[d_idx]
+            pt_choice_idx.append(
+                ak.where(pt_by_dist[:, 0] > pt_by_dist[:, 1], d_idx[:, 0], d_idx[:, 1])
+            )
+        # if the distance between the two best candidates is less than 30, choose by pt
         min_idx = [
-            ak.where(d[:, 1] - d[:, 0] > 30, d_idx[:, 0], pt_idx[:, 0])
-            for d, d_idx, pt_idx in zip(dist_order, dist_order_idx, pt_order_idx)
+            ak.where(d[:, 1] - d[:, 0] > 30, d_idx[:, 0], pt_idx)
+            for d, d_idx, pt_idx in zip(dist_order, dist_order_idx, pt_choice_idx)
         ]
 
         comb_idx = [np.tile(comb_idx, (len(m), 1, 1, 1)) for m in min_idx]
